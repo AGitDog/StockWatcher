@@ -346,14 +346,18 @@ def render_watchlist_signal_monitor(mapping_text: str):
     )
 
     with st.expander("Hilfe und Lesart des Signal Monitor V2", expanded=False):
-        st.markdown("- Der Brodel-Score ist ein Fruehwarnwert von 0 bis 100. Je hoeher, desto mehr positive oder auffaellige Signale haeuften sich zuletzt.")
-        st.markdown("- EPS-Revisionen zeigen, ob Analystenschaetzungen zuletzt eher nach oben oder unten angepasst wurden.")
-        st.markdown("- Kursziel-Potenzial vergleicht das mittlere Analystenkursziel mit dem aktuellen Kurs.")
-        st.markdown("- Preis/Volumen achtet auf Momentum, Volumenspitzen und die Lage relativ zu Durchschnittslinien.")
-        st.markdown("- News-Dichte zeigt, ob sich die Berichterstattung in den letzten Tagen beschleunigt hat.")
-        st.markdown("- Event-Druck bewertet, wie nah ein relevanter Termin wie Earnings oder Dividende bevorsteht.")
-        st.markdown("- Delta-Alerts zeigen, was sich seit dem letzten gespeicherten Snapshot veraendert hat.")
-        st.markdown("- Peer- und Sektor-Kontext ordnet die Aktie innerhalb der aktuellen Watchlist ein, nicht gegen den Gesamtmarkt.")
+        st.markdown("Der **Brodel-Score** (0 bis 100) ist ein 'Fruehwarn-Thermometer'. Er setzt sich aus 5 Bausteinen zusammen:")
+        st.markdown("- **EPS-Revisionen (max. 25 Punkte):** Passten Analysten ihre Gewinnerwartungen zuletzt nach oben oder unten an? Mehr positive Korrekturen geben mehr Punkte.")
+        st.markdown("- **Kursziel-Potenzial (max. 18 Punkte):** Vergleicht das mittlere Analystenkursziel mit dem aktuellen Kurs. Ueber 20% Luft nach oben bringt die volle Punktzahl.")
+        st.markdown("- **Preis & Volumen Momentum (max. 25 Punkte):** Technische Lage. Gibt Punkte fuer Kurse ueber der 20- und 50-Tage-Linie, Volumenspitzen (>1,5x) und kurzfristige starke Schwankungen.")
+        st.markdown("- **News-Dichte (max. 18 Punkte):** Berichten die Medien gerade ungewoehnlich viel? 6 oder mehr Artikel in den letzten Tagen bringen die volle Punktzahl.")
+        st.markdown("- **Event-Druck (max. 15 Punkte):** Stehen bald Quartalszahlen oder Dividenden an? Je naeher der Termin (z.B. innerhalb von 7 Tagen), desto mehr Punkte.")
+        st.markdown("---")
+        st.markdown("**Das Linien-Diagramm (Score-Verlauf)**")
+        st.markdown("Jeder 'Snapshot' speichert den Brodel-Score des aktuellen Tages ab. Das Diagramm zeichnet dann den Verlauf über die Zeit. Oft ist nicht der absolute Wert entscheidend, sondern die *Richtung*. Schiesst die Linie einer Aktie plötzlich nach oben, baut sich dort gerade massiv Momentum auf!")
+        st.markdown("---")
+        st.markdown("- **Delta-Alerts** zeigen konkret, bei welcher Aktie sich der Score seit dem letzten Scan veraendert hat.")
+        st.markdown("- **Peer-Kontext** ordnet die Aktie innerhalb deines eigenen Sektors/deiner eigenen Watchlist ein.")
 
     alert_threshold = st.slider("Harter Delta-Alert ab Score-Anstieg von", min_value=1, max_value=30, value=10)
 
