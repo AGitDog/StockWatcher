@@ -1055,6 +1055,17 @@ def _format_date_value(value: Any) -> str | None:
     if value is None or value == "":
         return None
 
+    if hasattr(value, "iloc") and not isinstance(value, str):
+        if len(value) > 0:
+            return _format_date_value(value.iloc[0])
+        return None
+
+    if hasattr(value, "tolist") and not isinstance(value, str):
+        try:
+            value = value.tolist()
+        except Exception:
+            pass
+
     if isinstance(value, (list, tuple)) and value:
         return _format_date_value(value[0])
 
