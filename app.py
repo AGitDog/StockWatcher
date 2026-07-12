@@ -465,6 +465,13 @@ def render_watchlist_signal_monitor(mapping_text: str):
     else:
         st.info("Noch kein vorheriger Snapshot oder keine relevanten Veraenderungen seit dem letzten Snapshot.")
 
+    st.markdown("**Top 20 Aktien (Score)**")
+    top_20 = signal_items[:20]
+    if top_20:
+        top_20_df = pd.DataFrame([{"Symbol": item["symbol"], "Score": item["brodel_score"]} for item in top_20])
+        st.bar_chart(top_20_df.set_index("Symbol"))
+
+    st.markdown("**Alle Signale in der Uebersicht**")
     table_rows = []
     for item in signal_items:
         peer_context = item.get("peer_context", {})
@@ -482,38 +489,51 @@ def render_watchlist_signal_monitor(mapping_text: str):
 
     st.dataframe(pd.DataFrame(table_rows), use_container_width=True, hide_index=True)
 
-    for item in signal_items:
-        header = f"{item['symbol']} - {item['name']} | Score {item['brodel_score']}"
-        with st.expander(header, expanded=item["brodel_score"] >= 50):
+    st.markdown("---")
+    st.subheader("🔍 Detail-Analyse")
+    st.write("Waehle eine Aktie aus der Tabelle, um die genauen Fruehsignale und Peer-Vergleiche zu sehen.")
+    
+    options = [f"{item['symbol']} - {item['name']} (Score: {item['brodel_score']})" for item in signal_items]
+    selected_option = st.selectbox("Aktie suchen", options=options, index=0 if options else None)
+    
+    if selected_option:
+        selected_symbol = selected_option.split(" - ")[0]
+        item = next((i for i in signal_items if i["symbol"] == selected_symbol), None)
+        
+        if item:
+            st.markdown(f"### {item['symbol']} - {item['name']} | Brodel-Score: {item['brodel_score']}")
             if item["resolved"]:
                 st.caption(f"Eingabe: {item['input_name']} | {item['resolution_note']}")
 
-            st.markdown("**Signal-Zusammenfassung**")
-            if item["signal_items"]:
-                for detail in item["signal_items"]:
-                    st.markdown(f"- {detail}")
-            else:
-                st.markdown("- Keine aussagekraeftigen Fruehsignale erkannt.")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**Signal-Zusammenfassung**")
+                if item["signal_items"]:
+                    for detail in item["signal_items"]:
+                        st.markdown(f"- {detail}")
+                else:
+                    st.markdown("- Keine aussagekraeftigen Fruehsignale erkannt.")
 
-            st.markdown("**Signal-Breakdown**")
-            for component in item["signal_breakdown"].values():
-                st.markdown(f"- {component['name']}: {component['score']} Punkte | {component['summary']}")
+                st.markdown("**Signal-Breakdown**")
+                for component in item["signal_breakdown"].values():
+                    st.markdown(f"- {component['name']}: {component['score']} Punkte | {component['summary']}")
 
-            peer_context = item.get("peer_context", {})
-            st.markdown("**Peer- und Sektor-Kontext**")
-            st.markdown(
-                f"- Sektor: {peer_context.get('sector', 'Unbekannt')} | Branche: {peer_context.get('industry', 'Unbekannt')}"
-            )
-            st.markdown(
-                f"- Sektor-Durchschnitt: {peer_context.get('sector_average', 0)} | Abstand: {peer_context.get('score_vs_sector', 0)} | Rang: {peer_context.get('sector_rank', 1)}/{peer_context.get('sector_count', 1)}"
-            )
-            top_peer = peer_context.get("top_peer")
-            if top_peer:
+            with col2:
+                peer_context = item.get("peer_context", {})
+                st.markdown("**Peer- und Sektor-Kontext**")
                 st.markdown(
-                    f"- Staerkster Peer in der Watchlist: {top_peer['symbol']} - {top_peer['name']} | Score {top_peer['score']}"
+                    f"- Sektor: {peer_context.get('sector', 'Unbekannt')} | Branche: {peer_context.get('industry', 'Unbekannt')}"
                 )
-            else:
-                st.markdown("- Kein weiterer Peer im gleichen Sektor innerhalb der Watchlist.")
+                st.markdown(
+                    f"- Sektor-Durchschnitt: {peer_context.get('sector_average', 0)} | Abstand: {peer_context.get('score_vs_sector', 0)} | Rang: {peer_context.get('sector_rank', 1)}/{peer_context.get('sector_count', 1)}"
+                )
+                top_peer = peer_context.get("top_peer")
+                if top_peer:
+                    st.markdown(
+                        f"- Staerkster Peer in der Watchlist: {top_peer['symbol']} - {top_peer['name']} | Score {top_peer['score']}"
+                    )
+                else:
+                    st.markdown("- Kein weiterer Peer im gleichen Sektor innerhalb der Watchlist.")
 
 
 def render_stock_agent():
