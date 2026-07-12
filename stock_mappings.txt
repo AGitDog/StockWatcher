@@ -1,0 +1,10 @@
+# Manuelle Zuordnung: Name=Ticker
+# Problematische oder mehrdeutige Eintraege hier hinterlegen.
+
+Palantir Technologies=PLTR
+Appen=APX.AX
+Honeywell International=HON
+Honeywell Aerospace=HONA
+SK Hynix Inc=HY9H.F
+Ishares Core MSCI World=IWDA.AS
+# L&G Hydrogen Economy (Acc)=TICKER_HIER_EINTRAGEN
