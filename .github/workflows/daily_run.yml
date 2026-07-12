@@ -1,0 +1,41 @@
+name: Daily Stock Watcher Job
+
+on:
+  schedule:
+    # Run every day at 06:00 UTC (08:00 CEST)
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    # Allows you to run this workflow manually from the Actions tab
+
+jobs:
+  run-daily-job:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Daily Job
+        run: |
+          python daily_job.py
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add signal_history/
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update daily signal snapshots" && git push)

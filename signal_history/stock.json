@@ -1,0 +1,746 @@
+[
+  {
+    "timestamp": "2026-07-10T11:45:02Z",
+    "items": [
+      {
+        "symbol": "PLTR",
+        "name": "Palantir Technologies Inc.",
+        "input_name": "Palantir Technologies",
+        "resolved": true,
+        "resolution_note": "Manuelles Mapping auf 'PLTR'.",
+        "sector": "Technology",
+        "industry": "Software - Infrastructure",
+        "brodel_score": 72,
+        "signal_items": [
+          "EPS-Revisionen: 13 hoch, 0 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 183.12 vs. Kurs 129.04 = 41.9% Potenzial (Spanne 70.00 bis 255.00)",
+          "Kurs 129.04, 5T 2.6%, Volumen 0.8x vs. 20T, ueber MA20/MA50: ja/nein",
+          "10 News in den letzten 7 Tagen",
+          "Naechster Termin in 24 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 25,
+            "summary": "EPS-Revisionen: 13 hoch, 0 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 183.12 vs. Kurs 129.04 = 41.9% Potenzial (Spanne 70.00 bis 255.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 6,
+            "summary": "Kurs 129.04, 5T 2.6%, Volumen 0.8x vs. 20T, ueber MA20/MA50: ja/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 24 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Technology",
+          "industry": "Software - Infrastructure",
+          "sector_average": 49.3,
+          "score_vs_sector": 22.7,
+          "sector_rank": 1,
+          "sector_count": 3,
+          "top_peer": {
+            "symbol": "HY9H.F",
+            "name": "SK hynix Inc.",
+            "score": 44
+          }
+        }
+      },
+      {
+        "symbol": "HY9H.F",
+        "name": "SK hynix Inc.",
+        "input_name": "SK Hynix Inc",
+        "resolved": true,
+        "resolution_note": "Manuelles Mapping auf 'HY9H.F'.",
+        "sector": "Technology",
+        "industry": "Semiconductors",
+        "brodel_score": 44,
+        "signal_items": [
+          "EPS-Revisionen: 2 hoch, 2 runter",
+          "Kursziel-Mittel 2653.34 vs. Kurs 1340.00 = 98.0% Potenzial (Spanne 2361.63 bis 2945.05)",
+          "Kurs 1340.00, 5T -5.0%, Volumen 0.7x vs. 20T, ueber MA20/MA50: nein/ja",
+          "10 News in den letzten 7 Tagen",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 0,
+            "summary": "EPS-Revisionen: 2 hoch, 2 runter"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 2653.34 vs. Kurs 1340.00 = 98.0% Potenzial (Spanne 2361.63 bis 2945.05)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 8,
+            "summary": "Kurs 1340.00, 5T -5.0%, Volumen 0.7x vs. 20T, ueber MA20/MA50: nein/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Technology",
+          "industry": "Semiconductors",
+          "sector_average": 49.3,
+          "score_vs_sector": -5.3,
+          "sector_rank": 2,
+          "sector_count": 3,
+          "top_peer": {
+            "symbol": "PLTR",
+            "name": "Palantir Technologies Inc.",
+            "score": 72
+          }
+        }
+      },
+      {
+        "symbol": "HON",
+        "name": "Honeywell International Inc.",
+        "input_name": "Honeywell International",
+        "resolved": true,
+        "resolution_note": "Manuelles Mapping auf 'HON'.",
+        "sector": "Industrials",
+        "industry": "Conglomerates",
+        "brodel_score": 42,
+        "signal_items": [
+          "EPS-Revisionen: 5 hoch, 11 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 246.45 vs. Kurs 223.42 = 10.3% Potenzial (Spanne 164.00 bis 272.00)",
+          "Kurs 223.42, 5T 0.8%, Volumen 0.5x vs. 20T, ueber MA20/MA50: nein/nein",
+          "10 News in den letzten 7 Tagen",
+          "Naechster Termin in 13 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 5 hoch, 11 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 10,
+            "summary": "Kursziel-Mittel 246.45 vs. Kurs 223.42 = 10.3% Potenzial (Spanne 164.00 bis 272.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Kurs 223.42, 5T 0.8%, Volumen 0.5x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 10,
+            "summary": "Naechster Termin in 13 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Conglomerates",
+          "sector_average": 33.0,
+          "score_vs_sector": 9.0,
+          "sector_rank": 1,
+          "sector_count": 2,
+          "top_peer": {
+            "symbol": "HONA",
+            "name": "Honeywell Aerospace Inc.",
+            "score": 24
+          }
+        }
+      },
+      {
+        "symbol": "APX.AX",
+        "name": "Appen Limited",
+        "input_name": "Appen",
+        "resolved": true,
+        "resolution_note": "Manuelles Mapping auf 'APX.AX'.",
+        "sector": "Technology",
+        "industry": "Information Technology Services",
+        "brodel_score": 32,
+        "signal_items": [
+          "EPS-Revisionen: 5 hoch, 3 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 1.78 vs. Kurs 0.91 = 97.2% Potenzial (Spanne 0.59 bis 2.35)",
+          "Kurs 0.90, 5T -2.2%, Volumen 1.0x vs. 20T, ueber MA20/MA50: nein/nein",
+          "0 News in den letzten 7 Tagen",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 14,
+            "summary": "EPS-Revisionen: 5 hoch, 3 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 1.78 vs. Kurs 0.91 = 97.2% Potenzial (Spanne 0.59 bis 2.35)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Kurs 0.90, 5T -2.2%, Volumen 1.0x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Technology",
+          "industry": "Information Technology Services",
+          "sector_average": 49.3,
+          "score_vs_sector": -17.3,
+          "sector_rank": 3,
+          "sector_count": 3,
+          "top_peer": {
+            "symbol": "PLTR",
+            "name": "Palantir Technologies Inc.",
+            "score": 72
+          }
+        }
+      },
+      {
+        "symbol": "HONA",
+        "name": "Honeywell Aerospace Inc.",
+        "input_name": "Honeywell Aerospace",
+        "resolved": true,
+        "resolution_note": "Manuelles Mapping auf 'HONA'.",
+        "sector": "Industrials",
+        "industry": "Aerospace & Defense",
+        "brodel_score": 24,
+        "signal_items": [
+          "EPS-Revisionen: 0 hoch, 0 runter",
+          "Kursziel-Mittel 269.14 vs. Kurs 223.12 = 20.6% Potenzial (Spanne 235.00 bis 306.00)",
+          "Nicht genug Kursdaten fuer Preis/Volumen-Signal.",
+          "3 News in den letzten 7 Tagen",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 0,
+            "summary": "EPS-Revisionen: 0 hoch, 0 runter"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 269.14 vs. Kurs 223.12 = 20.6% Potenzial (Spanne 235.00 bis 306.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Nicht genug Kursdaten fuer Preis/Volumen-Signal."
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 6,
+            "summary": "3 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Aerospace & Defense",
+          "sector_average": 33.0,
+          "score_vs_sector": -9.0,
+          "sector_rank": 2,
+          "sector_count": 2,
+          "top_peer": {
+            "symbol": "HON",
+            "name": "Honeywell International Inc.",
+            "score": 42
+          }
+        }
+      },
+      {
+        "symbol": "IWDA.AS",
+        "name": "iShares Core MSCI World UCITS ETF USD (Acc)",
+        "input_name": "Ishares Core MSCI World",
+        "resolved": true,
+        "resolution_note": "Manuelles Mapping auf 'IWDA.AS'.",
+        "sector": "Unbekannt",
+        "industry": "BlackRock Asset Management Ireland - ETF",
+        "brodel_score": 14,
+        "signal_items": [
+          "Keine EPS-Revisionen verfuegbar.",
+          "Keine Kursziel-Daten verfuegbar.",
+          "Kurs 126.07, 5T 0.3%, Volumen 0.5x vs. 20T, ueber MA20/MA50: ja/ja",
+          "Keine aktuelle News-Dichte erkennbar.",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 0,
+            "summary": "Keine EPS-Revisionen verfuegbar."
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 0,
+            "summary": "Keine Kursziel-Daten verfuegbar."
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 126.07, 5T 0.3%, Volumen 0.5x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "Keine aktuelle News-Dichte erkennbar."
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Unbekannt",
+          "industry": "BlackRock Asset Management Ireland - ETF",
+          "sector_average": 7.0,
+          "score_vs_sector": 7.0,
+          "sector_rank": 1,
+          "sector_count": 2,
+          "top_peer": {
+            "symbol": "L&G Hydrogen Economy (Acc)",
+            "name": "L&G Hydrogen Economy (Acc)",
+            "score": 0
+          }
+        }
+      },
+      {
+        "symbol": "L&G Hydrogen Economy (Acc)",
+        "name": "L&G Hydrogen Economy (Acc)",
+        "input_name": "L&G Hydrogen Economy (Acc)",
+        "resolved": false,
+        "resolution_note": "Kein passendes Boersensymbol gefunden.",
+        "brodel_score": 0,
+        "signal_items": [
+          "Kein gueltiges Symbol verfuegbar."
+        ],
+        "signal_breakdown": {},
+        "peer_context": {
+          "sector": "Unbekannt",
+          "industry": "Unbekannt",
+          "sector_average": 7.0,
+          "score_vs_sector": -7.0,
+          "sector_rank": 2,
+          "sector_count": 2,
+          "top_peer": {
+            "symbol": "IWDA.AS",
+            "name": "iShares Core MSCI World UCITS ETF USD (Acc)",
+            "score": 14
+          }
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-07-10T11:45:31Z",
+    "items": [
+      {
+        "symbol": "PLTR",
+        "name": "Palantir Technologies Inc.",
+        "input_name": "Palantir Technologies",
+        "resolved": true,
+        "resolution_note": "Manuelles Mapping auf 'PLTR'.",
+        "sector": "Technology",
+        "industry": "Software - Infrastructure",
+        "brodel_score": 72,
+        "signal_items": [
+          "EPS-Revisionen: 13 hoch, 0 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 183.12 vs. Kurs 129.04 = 41.9% Potenzial (Spanne 70.00 bis 255.00)",
+          "Kurs 129.04, 5T 2.6%, Volumen 0.8x vs. 20T, ueber MA20/MA50: ja/nein",
+          "10 News in den letzten 7 Tagen",
+          "Naechster Termin in 24 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 25,
+            "summary": "EPS-Revisionen: 13 hoch, 0 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 183.12 vs. Kurs 129.04 = 41.9% Potenzial (Spanne 70.00 bis 255.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 6,
+            "summary": "Kurs 129.04, 5T 2.6%, Volumen 0.8x vs. 20T, ueber MA20/MA50: ja/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 24 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Technology",
+          "industry": "Software - Infrastructure",
+          "sector_average": 49.3,
+          "score_vs_sector": 22.7,
+          "sector_rank": 1,
+          "sector_count": 3,
+          "top_peer": {
+            "symbol": "HY9H.F",
+            "name": "SK hynix Inc.",
+            "score": 44
+          }
+        }
+      },
+      {
+        "symbol": "HY9H.F",
+        "name": "SK hynix Inc.",
+        "input_name": "SK Hynix Inc",
+        "resolved": true,
+        "resolution_note": "Manuelles Mapping auf 'HY9H.F'.",
+        "sector": "Technology",
+        "industry": "Semiconductors",
+        "brodel_score": 44,
+        "signal_items": [
+          "EPS-Revisionen: 2 hoch, 2 runter",
+          "Kursziel-Mittel 2653.34 vs. Kurs 1340.00 = 98.0% Potenzial (Spanne 2361.63 bis 2945.05)",
+          "Kurs 1340.00, 5T -5.0%, Volumen 0.7x vs. 20T, ueber MA20/MA50: nein/ja",
+          "10 News in den letzten 7 Tagen",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 0,
+            "summary": "EPS-Revisionen: 2 hoch, 2 runter"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 2653.34 vs. Kurs 1340.00 = 98.0% Potenzial (Spanne 2361.63 bis 2945.05)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 8,
+            "summary": "Kurs 1340.00, 5T -5.0%, Volumen 0.7x vs. 20T, ueber MA20/MA50: nein/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Technology",
+          "industry": "Semiconductors",
+          "sector_average": 49.3,
+          "score_vs_sector": -5.3,
+          "sector_rank": 2,
+          "sector_count": 3,
+          "top_peer": {
+            "symbol": "PLTR",
+            "name": "Palantir Technologies Inc.",
+            "score": 72
+          }
+        }
+      },
+      {
+        "symbol": "HON",
+        "name": "Honeywell International Inc.",
+        "input_name": "Honeywell International",
+        "resolved": true,
+        "resolution_note": "Manuelles Mapping auf 'HON'.",
+        "sector": "Industrials",
+        "industry": "Conglomerates",
+        "brodel_score": 42,
+        "signal_items": [
+          "EPS-Revisionen: 5 hoch, 11 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 246.45 vs. Kurs 223.42 = 10.3% Potenzial (Spanne 164.00 bis 272.00)",
+          "Kurs 223.42, 5T 0.8%, Volumen 0.5x vs. 20T, ueber MA20/MA50: nein/nein",
+          "10 News in den letzten 7 Tagen",
+          "Naechster Termin in 13 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 5 hoch, 11 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 10,
+            "summary": "Kursziel-Mittel 246.45 vs. Kurs 223.42 = 10.3% Potenzial (Spanne 164.00 bis 272.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Kurs 223.42, 5T 0.8%, Volumen 0.5x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 10,
+            "summary": "Naechster Termin in 13 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Conglomerates",
+          "sector_average": 33.0,
+          "score_vs_sector": 9.0,
+          "sector_rank": 1,
+          "sector_count": 2,
+          "top_peer": {
+            "symbol": "HONA",
+            "name": "Honeywell Aerospace Inc.",
+            "score": 24
+          }
+        }
+      },
+      {
+        "symbol": "APX.AX",
+        "name": "Appen Limited",
+        "input_name": "Appen",
+        "resolved": true,
+        "resolution_note": "Manuelles Mapping auf 'APX.AX'.",
+        "sector": "Technology",
+        "industry": "Information Technology Services",
+        "brodel_score": 32,
+        "signal_items": [
+          "EPS-Revisionen: 5 hoch, 3 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 1.78 vs. Kurs 0.91 = 97.2% Potenzial (Spanne 0.59 bis 2.35)",
+          "Kurs 0.90, 5T -2.2%, Volumen 1.0x vs. 20T, ueber MA20/MA50: nein/nein",
+          "0 News in den letzten 7 Tagen",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 14,
+            "summary": "EPS-Revisionen: 5 hoch, 3 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 1.78 vs. Kurs 0.91 = 97.2% Potenzial (Spanne 0.59 bis 2.35)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Kurs 0.90, 5T -2.2%, Volumen 1.0x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Technology",
+          "industry": "Information Technology Services",
+          "sector_average": 49.3,
+          "score_vs_sector": -17.3,
+          "sector_rank": 3,
+          "sector_count": 3,
+          "top_peer": {
+            "symbol": "PLTR",
+            "name": "Palantir Technologies Inc.",
+            "score": 72
+          }
+        }
+      },
+      {
+        "symbol": "HONA",
+        "name": "Honeywell Aerospace Inc.",
+        "input_name": "Honeywell Aerospace",
+        "resolved": true,
+        "resolution_note": "Manuelles Mapping auf 'HONA'.",
+        "sector": "Industrials",
+        "industry": "Aerospace & Defense",
+        "brodel_score": 24,
+        "signal_items": [
+          "EPS-Revisionen: 0 hoch, 0 runter",
+          "Kursziel-Mittel 269.14 vs. Kurs 223.12 = 20.6% Potenzial (Spanne 235.00 bis 306.00)",
+          "Nicht genug Kursdaten fuer Preis/Volumen-Signal.",
+          "3 News in den letzten 7 Tagen",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 0,
+            "summary": "EPS-Revisionen: 0 hoch, 0 runter"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 269.14 vs. Kurs 223.12 = 20.6% Potenzial (Spanne 235.00 bis 306.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Nicht genug Kursdaten fuer Preis/Volumen-Signal."
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 6,
+            "summary": "3 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Aerospace & Defense",
+          "sector_average": 33.0,
+          "score_vs_sector": -9.0,
+          "sector_rank": 2,
+          "sector_count": 2,
+          "top_peer": {
+            "symbol": "HON",
+            "name": "Honeywell International Inc.",
+            "score": 42
+          }
+        }
+      },
+      {
+        "symbol": "IWDA.AS",
+        "name": "iShares Core MSCI World UCITS ETF USD (Acc)",
+        "input_name": "Ishares Core MSCI World",
+        "resolved": true,
+        "resolution_note": "Manuelles Mapping auf 'IWDA.AS'.",
+        "sector": "Unbekannt",
+        "industry": "BlackRock Asset Management Ireland - ETF",
+        "brodel_score": 14,
+        "signal_items": [
+          "Keine EPS-Revisionen verfuegbar.",
+          "Keine Kursziel-Daten verfuegbar.",
+          "Kurs 126.04, 5T 0.2%, Volumen 0.5x vs. 20T, ueber MA20/MA50: ja/ja",
+          "Keine aktuelle News-Dichte erkennbar.",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 0,
+            "summary": "Keine EPS-Revisionen verfuegbar."
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 0,
+            "summary": "Keine Kursziel-Daten verfuegbar."
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 126.04, 5T 0.2%, Volumen 0.5x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "Keine aktuelle News-Dichte erkennbar."
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Unbekannt",
+          "industry": "BlackRock Asset Management Ireland - ETF",
+          "sector_average": 7.0,
+          "score_vs_sector": 7.0,
+          "sector_rank": 1,
+          "sector_count": 2,
+          "top_peer": {
+            "symbol": "L&G Hydrogen Economy (Acc)",
+            "name": "L&G Hydrogen Economy (Acc)",
+            "score": 0
+          }
+        }
+      },
+      {
+        "symbol": "L&G Hydrogen Economy (Acc)",
+        "name": "L&G Hydrogen Economy (Acc)",
+        "input_name": "L&G Hydrogen Economy (Acc)",
+        "resolved": false,
+        "resolution_note": "Kein passendes Boersensymbol gefunden.",
+        "brodel_score": 0,
+        "signal_items": [
+          "Kein gueltiges Symbol verfuegbar."
+        ],
+        "signal_breakdown": {},
+        "peer_context": {
+          "sector": "Unbekannt",
+          "industry": "Unbekannt",
+          "sector_average": 7.0,
+          "score_vs_sector": -7.0,
+          "sector_rank": 2,
+          "sector_count": 2,
+          "top_peer": {
+            "symbol": "IWDA.AS",
+            "name": "iShares Core MSCI World UCITS ETF USD (Acc)",
+            "score": 14
+          }
+        }
+      }
+    ]
+  }
+]

@@ -1,0 +1,2964 @@
+[
+  {
+    "timestamp": "2026-07-10T12:11:45Z",
+    "items": [
+      {
+        "symbol": "NVDA",
+        "name": "NVIDIA Corporation",
+        "input_name": "NVDA",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Technology",
+        "industry": "Semiconductors",
+        "brodel_score": 67,
+        "signal_items": [
+          "EPS-Revisionen: 224 hoch, 13 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 301.62 vs. Kurs 202.78 = 48.7% Potenzial (Spanne 180.00 bis 500.00)",
+          "Kurs 202.78, 5T 2.6%, Volumen 0.9x vs. 20T, ueber MA20/MA50: ja/nein",
+          "10 News in den letzten 7 Tagen",
+          "Naechster Termin in 47 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 25,
+            "summary": "EPS-Revisionen: 224 hoch, 13 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 301.62 vs. Kurs 202.78 = 48.7% Potenzial (Spanne 180.00 bis 500.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 6,
+            "summary": "Kurs 202.78, 5T 2.6%, Volumen 0.9x vs. 20T, ueber MA20/MA50: ja/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Naechster Termin in 47 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Technology",
+          "industry": "Semiconductors",
+          "sector_average": 48.0,
+          "score_vs_sector": 19.0,
+          "sector_rank": 1,
+          "sector_count": 2,
+          "top_peer": {
+            "symbol": "PTX.F",
+            "name": "Palantir Technologies Inc.",
+            "score": 29
+          }
+        }
+      },
+      {
+        "symbol": "HON",
+        "name": "Honeywell International Inc.",
+        "input_name": "HON",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Industrials",
+        "industry": "Conglomerates",
+        "brodel_score": 42,
+        "signal_items": [
+          "EPS-Revisionen: 5 hoch, 11 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 246.45 vs. Kurs 223.42 = 10.3% Potenzial (Spanne 164.00 bis 272.00)",
+          "Kurs 223.42, 5T 0.8%, Volumen 0.5x vs. 20T, ueber MA20/MA50: nein/nein",
+          "10 News in den letzten 7 Tagen",
+          "Naechster Termin in 13 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 5 hoch, 11 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 10,
+            "summary": "Kursziel-Mittel 246.45 vs. Kurs 223.42 = 10.3% Potenzial (Spanne 164.00 bis 272.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Kurs 223.42, 5T 0.8%, Volumen 0.5x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 10,
+            "summary": "Naechster Termin in 13 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Conglomerates",
+          "sector_average": 25.7,
+          "score_vs_sector": 16.3,
+          "sector_rank": 1,
+          "sector_count": 3,
+          "top_peer": {
+            "symbol": "HONA",
+            "name": "Honeywell Aerospace Inc.",
+            "score": 24
+          }
+        }
+      },
+      {
+        "symbol": "PTX.F",
+        "name": "Palantir Technologies Inc.",
+        "input_name": "PTX.F",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Technology",
+        "industry": "Software - Infrastructure",
+        "brodel_score": 29,
+        "signal_items": [
+          "Keine EPS-Revisionen verfuegbar.",
+          "Kursziel-Daten vorhanden, aber nicht sauber vergleichbar.",
+          "Kurs 113.22, 5T 1.1%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/nein",
+          "10 News in den letzten 7 Tagen",
+          "Naechster Termin in 24 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 0,
+            "summary": "Keine EPS-Revisionen verfuegbar."
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 0,
+            "summary": "Kursziel-Daten vorhanden, aber nicht sauber vergleichbar."
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 6,
+            "summary": "Kurs 113.22, 5T 1.1%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 24 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Technology",
+          "industry": "Software - Infrastructure",
+          "sector_average": 48.0,
+          "score_vs_sector": -19.0,
+          "sector_rank": 2,
+          "sector_count": 2,
+          "top_peer": {
+            "symbol": "NVDA",
+            "name": "NVIDIA Corporation",
+            "score": 67
+          }
+        }
+      },
+      {
+        "symbol": "HONA",
+        "name": "Honeywell Aerospace Inc.",
+        "input_name": "HONA",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Industrials",
+        "industry": "Aerospace & Defense",
+        "brodel_score": 24,
+        "signal_items": [
+          "EPS-Revisionen: 0 hoch, 0 runter",
+          "Kursziel-Mittel 269.14 vs. Kurs 223.12 = 20.6% Potenzial (Spanne 235.00 bis 306.00)",
+          "Nicht genug Kursdaten fuer Preis/Volumen-Signal.",
+          "3 News in den letzten 7 Tagen",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 0,
+            "summary": "EPS-Revisionen: 0 hoch, 0 runter"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 269.14 vs. Kurs 223.12 = 20.6% Potenzial (Spanne 235.00 bis 306.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Nicht genug Kursdaten fuer Preis/Volumen-Signal."
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 6,
+            "summary": "3 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Aerospace & Defense",
+          "sector_average": 25.7,
+          "score_vs_sector": -1.7,
+          "sector_rank": 2,
+          "sector_count": 3,
+          "top_peer": {
+            "symbol": "HON",
+            "name": "Honeywell International Inc.",
+            "score": 42
+          }
+        }
+      },
+      {
+        "symbol": "AAD.VI",
+        "name": "Amadeus FiRe AG",
+        "input_name": "AAD.VI",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Industrials",
+        "industry": "Staffing & Employment Services",
+        "brodel_score": 11,
+        "signal_items": [
+          "Keine EPS-Revisionen verfuegbar.",
+          "Kursziel-Daten vorhanden, aber nicht sauber vergleichbar.",
+          "Kurs 19.10, 5T -10.5%, Volumen 0.0x vs. 20T, ueber MA20/MA50: nein/nein",
+          "0 News in den letzten 7 Tagen",
+          "Naechster Termin in 24 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 0,
+            "summary": "Keine EPS-Revisionen verfuegbar."
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 0,
+            "summary": "Kursziel-Daten vorhanden, aber nicht sauber vergleichbar."
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 6,
+            "summary": "Kurs 19.10, 5T -10.5%, Volumen 0.0x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 24 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Staffing & Employment Services",
+          "sector_average": 25.7,
+          "score_vs_sector": -14.7,
+          "sector_rank": 3,
+          "sector_count": 3,
+          "top_peer": {
+            "symbol": "HON",
+            "name": "Honeywell International Inc.",
+            "score": 42
+          }
+        }
+      },
+      {
+        "symbol": "433.MU",
+        "name": "Appen Ltd",
+        "input_name": "433.MU",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Unbekannt",
+        "industry": "Unbekannt",
+        "brodel_score": 0,
+        "signal_items": [
+          "Keine EPS-Revisionen verfuegbar.",
+          "Keine Kursziel-Daten verfuegbar.",
+          "Kurs 0.56, 5T -3.3%, Volumen 0.0x vs. 20T, ueber MA20/MA50: nein/nein",
+          "0 News in den letzten 7 Tagen",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 0,
+            "summary": "Keine EPS-Revisionen verfuegbar."
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 0,
+            "summary": "Keine Kursziel-Daten verfuegbar."
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Kurs 0.56, 5T -3.3%, Volumen 0.0x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Unbekannt",
+          "industry": "Unbekannt",
+          "sector_average": 0.0,
+          "score_vs_sector": 0.0,
+          "sector_rank": 1,
+          "sector_count": 1,
+          "top_peer": null
+        }
+      }
+    ]
+  },
+  {
+    "timestamp": "2026-07-10T12:19:33Z",
+    "items": [
+      {
+        "symbol": "SAP.DE",
+        "name": "SAP SE",
+        "input_name": "SAP.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Technology",
+        "industry": "Software - Application",
+        "brodel_score": 77,
+        "signal_items": [
+          "EPS-Revisionen: 12 hoch, 4 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 210.88 vs. Kurs 138.96 = 51.8% Potenzial (Spanne 154.99 bis 290.00)",
+          "Kurs 138.96, 5T -0.5%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/nein",
+          "10 News in den letzten 7 Tagen",
+          "Naechster Termin in 13 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 25,
+            "summary": "EPS-Revisionen: 12 hoch, 4 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 210.88 vs. Kurs 138.96 = 51.8% Potenzial (Spanne 154.99 bis 290.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 6,
+            "summary": "Kurs 138.96, 5T -0.5%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 10,
+            "summary": "Naechster Termin in 13 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Technology",
+          "industry": "Software - Application",
+          "sector_average": 59.2,
+          "score_vs_sector": 17.8,
+          "sector_rank": 1,
+          "sector_count": 4,
+          "top_peer": {
+            "symbol": "NVDA",
+            "name": "NVIDIA Corporation",
+            "score": 67
+          }
+        }
+      },
+      {
+        "symbol": "ADS.DE",
+        "name": "adidas AG",
+        "input_name": "ADS.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Consumer Cyclical",
+        "industry": "Footwear & Accessories",
+        "brodel_score": 72,
+        "signal_items": [
+          "EPS-Revisionen: 13 hoch, 9 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 205.34 vs. Kurs 180.20 = 14.0% Potenzial (Spanne 163.00 bis 255.00)",
+          "Kurs 180.20, 5T -2.8%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja",
+          "10 News in den letzten 7 Tagen",
+          "Naechster Termin in 20 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 20,
+            "summary": "EPS-Revisionen: 13 hoch, 9 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 10,
+            "summary": "Kursziel-Mittel 205.34 vs. Kurs 180.20 = 14.0% Potenzial (Spanne 163.00 bis 255.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 180.20, 5T -2.8%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 10,
+            "summary": "Naechster Termin in 20 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Consumer Cyclical",
+          "industry": "Footwear & Accessories",
+          "sector_average": 46.1,
+          "score_vs_sector": 25.9,
+          "sector_rank": 1,
+          "sector_count": 7,
+          "top_peer": {
+            "symbol": "BMW.DE",
+            "name": "Bayerische Motoren Werke Aktiengesellschaft",
+            "score": 50
+          }
+        }
+      },
+      {
+        "symbol": "AIR.PA",
+        "name": "Airbus SE",
+        "input_name": "AIR.PA",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Industrials",
+        "industry": "Aerospace & Defense",
+        "brodel_score": 70,
+        "signal_items": [
+          "EPS-Revisionen: 11 hoch, 6 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 213.52 vs. Kurs 195.34 = 9.3% Potenzial (Spanne 175.00 bis 258.00)",
+          "Kurs 195.34, 5T -5.2%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/ja",
+          "10 News in den letzten 7 Tagen",
+          "Naechster Termin in 19 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 23,
+            "summary": "EPS-Revisionen: 11 hoch, 6 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 5,
+            "summary": "Kursziel-Mittel 213.52 vs. Kurs 195.34 = 9.3% Potenzial (Spanne 175.00 bis 258.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 195.34, 5T -5.2%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 10,
+            "summary": "Naechster Termin in 19 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Aerospace & Defense",
+          "sector_average": 44.2,
+          "score_vs_sector": 25.8,
+          "sector_rank": 1,
+          "sector_count": 11,
+          "top_peer": {
+            "symbol": "ENR.DE",
+            "name": "Siemens Energy AG",
+            "score": 60
+          }
+        }
+      },
+      {
+        "symbol": "NVDA",
+        "name": "NVIDIA Corporation",
+        "input_name": "NVDA",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Technology",
+        "industry": "Semiconductors",
+        "brodel_score": 67,
+        "signal_items": [
+          "EPS-Revisionen: 224 hoch, 13 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 301.62 vs. Kurs 202.78 = 48.7% Potenzial (Spanne 180.00 bis 500.00)",
+          "Kurs 202.78, 5T 2.6%, Volumen 0.9x vs. 20T, ueber MA20/MA50: ja/nein",
+          "10 News in den letzten 7 Tagen",
+          "Naechster Termin in 47 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 25,
+            "summary": "EPS-Revisionen: 224 hoch, 13 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 301.62 vs. Kurs 202.78 = 48.7% Potenzial (Spanne 180.00 bis 500.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 6,
+            "summary": "Kurs 202.78, 5T 2.6%, Volumen 0.9x vs. 20T, ueber MA20/MA50: ja/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Naechster Termin in 47 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Technology",
+          "industry": "Semiconductors",
+          "sector_average": 59.2,
+          "score_vs_sector": 7.8,
+          "sector_rank": 2,
+          "sector_count": 4,
+          "top_peer": {
+            "symbol": "SAP.DE",
+            "name": "SAP SE",
+            "score": 77
+          }
+        }
+      },
+      {
+        "symbol": "CBK.DE",
+        "name": "Commerzbank AG",
+        "input_name": "CBK.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Financial Services",
+        "industry": "Banks - Regional",
+        "brodel_score": 67,
+        "signal_items": [
+          "EPS-Revisionen: 20 hoch, 9 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 39.95 vs. Kurs 38.33 = 4.2% Potenzial (Spanne 31.60 bis 45.00)",
+          "Kurs 38.33, 5T 1.6%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja",
+          "10 News in den letzten 7 Tagen",
+          "Naechster Termin in 27 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 25,
+            "summary": "EPS-Revisionen: 20 hoch, 9 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 5,
+            "summary": "Kursziel-Mittel 39.95 vs. Kurs 38.33 = 4.2% Potenzial (Spanne 31.60 bis 45.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 38.33, 5T 1.6%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 27 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Financial Services",
+          "industry": "Banks - Regional",
+          "sector_average": 48.8,
+          "score_vs_sector": 18.2,
+          "sector_rank": 1,
+          "sector_count": 6,
+          "top_peer": {
+            "symbol": "HNR1.DE",
+            "name": "Hannover R\u00fcck SE",
+            "score": 54
+          }
+        }
+      },
+      {
+        "symbol": "IFX.DE",
+        "name": "Infineon Technologies AG",
+        "input_name": "IFX.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Technology",
+        "industry": "Semiconductors",
+        "brodel_score": 64,
+        "signal_items": [
+          "EPS-Revisionen: 19 hoch, 1 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 84.71 vs. Kurs 71.78 = 18.0% Potenzial (Spanne 50.00 bis 114.00)",
+          "Kurs 71.78, 5T -7.2%, Volumen 0.2x vs. 20T, ueber MA20/MA50: nein/nein",
+          "6 News in den letzten 7 Tagen",
+          "Naechster Termin in 26 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 25,
+            "summary": "EPS-Revisionen: 19 hoch, 1 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 10,
+            "summary": "Kursziel-Mittel 84.71 vs. Kurs 71.78 = 18.0% Potenzial (Spanne 50.00 bis 114.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 6,
+            "summary": "Kurs 71.78, 5T -7.2%, Volumen 0.2x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "6 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 26 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Technology",
+          "industry": "Semiconductors",
+          "sector_average": 59.2,
+          "score_vs_sector": 4.8,
+          "sector_rank": 3,
+          "sector_count": 4,
+          "top_peer": {
+            "symbol": "SAP.DE",
+            "name": "SAP SE",
+            "score": 77
+          }
+        }
+      },
+      {
+        "symbol": "ENR.DE",
+        "name": "Siemens Energy AG",
+        "input_name": "ENR.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Industrials",
+        "industry": "Specialty Industrial Machinery",
+        "brodel_score": 60,
+        "signal_items": [
+          "EPS-Revisionen: 33 hoch, 1 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 197.08 vs. Kurs 153.66 = 28.3% Potenzial (Spanne 100.00 bis 260.00)",
+          "Kurs 153.66, 5T -8.6%, Volumen 0.2x vs. 20T, ueber MA20/MA50: nein/nein",
+          "2 News in den letzten 7 Tagen",
+          "Naechster Termin in 26 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 25,
+            "summary": "EPS-Revisionen: 33 hoch, 1 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 197.08 vs. Kurs 153.66 = 28.3% Potenzial (Spanne 100.00 bis 260.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 6,
+            "summary": "Kurs 153.66, 5T -8.6%, Volumen 0.2x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 6,
+            "summary": "2 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 26 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Specialty Industrial Machinery",
+          "sector_average": 44.2,
+          "score_vs_sector": 15.8,
+          "sector_rank": 2,
+          "sector_count": 11,
+          "top_peer": {
+            "symbol": "AIR.PA",
+            "name": "Airbus SE",
+            "score": 70
+          }
+        }
+      },
+      {
+        "symbol": "HNR1.DE",
+        "name": "Hannover R\u00fcck SE",
+        "input_name": "HNR1.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Financial Services",
+        "industry": "Insurance - Reinsurance",
+        "brodel_score": 54,
+        "signal_items": [
+          "EPS-Revisionen: 8 hoch, 2 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 285.57 vs. Kurs 251.60 = 13.5% Potenzial (Spanne 246.00 bis 360.00)",
+          "Kurs 251.60, 5T 3.0%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/ja",
+          "0 News in den letzten 7 Tagen",
+          "Naechster Termin in 33 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 25,
+            "summary": "EPS-Revisionen: 8 hoch, 2 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 10,
+            "summary": "Kursziel-Mittel 285.57 vs. Kurs 251.60 = 13.5% Potenzial (Spanne 246.00 bis 360.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 251.60, 5T 3.0%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 33 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Financial Services",
+          "industry": "Insurance - Reinsurance",
+          "sector_average": 48.8,
+          "score_vs_sector": 5.2,
+          "sector_rank": 2,
+          "sector_count": 6,
+          "top_peer": {
+            "symbol": "CBK.DE",
+            "name": "Commerzbank AG",
+            "score": 67
+          }
+        }
+      },
+      {
+        "symbol": "DBK.DE",
+        "name": "Deutsche Bank Aktiengesellschaft",
+        "input_name": "DBK.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Financial Services",
+        "industry": "Banks - Regional",
+        "brodel_score": 51,
+        "signal_items": [
+          "EPS-Revisionen: 11 hoch, 22 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 32.00 vs. Kurs 31.18 = 2.6% Potenzial (Spanne 10.90 bis 41.00)",
+          "Kurs 31.18, 5T -2.0%, Volumen 0.3x vs. 20T, ueber MA20/MA50: ja/ja",
+          "10 News in den letzten 7 Tagen",
+          "Naechster Termin in 19 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 11 hoch, 22 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 5,
+            "summary": "Kursziel-Mittel 32.00 vs. Kurs 31.18 = 2.6% Potenzial (Spanne 10.90 bis 41.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 31.18, 5T -2.0%, Volumen 0.3x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 10,
+            "summary": "Naechster Termin in 19 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Financial Services",
+          "industry": "Banks - Regional",
+          "sector_average": 48.8,
+          "score_vs_sector": 2.2,
+          "sector_rank": 3,
+          "sector_count": 6,
+          "top_peer": {
+            "symbol": "CBK.DE",
+            "name": "Commerzbank AG",
+            "score": 67
+          }
+        }
+      },
+      {
+        "symbol": "DHL.DE",
+        "name": "Deutsche Post AG",
+        "input_name": "DHL.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Industrials",
+        "industry": "Integrated Freight & Logistics",
+        "brodel_score": 51,
+        "signal_items": [
+          "EPS-Revisionen: 18 hoch, 2 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 52.08 vs. Kurs 56.44 = -7.7% Potenzial (Spanne 39.00 bis 62.00)",
+          "Kurs 56.44, 5T 0.8%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja",
+          "4 News in den letzten 7 Tagen",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 25,
+            "summary": "EPS-Revisionen: 18 hoch, 2 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 0,
+            "summary": "Kursziel-Mittel 52.08 vs. Kurs 56.44 = -7.7% Potenzial (Spanne 39.00 bis 62.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 56.44, 5T 0.8%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 12,
+            "summary": "4 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Integrated Freight & Logistics",
+          "sector_average": 44.2,
+          "score_vs_sector": 6.8,
+          "sector_rank": 3,
+          "sector_count": 11,
+          "top_peer": {
+            "symbol": "AIR.PA",
+            "name": "Airbus SE",
+            "score": 70
+          }
+        }
+      },
+      {
+        "symbol": "RHM.DE",
+        "name": "Rheinmetall AG",
+        "input_name": "RHM.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Industrials",
+        "industry": "Aerospace & Defense",
+        "brodel_score": 51,
+        "signal_items": [
+          "EPS-Revisionen: 10 hoch, 15 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 1721.35 vs. Kurs 993.80 = 73.2% Potenzial (Spanne 1150.00 bis 2380.00)",
+          "Kurs 993.80, 5T -9.1%, Volumen 0.3x vs. 20T, ueber MA20/MA50: nein/nein",
+          "6 News in den letzten 7 Tagen",
+          "Naechster Termin in 27 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 10 hoch, 15 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 1721.35 vs. Kurs 993.80 = 73.2% Potenzial (Spanne 1150.00 bis 2380.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 6,
+            "summary": "Kurs 993.80, 5T -9.1%, Volumen 0.3x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "6 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 27 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Aerospace & Defense",
+          "sector_average": 44.2,
+          "score_vs_sector": 6.8,
+          "sector_rank": 3,
+          "sector_count": 11,
+          "top_peer": {
+            "symbol": "AIR.PA",
+            "name": "Airbus SE",
+            "score": 70
+          }
+        }
+      },
+      {
+        "symbol": "BMW.DE",
+        "name": "Bayerische Motoren Werke Aktiengesellschaft",
+        "input_name": "BMW.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Consumer Cyclical",
+        "industry": "Auto Manufacturers",
+        "brodel_score": 50,
+        "signal_items": [
+          "EPS-Revisionen: 8 hoch, 37 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 76.50 vs. Kurs 58.52 = 30.7% Potenzial (Spanne 57.00 bis 95.00)",
+          "Kurs 58.52, 5T -3.4%, Volumen 0.2x vs. 20T, ueber MA20/MA50: nein/nein",
+          "7 News in den letzten 7 Tagen",
+          "Naechster Termin in 20 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 8 hoch, 37 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 76.50 vs. Kurs 58.52 = 30.7% Potenzial (Spanne 57.00 bis 95.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Kurs 58.52, 5T -3.4%, Volumen 0.2x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "7 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 10,
+            "summary": "Naechster Termin in 20 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Consumer Cyclical",
+          "industry": "Auto Manufacturers",
+          "sector_average": 46.1,
+          "score_vs_sector": 3.9,
+          "sector_rank": 2,
+          "sector_count": 7,
+          "top_peer": {
+            "symbol": "ADS.DE",
+            "name": "adidas AG",
+            "score": 72
+          }
+        }
+      },
+      {
+        "symbol": "MBG.DE",
+        "name": "Mercedes-Benz Group AG",
+        "input_name": "MBG.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Consumer Cyclical",
+        "industry": "Auto Manufacturers",
+        "brodel_score": 50,
+        "signal_items": [
+          "EPS-Revisionen: 0 hoch, 11 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 59.47 vs. Kurs 43.81 = 35.8% Potenzial (Spanne 42.00 bis 75.00)",
+          "Kurs 43.81, 5T -3.2%, Volumen 0.2x vs. 20T, ueber MA20/MA50: nein/nein",
+          "7 News in den letzten 7 Tagen",
+          "Naechster Termin in 18 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 0 hoch, 11 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 59.47 vs. Kurs 43.81 = 35.8% Potenzial (Spanne 42.00 bis 75.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Kurs 43.81, 5T -3.2%, Volumen 0.2x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "7 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 10,
+            "summary": "Naechster Termin in 18 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Consumer Cyclical",
+          "industry": "Auto Manufacturers",
+          "sector_average": 46.1,
+          "score_vs_sector": 3.9,
+          "sector_rank": 2,
+          "sector_count": 7,
+          "top_peer": {
+            "symbol": "ADS.DE",
+            "name": "adidas AG",
+            "score": 72
+          }
+        }
+      },
+      {
+        "symbol": "VOW3.DE",
+        "name": "Volkswagen AG",
+        "input_name": "VOW3.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Consumer Cyclical",
+        "industry": "Auto Manufacturers",
+        "brodel_score": 50,
+        "signal_items": [
+          "EPS-Revisionen: 8 hoch, 15 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 110.23 vs. Kurs 70.54 = 56.3% Potenzial (Spanne 80.00 bis 151.00)",
+          "Kurs 70.54, 5T -5.5%, Volumen 0.3x vs. 20T, ueber MA20/MA50: nein/nein",
+          "10 News in den letzten 7 Tagen",
+          "Naechster Termin in 14 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 8 hoch, 15 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 110.23 vs. Kurs 70.54 = 56.3% Potenzial (Spanne 80.00 bis 151.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Kurs 70.54, 5T -5.5%, Volumen 0.3x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 10,
+            "summary": "Naechster Termin in 14 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Consumer Cyclical",
+          "industry": "Auto Manufacturers",
+          "sector_average": 46.1,
+          "score_vs_sector": 3.9,
+          "sector_rank": 2,
+          "sector_count": 7,
+          "top_peer": {
+            "symbol": "ADS.DE",
+            "name": "adidas AG",
+            "score": 72
+          }
+        }
+      },
+      {
+        "symbol": "EOAN.DE",
+        "name": "E.ON SE",
+        "input_name": "EOAN.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Utilities",
+        "industry": "Utilities - Diversified",
+        "brodel_score": 49,
+        "signal_items": [
+          "EPS-Revisionen: 13 hoch, 7 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 20.17 vs. Kurs 19.10 = 5.6% Potenzial (Spanne 17.00 bis 24.00)",
+          "Kurs 19.10, 5T -0.4%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja",
+          "0 News in den letzten 7 Tagen",
+          "Naechster Termin in 33 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 25,
+            "summary": "EPS-Revisionen: 13 hoch, 7 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 5,
+            "summary": "Kursziel-Mittel 20.17 vs. Kurs 19.10 = 5.6% Potenzial (Spanne 17.00 bis 24.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 19.10, 5T -0.4%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 33 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Utilities",
+          "industry": "Utilities - Diversified",
+          "sector_average": 46.0,
+          "score_vs_sector": 3.0,
+          "sector_rank": 1,
+          "sector_count": 2,
+          "top_peer": {
+            "symbol": "RWE.DE",
+            "name": "RWE Aktiengesellschaft",
+            "score": 43
+          }
+        }
+      },
+      {
+        "symbol": "G1A.DE",
+        "name": "GEA Group Aktiengesellschaft",
+        "input_name": "G1A.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Industrials",
+        "industry": "Specialty Industrial Machinery",
+        "brodel_score": 49,
+        "signal_items": [
+          "EPS-Revisionen: 9 hoch, 3 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 66.11 vs. Kurs 60.15 = 9.9% Potenzial (Spanne 51.00 bis 75.00)",
+          "Kurs 60.15, 5T -5.0%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/ja",
+          "1 News in den letzten 7 Tagen",
+          "Naechster Termin in 31 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 25,
+            "summary": "EPS-Revisionen: 9 hoch, 3 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 5,
+            "summary": "Kursziel-Mittel 66.11 vs. Kurs 60.15 = 9.9% Potenzial (Spanne 51.00 bis 75.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 60.15, 5T -5.0%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "1 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 31 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Specialty Industrial Machinery",
+          "sector_average": 44.2,
+          "score_vs_sector": 4.8,
+          "sector_rank": 5,
+          "sector_count": 11,
+          "top_peer": {
+            "symbol": "AIR.PA",
+            "name": "Airbus SE",
+            "score": 70
+          }
+        }
+      },
+      {
+        "symbol": "HEN3.DE",
+        "name": "Henkel AG & Co. KGaA",
+        "input_name": "HEN3.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Consumer Defensive",
+        "industry": "Household & Personal Products",
+        "brodel_score": 49,
+        "signal_items": [
+          "EPS-Revisionen: 16 hoch, 4 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 76.23 vs. Kurs 74.02 = 3.0% Potenzial (Spanne 61.00 bis 92.00)",
+          "Kurs 74.02, 5T -1.8%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/ja",
+          "1 News in den letzten 7 Tagen",
+          "Naechster Termin in 27 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 25,
+            "summary": "EPS-Revisionen: 16 hoch, 4 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 5,
+            "summary": "Kursziel-Mittel 76.23 vs. Kurs 74.02 = 3.0% Potenzial (Spanne 61.00 bis 92.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 74.02, 5T -1.8%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "1 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 27 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Consumer Defensive",
+          "industry": "Household & Personal Products",
+          "sector_average": 38.5,
+          "score_vs_sector": 10.5,
+          "sector_rank": 1,
+          "sector_count": 2,
+          "top_peer": {
+            "symbol": "BEI.DE",
+            "name": "Beiersdorf Aktiengesellschaft",
+            "score": 28
+          }
+        }
+      },
+      {
+        "symbol": "DTG.DE",
+        "name": "Daimler Truck Holding AG",
+        "input_name": "DTG.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Industrials",
+        "industry": "Farm & Heavy Construction Machinery",
+        "brodel_score": 48,
+        "signal_items": [
+          "EPS-Revisionen: 22 hoch, 16 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 47.65 vs. Kurs 41.94 = 13.6% Potenzial (Spanne 30.00 bis 55.00)",
+          "Kurs 41.94, 5T -4.7%, Volumen 0.3x vs. 20T, ueber MA20/MA50: nein/ja",
+          "1 News in den letzten 7 Tagen",
+          "Naechster Termin in 28 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 25,
+            "summary": "EPS-Revisionen: 22 hoch, 16 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 10,
+            "summary": "Kursziel-Mittel 47.65 vs. Kurs 41.94 = 13.6% Potenzial (Spanne 30.00 bis 55.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 8,
+            "summary": "Kurs 41.94, 5T -4.7%, Volumen 0.3x vs. 20T, ueber MA20/MA50: nein/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "1 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 28 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Farm & Heavy Construction Machinery",
+          "sector_average": 44.2,
+          "score_vs_sector": 3.8,
+          "sector_rank": 6,
+          "sector_count": 11,
+          "top_peer": {
+            "symbol": "AIR.PA",
+            "name": "Airbus SE",
+            "score": 70
+          }
+        }
+      },
+      {
+        "symbol": "DB1.DE",
+        "name": "Deutsche B\u00f6rse AG",
+        "input_name": "DB1.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Financial Services",
+        "industry": "Financial Data & Stock Exchanges",
+        "brodel_score": 48,
+        "signal_items": [
+          "EPS-Revisionen: 6 hoch, 4 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 285.67 vs. Kurs 250.40 = 14.1% Potenzial (Spanne 240.00 bis 310.00)",
+          "Kurs 250.40, 5T 0.2%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja",
+          "0 News in den letzten 7 Tagen",
+          "Naechster Termin in 12 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 14,
+            "summary": "EPS-Revisionen: 6 hoch, 4 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 10,
+            "summary": "Kursziel-Mittel 285.67 vs. Kurs 250.40 = 14.1% Potenzial (Spanne 240.00 bis 310.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 250.40, 5T 0.2%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 10,
+            "summary": "Naechster Termin in 12 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Financial Services",
+          "industry": "Financial Data & Stock Exchanges",
+          "sector_average": 48.8,
+          "score_vs_sector": -0.8,
+          "sector_rank": 4,
+          "sector_count": 6,
+          "top_peer": {
+            "symbol": "CBK.DE",
+            "name": "Commerzbank AG",
+            "score": 67
+          }
+        }
+      },
+      {
+        "symbol": "QIA.DE",
+        "name": "Qiagen N.V.",
+        "input_name": "QIA.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Healthcare",
+        "industry": "Diagnostics & Research",
+        "brodel_score": 47,
+        "signal_items": [
+          "EPS-Revisionen: 5 hoch, 4 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 39.87 vs. Kurs 36.57 = 9.0% Potenzial (Spanne 32.00 bis 50.00)",
+          "Kurs 36.57, 5T 5.6%, Volumen 0.3x vs. 20T, ueber MA20/MA50: ja/ja",
+          "4 News in den letzten 7 Tagen",
+          "Naechster Termin in 25 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 11,
+            "summary": "EPS-Revisionen: 5 hoch, 4 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 5,
+            "summary": "Kursziel-Mittel 39.87 vs. Kurs 36.57 = 9.0% Potenzial (Spanne 32.00 bis 50.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 36.57, 5T 5.6%, Volumen 0.3x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 12,
+            "summary": "4 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 25 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Healthcare",
+          "industry": "Diagnostics & Research",
+          "sector_average": 38.0,
+          "score_vs_sector": 9.0,
+          "sector_rank": 1,
+          "sector_count": 6,
+          "top_peer": {
+            "symbol": "BAYN.DE",
+            "name": "Bayer Aktiengesellschaft",
+            "score": 42
+          }
+        }
+      },
+      {
+        "symbol": "SIE.DE",
+        "name": "Siemens Aktiengesellschaft",
+        "input_name": "SIE.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Industrials",
+        "industry": "Specialty Industrial Machinery",
+        "brodel_score": 47,
+        "signal_items": [
+          "EPS-Revisionen: 9 hoch, 6 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 292.78 vs. Kurs 273.10 = 7.2% Potenzial (Spanne 235.00 bis 355.00)",
+          "Kurs 273.10, 5T -3.9%, Volumen 0.2x vs. 20T, ueber MA20/MA50: nein/ja",
+          "4 News in den letzten 7 Tagen",
+          "Naechster Termin in 27 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 17,
+            "summary": "EPS-Revisionen: 9 hoch, 6 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 5,
+            "summary": "Kursziel-Mittel 292.78 vs. Kurs 273.10 = 7.2% Potenzial (Spanne 235.00 bis 355.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 8,
+            "summary": "Kurs 273.10, 5T -3.9%, Volumen 0.2x vs. 20T, ueber MA20/MA50: nein/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 12,
+            "summary": "4 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 27 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Specialty Industrial Machinery",
+          "sector_average": 44.2,
+          "score_vs_sector": 2.8,
+          "sector_rank": 7,
+          "sector_count": 11,
+          "top_peer": {
+            "symbol": "AIR.PA",
+            "name": "Airbus SE",
+            "score": 70
+          }
+        }
+      },
+      {
+        "symbol": "ALV.DE",
+        "name": "Allianz SE",
+        "input_name": "ALV.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Financial Services",
+        "industry": "Insurance - Diversified",
+        "brodel_score": 45,
+        "signal_items": [
+          "EPS-Revisionen: 14 hoch, 12 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 413.90 vs. Kurs 424.40 = -2.5% Potenzial (Spanne 325.00 bis 684.00)",
+          "Kurs 424.40, 5T 1.1%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja",
+          "5 News in den letzten 7 Tagen",
+          "Naechster Termin in 28 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 14,
+            "summary": "EPS-Revisionen: 14 hoch, 12 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 0,
+            "summary": "Kursziel-Mittel 413.90 vs. Kurs 424.40 = -2.5% Potenzial (Spanne 325.00 bis 684.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 424.40, 5T 1.1%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 12,
+            "summary": "5 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 28 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Financial Services",
+          "industry": "Insurance - Diversified",
+          "sector_average": 48.8,
+          "score_vs_sector": -3.8,
+          "sector_rank": 5,
+          "sector_count": 6,
+          "top_peer": {
+            "symbol": "CBK.DE",
+            "name": "Commerzbank AG",
+            "score": 67
+          }
+        }
+      },
+      {
+        "symbol": "HEI.DE",
+        "name": "Heidelberg Materials AG",
+        "input_name": "HEI.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Basic Materials",
+        "industry": "Building Materials",
+        "brodel_score": 45,
+        "signal_items": [
+          "EPS-Revisionen: 9 hoch, 8 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 222.89 vs. Kurs 170.30 = 30.9% Potenzial (Spanne 140.00 bis 292.00)",
+          "Kurs 170.30, 5T -3.2%, Volumen 0.3x vs. 20T, ueber MA20/MA50: nein/nein",
+          "2 News in den letzten 7 Tagen",
+          "Naechster Termin in 20 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 11,
+            "summary": "EPS-Revisionen: 9 hoch, 8 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 222.89 vs. Kurs 170.30 = 30.9% Potenzial (Spanne 140.00 bis 292.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Kurs 170.30, 5T -3.2%, Volumen 0.3x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 6,
+            "summary": "2 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 10,
+            "summary": "Naechster Termin in 20 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Basic Materials",
+          "industry": "Building Materials",
+          "sector_average": 39.5,
+          "score_vs_sector": 5.5,
+          "sector_rank": 1,
+          "sector_count": 4,
+          "top_peer": {
+            "symbol": "SY1.DE",
+            "name": "Symrise AG",
+            "score": 42
+          }
+        }
+      },
+      {
+        "symbol": "DTE.DE",
+        "name": "Deutsche Telekom AG",
+        "input_name": "DTE.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Communication Services",
+        "industry": "Telecom Services",
+        "brodel_score": 43,
+        "signal_items": [
+          "EPS-Revisionen: 9 hoch, 7 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 37.69 vs. Kurs 25.98 = 45.1% Potenzial (Spanne 33.00 bis 43.00)",
+          "Kurs 25.98, 5T 3.3%, Volumen 0.3x vs. 20T, ueber MA20/MA50: ja/nein",
+          "1 News in den letzten 7 Tagen",
+          "Naechster Termin in 27 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 14,
+            "summary": "EPS-Revisionen: 9 hoch, 7 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 37.69 vs. Kurs 25.98 = 45.1% Potenzial (Spanne 33.00 bis 43.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 6,
+            "summary": "Kurs 25.98, 5T 3.3%, Volumen 0.3x vs. 20T, ueber MA20/MA50: ja/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "1 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 27 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Communication Services",
+          "industry": "Telecom Services",
+          "sector_average": 43.0,
+          "score_vs_sector": 0.0,
+          "sector_rank": 1,
+          "sector_count": 2,
+          "top_peer": {
+            "symbol": "G24.DE",
+            "name": "Scout24 SE",
+            "score": 43
+          }
+        }
+      },
+      {
+        "symbol": "RWE.DE",
+        "name": "RWE Aktiengesellschaft",
+        "input_name": "RWE.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Utilities",
+        "industry": "Utilities - Diversified",
+        "brodel_score": 43,
+        "signal_items": [
+          "EPS-Revisionen: 7 hoch, 9 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 65.22 vs. Kurs 56.42 = 15.6% Potenzial (Spanne 55.00 bis 72.00)",
+          "Kurs 56.42, 5T -2.4%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/nein",
+          "9 News in den letzten 7 Tagen",
+          "Naechster Termin in 34 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 7 hoch, 9 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 10,
+            "summary": "Kursziel-Mittel 65.22 vs. Kurs 56.42 = 15.6% Potenzial (Spanne 55.00 bis 72.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 6,
+            "summary": "Kurs 56.42, 5T -2.4%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "9 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 34 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Utilities",
+          "industry": "Utilities - Diversified",
+          "sector_average": 46.0,
+          "score_vs_sector": -3.0,
+          "sector_rank": 2,
+          "sector_count": 2,
+          "top_peer": {
+            "symbol": "EOAN.DE",
+            "name": "E.ON SE",
+            "score": 49
+          }
+        }
+      },
+      {
+        "symbol": "G24.DE",
+        "name": "Scout24 SE",
+        "input_name": "G24.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Communication Services",
+        "industry": "Internet Content & Information",
+        "brodel_score": 43,
+        "signal_items": [
+          "EPS-Revisionen: 10 hoch, 0 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 106.12 vs. Kurs 73.05 = 45.3% Potenzial (Spanne 86.00 bis 140.00)",
+          "Kurs 73.05, 5T 0.1%, Volumen 0.1x vs. 20T, ueber MA20/MA50: nein/nein",
+          "0 News in den letzten 7 Tagen",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 25,
+            "summary": "EPS-Revisionen: 10 hoch, 0 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 106.12 vs. Kurs 73.05 = 45.3% Potenzial (Spanne 86.00 bis 140.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Kurs 73.05, 5T 0.1%, Volumen 0.1x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Communication Services",
+          "industry": "Internet Content & Information",
+          "sector_average": 43.0,
+          "score_vs_sector": 0.0,
+          "sector_rank": 1,
+          "sector_count": 2,
+          "top_peer": {
+            "symbol": "DTE.DE",
+            "name": "Deutsche Telekom AG",
+            "score": 43
+          }
+        }
+      },
+      {
+        "symbol": "HON",
+        "name": "Honeywell International Inc.",
+        "input_name": "HON",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Industrials",
+        "industry": "Conglomerates",
+        "brodel_score": 42,
+        "signal_items": [
+          "EPS-Revisionen: 5 hoch, 11 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 246.45 vs. Kurs 223.42 = 10.3% Potenzial (Spanne 164.00 bis 272.00)",
+          "Kurs 223.42, 5T 0.8%, Volumen 0.5x vs. 20T, ueber MA20/MA50: nein/nein",
+          "10 News in den letzten 7 Tagen",
+          "Naechster Termin in 13 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 5 hoch, 11 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 10,
+            "summary": "Kursziel-Mittel 246.45 vs. Kurs 223.42 = 10.3% Potenzial (Spanne 164.00 bis 272.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Kurs 223.42, 5T 0.8%, Volumen 0.5x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 10,
+            "summary": "Naechster Termin in 13 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Conglomerates",
+          "sector_average": 44.2,
+          "score_vs_sector": -2.2,
+          "sector_rank": 8,
+          "sector_count": 11,
+          "top_peer": {
+            "symbol": "AIR.PA",
+            "name": "Airbus SE",
+            "score": 70
+          }
+        }
+      },
+      {
+        "symbol": "BAYN.DE",
+        "name": "Bayer Aktiengesellschaft",
+        "input_name": "BAYN.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Healthcare",
+        "industry": "Drug Manufacturers - General",
+        "brodel_score": 42,
+        "signal_items": [
+          "EPS-Revisionen: 12 hoch, 12 runter",
+          "Kursziel-Mittel 54.36 vs. Kurs 49.98 = 8.8% Potenzial (Spanne 46.00 bis 65.00)",
+          "Kurs 49.98, 5T -6.3%, Volumen 0.3x vs. 20T, ueber MA20/MA50: ja/ja",
+          "6 News in den letzten 7 Tagen",
+          "Naechster Termin in 25 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 0,
+            "summary": "EPS-Revisionen: 12 hoch, 12 runter"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 5,
+            "summary": "Kursziel-Mittel 54.36 vs. Kurs 49.98 = 8.8% Potenzial (Spanne 46.00 bis 65.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 49.98, 5T -6.3%, Volumen 0.3x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "6 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 25 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Healthcare",
+          "industry": "Drug Manufacturers - General",
+          "sector_average": 38.0,
+          "score_vs_sector": 4.0,
+          "sector_rank": 2,
+          "sector_count": 6,
+          "top_peer": {
+            "symbol": "QIA.DE",
+            "name": "Qiagen N.V.",
+            "score": 47
+          }
+        }
+      },
+      {
+        "symbol": "SY1.DE",
+        "name": "Symrise AG",
+        "input_name": "SY1.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Basic Materials",
+        "industry": "Specialty Chemicals",
+        "brodel_score": 42,
+        "signal_items": [
+          "EPS-Revisionen: 9 hoch, 4 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 94.62 vs. Kurs 88.10 = 7.4% Potenzial (Spanne 75.00 bis 110.00)",
+          "Kurs 88.10, 5T -3.6%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja",
+          "0 News in den letzten 7 Tagen",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 23,
+            "summary": "EPS-Revisionen: 9 hoch, 4 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 5,
+            "summary": "Kursziel-Mittel 94.62 vs. Kurs 88.10 = 7.4% Potenzial (Spanne 75.00 bis 110.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 88.10, 5T -3.6%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Basic Materials",
+          "industry": "Specialty Chemicals",
+          "sector_average": 39.5,
+          "score_vs_sector": 2.5,
+          "sector_rank": 2,
+          "sector_count": 4,
+          "top_peer": {
+            "symbol": "HEI.DE",
+            "name": "Heidelberg Materials AG",
+            "score": 45
+          }
+        }
+      },
+      {
+        "symbol": "BNR.DE",
+        "name": "Brenntag SE",
+        "input_name": "BNR.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Basic Materials",
+        "industry": "Specialty Chemicals",
+        "brodel_score": 41,
+        "signal_items": [
+          "EPS-Revisionen: 13 hoch, 5 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 56.36 vs. Kurs 55.98 = 0.7% Potenzial (Spanne 44.00 bis 73.00)",
+          "Kurs 55.98, 5T -0.4%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/nein",
+          "0 News in den letzten 7 Tagen",
+          "Naechster Termin in 33 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 25,
+            "summary": "EPS-Revisionen: 13 hoch, 5 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 5,
+            "summary": "Kursziel-Mittel 56.36 vs. Kurs 55.98 = 0.7% Potenzial (Spanne 44.00 bis 73.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 6,
+            "summary": "Kurs 55.98, 5T -0.4%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 33 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Basic Materials",
+          "industry": "Specialty Chemicals",
+          "sector_average": 39.5,
+          "score_vs_sector": 1.5,
+          "sector_rank": 3,
+          "sector_count": 4,
+          "top_peer": {
+            "symbol": "HEI.DE",
+            "name": "Heidelberg Materials AG",
+            "score": 45
+          }
+        }
+      },
+      {
+        "symbol": "FRE.DE",
+        "name": "Fresenius SE & Co. KGaA",
+        "input_name": "FRE.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Healthcare",
+        "industry": "Medical Care Facilities",
+        "brodel_score": 41,
+        "signal_items": [
+          "EPS-Revisionen: 8 hoch, 24 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 54.22 vs. Kurs 42.88 = 26.4% Potenzial (Spanne 48.00 bis 59.00)",
+          "Kurs 42.88, 5T 1.1%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja",
+          "0 News in den letzten 7 Tagen",
+          "Naechster Termin in 26 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 8 hoch, 24 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 54.22 vs. Kurs 42.88 = 26.4% Potenzial (Spanne 48.00 bis 59.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 42.88, 5T 1.1%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 26 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Healthcare",
+          "industry": "Medical Care Facilities",
+          "sector_average": 38.0,
+          "score_vs_sector": 3.0,
+          "sector_rank": 3,
+          "sector_count": 6,
+          "top_peer": {
+            "symbol": "QIA.DE",
+            "name": "Qiagen N.V.",
+            "score": 47
+          }
+        }
+      },
+      {
+        "symbol": "VNA.DE",
+        "name": "Vonovia SE",
+        "input_name": "VNA.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Real Estate",
+        "industry": "Real Estate Services",
+        "brodel_score": 41,
+        "signal_items": [
+          "EPS-Revisionen: 4 hoch, 6 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 31.93 vs. Kurs 21.53 = 48.3% Potenzial (Spanne 23.00 bis 52.90)",
+          "Kurs 21.53, 5T -3.9%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja",
+          "0 News in den letzten 7 Tagen",
+          "Naechster Termin in 26 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 4 hoch, 6 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 31.93 vs. Kurs 21.53 = 48.3% Potenzial (Spanne 23.00 bis 52.90)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 21.53, 5T -3.9%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 26 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Real Estate",
+          "industry": "Real Estate Services",
+          "sector_average": 41.0,
+          "score_vs_sector": 0.0,
+          "sector_rank": 1,
+          "sector_count": 1,
+          "top_peer": null
+        }
+      },
+      {
+        "symbol": "ZAL.DE",
+        "name": "Zalando SE",
+        "input_name": "ZAL.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Consumer Cyclical",
+        "industry": "Internet Retail",
+        "brodel_score": 41,
+        "signal_items": [
+          "EPS-Revisionen: 12 hoch, 14 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 35.36 vs. Kurs 26.82 = 31.8% Potenzial (Spanne 20.00 bis 53.00)",
+          "Kurs 26.82, 5T -0.8%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja",
+          "1 News in den letzten 7 Tagen",
+          "Naechster Termin in 25 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 12 hoch, 14 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 35.36 vs. Kurs 26.82 = 31.8% Potenzial (Spanne 20.00 bis 53.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 26.82, 5T -0.8%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "1 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 25 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Consumer Cyclical",
+          "industry": "Internet Retail",
+          "sector_average": 46.1,
+          "score_vs_sector": -5.1,
+          "sector_rank": 5,
+          "sector_count": 7,
+          "top_peer": {
+            "symbol": "ADS.DE",
+            "name": "adidas AG",
+            "score": 72
+          }
+        }
+      },
+      {
+        "symbol": "SHL.DE",
+        "name": "Siemens Healthineers AG",
+        "input_name": "SHL.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Healthcare",
+        "industry": "Medical Devices",
+        "brodel_score": 40,
+        "signal_items": [
+          "EPS-Revisionen: 9 hoch, 13 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 46.90 vs. Kurs 34.48 = 36.0% Potenzial (Spanne 37.00 bis 58.00)",
+          "Kurs 34.48, 5T -1.4%, Volumen 0.3x vs. 20T, ueber MA20/MA50: nein/ja",
+          "0 News in den letzten 7 Tagen",
+          "Naechster Termin in 21 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 9 hoch, 13 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 46.90 vs. Kurs 34.48 = 36.0% Potenzial (Spanne 37.00 bis 58.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 8,
+            "summary": "Kurs 34.48, 5T -1.4%, Volumen 0.3x vs. 20T, ueber MA20/MA50: nein/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 10,
+            "summary": "Naechster Termin in 21 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Healthcare",
+          "industry": "Medical Devices",
+          "sector_average": 38.0,
+          "score_vs_sector": 2.0,
+          "sector_rank": 4,
+          "sector_count": 6,
+          "top_peer": {
+            "symbol": "QIA.DE",
+            "name": "Qiagen N.V.",
+            "score": 47
+          }
+        }
+      },
+      {
+        "symbol": "CON.DE",
+        "name": "Continental Aktiengesellschaft",
+        "input_name": "CON.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Consumer Cyclical",
+        "industry": "Auto Parts",
+        "brodel_score": 38,
+        "signal_items": [
+          "EPS-Revisionen: 10 hoch, 6 runter - positive Revisionstendenz",
+          "Kursziel-Mittel 76.67 vs. Kurs 72.24 = 6.1% Potenzial (Spanne 62.00 bis 90.00)",
+          "Kurs 72.24, 5T -4.9%, Volumen 0.1x vs. 20T, ueber MA20/MA50: nein/ja",
+          "1 News in den letzten 7 Tagen",
+          "Naechster Termin in 25 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 20,
+            "summary": "EPS-Revisionen: 10 hoch, 6 runter - positive Revisionstendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 5,
+            "summary": "Kursziel-Mittel 76.67 vs. Kurs 72.24 = 6.1% Potenzial (Spanne 62.00 bis 90.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 8,
+            "summary": "Kurs 72.24, 5T -4.9%, Volumen 0.1x vs. 20T, ueber MA20/MA50: nein/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "1 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 25 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Consumer Cyclical",
+          "industry": "Auto Parts",
+          "sector_average": 46.1,
+          "score_vs_sector": -8.1,
+          "sector_rank": 6,
+          "sector_count": 7,
+          "top_peer": {
+            "symbol": "ADS.DE",
+            "name": "adidas AG",
+            "score": 72
+          }
+        }
+      },
+      {
+        "symbol": "MTX.DE",
+        "name": "MTU Aero Engines AG",
+        "input_name": "MTX.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Industrials",
+        "industry": "Aerospace & Defense",
+        "brodel_score": 33,
+        "signal_items": [
+          "EPS-Revisionen: 5 hoch, 7 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 394.80 vs. Kurs 362.70 = 8.9% Potenzial (Spanne 310.00 bis 530.00)",
+          "Kurs 362.70, 5T -4.2%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja",
+          "1 News in den letzten 7 Tagen",
+          "Naechster Termin in 20 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 5 hoch, 7 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 5,
+            "summary": "Kursziel-Mittel 394.80 vs. Kurs 362.70 = 8.9% Potenzial (Spanne 310.00 bis 530.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 362.70, 5T -4.2%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "1 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 10,
+            "summary": "Naechster Termin in 20 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Aerospace & Defense",
+          "sector_average": 44.2,
+          "score_vs_sector": -11.2,
+          "sector_rank": 9,
+          "sector_count": 11,
+          "top_peer": {
+            "symbol": "AIR.PA",
+            "name": "Airbus SE",
+            "score": 70
+          }
+        }
+      },
+      {
+        "symbol": "BAS.DE",
+        "name": "BASF SE",
+        "input_name": "BAS.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Basic Materials",
+        "industry": "Chemicals",
+        "brodel_score": 30,
+        "signal_items": [
+          "EPS-Revisionen: 7 hoch, 13 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 52.55 vs. Kurs 47.43 = 10.8% Potenzial (Spanne 40.00 bis 63.00)",
+          "Kurs 47.43, 5T -0.7%, Volumen 0.2x vs. 20T, ueber MA20/MA50: nein/nein",
+          "3 News in den letzten 7 Tagen",
+          "Naechster Termin in 19 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 7 hoch, 13 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 10,
+            "summary": "Kursziel-Mittel 52.55 vs. Kurs 47.43 = 10.8% Potenzial (Spanne 40.00 bis 63.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Kurs 47.43, 5T -0.7%, Volumen 0.2x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 6,
+            "summary": "3 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 10,
+            "summary": "Naechster Termin in 19 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Basic Materials",
+          "industry": "Chemicals",
+          "sector_average": 39.5,
+          "score_vs_sector": -9.5,
+          "sector_rank": 4,
+          "sector_count": 4,
+          "top_peer": {
+            "symbol": "HEI.DE",
+            "name": "Heidelberg Materials AG",
+            "score": 45
+          }
+        }
+      },
+      {
+        "symbol": "MRK.DE",
+        "name": "Merck KGaA",
+        "input_name": "MRK.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Healthcare",
+        "industry": "Drug Manufacturers - Specialty & Generic",
+        "brodel_score": 30,
+        "signal_items": [
+          "EPS-Revisionen: 11 hoch, 11 runter",
+          "Kursziel-Mittel 145.86 vs. Kurs 140.60 = 3.7% Potenzial (Spanne 121.00 bis 179.00)",
+          "Kurs 140.60, 5T -3.5%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/ja",
+          "2 News in den letzten 7 Tagen",
+          "Naechster Termin in 27 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 0,
+            "summary": "EPS-Revisionen: 11 hoch, 11 runter"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 5,
+            "summary": "Kursziel-Mittel 145.86 vs. Kurs 140.60 = 3.7% Potenzial (Spanne 121.00 bis 179.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 140.60, 5T -3.5%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 6,
+            "summary": "2 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 27 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Healthcare",
+          "industry": "Drug Manufacturers - Specialty & Generic",
+          "sector_average": 38.0,
+          "score_vs_sector": -8.0,
+          "sector_rank": 5,
+          "sector_count": 6,
+          "top_peer": {
+            "symbol": "QIA.DE",
+            "name": "Qiagen N.V.",
+            "score": 47
+          }
+        }
+      },
+      {
+        "symbol": "PTX.F",
+        "name": "Palantir Technologies Inc.",
+        "input_name": "PTX.F",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Technology",
+        "industry": "Software - Infrastructure",
+        "brodel_score": 29,
+        "signal_items": [
+          "Keine EPS-Revisionen verfuegbar.",
+          "Kursziel-Daten vorhanden, aber nicht sauber vergleichbar.",
+          "Kurs 113.22, 5T 1.1%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/nein",
+          "10 News in den letzten 7 Tagen",
+          "Naechster Termin in 24 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 0,
+            "summary": "Keine EPS-Revisionen verfuegbar."
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 0,
+            "summary": "Kursziel-Daten vorhanden, aber nicht sauber vergleichbar."
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 6,
+            "summary": "Kurs 113.22, 5T 1.1%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 18,
+            "summary": "10 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 24 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Technology",
+          "industry": "Software - Infrastructure",
+          "sector_average": 59.2,
+          "score_vs_sector": -30.2,
+          "sector_rank": 4,
+          "sector_count": 4,
+          "top_peer": {
+            "symbol": "SAP.DE",
+            "name": "SAP SE",
+            "score": 77
+          }
+        }
+      },
+      {
+        "symbol": "BEI.DE",
+        "name": "Beiersdorf Aktiengesellschaft",
+        "input_name": "BEI.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Consumer Defensive",
+        "industry": "Household & Personal Products",
+        "brodel_score": 28,
+        "signal_items": [
+          "EPS-Revisionen: 2 hoch, 32 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 86.42 vs. Kurs 77.82 = 11.1% Potenzial (Spanne 68.00 bis 110.00)",
+          "Kurs 77.82, 5T 1.7%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/ja",
+          "0 News in den letzten 7 Tagen",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 2 hoch, 32 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 10,
+            "summary": "Kursziel-Mittel 86.42 vs. Kurs 77.82 = 11.1% Potenzial (Spanne 68.00 bis 110.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 77.82, 5T 1.7%, Volumen 0.1x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Consumer Defensive",
+          "industry": "Household & Personal Products",
+          "sector_average": 38.5,
+          "score_vs_sector": -10.5,
+          "sector_rank": 2,
+          "sector_count": 2,
+          "top_peer": {
+            "symbol": "HEN3.DE",
+            "name": "Henkel AG & Co. KGaA",
+            "score": 49
+          }
+        }
+      },
+      {
+        "symbol": "FME.DE",
+        "name": "Fresenius Medical Care AG",
+        "input_name": "FME.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Healthcare",
+        "industry": "Medical Care Facilities",
+        "brodel_score": 28,
+        "signal_items": [
+          "EPS-Revisionen: 6 hoch, 14 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 43.69 vs. Kurs 42.04 = 3.9% Potenzial (Spanne 31.00 bis 67.00)",
+          "Kurs 42.04, 5T 2.3%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja",
+          "0 News in den letzten 7 Tagen",
+          "Naechster Termin in 25 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 6 hoch, 14 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 5,
+            "summary": "Kursziel-Mittel 43.69 vs. Kurs 42.04 = 3.9% Potenzial (Spanne 31.00 bis 67.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 42.04, 5T 2.3%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 25 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Healthcare",
+          "industry": "Medical Care Facilities",
+          "sector_average": 38.0,
+          "score_vs_sector": -10.0,
+          "sector_rank": 6,
+          "sector_count": 6,
+          "top_peer": {
+            "symbol": "QIA.DE",
+            "name": "Qiagen N.V.",
+            "score": 47
+          }
+        }
+      },
+      {
+        "symbol": "MUV2.DE",
+        "name": "M\u00fcnchener R\u00fcckversicherungs-Gesellschaft Aktiengesellschaft in M\u00fcnchen",
+        "input_name": "MUV2.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Financial Services",
+        "industry": "Insurance - Reinsurance",
+        "brodel_score": 28,
+        "signal_items": [
+          "EPS-Revisionen: 5 hoch, 10 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 552.07 vs. Kurs 504.00 = 9.5% Potenzial (Spanne 480.00 bis 665.00)",
+          "Kurs 504.00, 5T 1.5%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja",
+          "0 News in den letzten 7 Tagen",
+          "Naechster Termin in 28 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 5 hoch, 10 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 5,
+            "summary": "Kursziel-Mittel 552.07 vs. Kurs 504.00 = 9.5% Potenzial (Spanne 480.00 bis 665.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 14,
+            "summary": "Kurs 504.00, 5T 1.5%, Volumen 0.2x vs. 20T, ueber MA20/MA50: ja/ja"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 28 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Financial Services",
+          "industry": "Insurance - Reinsurance",
+          "sector_average": 48.8,
+          "score_vs_sector": -20.8,
+          "sector_rank": 6,
+          "sector_count": 6,
+          "top_peer": {
+            "symbol": "CBK.DE",
+            "name": "Commerzbank AG",
+            "score": 67
+          }
+        }
+      },
+      {
+        "symbol": "HONA",
+        "name": "Honeywell Aerospace Inc.",
+        "input_name": "HONA",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Industrials",
+        "industry": "Aerospace & Defense",
+        "brodel_score": 24,
+        "signal_items": [
+          "EPS-Revisionen: 0 hoch, 0 runter",
+          "Kursziel-Mittel 269.14 vs. Kurs 223.12 = 20.6% Potenzial (Spanne 235.00 bis 306.00)",
+          "Nicht genug Kursdaten fuer Preis/Volumen-Signal.",
+          "3 News in den letzten 7 Tagen",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 0,
+            "summary": "EPS-Revisionen: 0 hoch, 0 runter"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 269.14 vs. Kurs 223.12 = 20.6% Potenzial (Spanne 235.00 bis 306.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Nicht genug Kursdaten fuer Preis/Volumen-Signal."
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 6,
+            "summary": "3 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Aerospace & Defense",
+          "sector_average": 44.2,
+          "score_vs_sector": -20.2,
+          "sector_rank": 10,
+          "sector_count": 11,
+          "top_peer": {
+            "symbol": "AIR.PA",
+            "name": "Airbus SE",
+            "score": 70
+          }
+        }
+      },
+      {
+        "symbol": "PAH3.DE",
+        "name": "Porsche Automobil Holding SE",
+        "input_name": "PAH3.DE",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Consumer Cyclical",
+        "industry": "Auto Manufacturers",
+        "brodel_score": 22,
+        "signal_items": [
+          "EPS-Revisionen: 0 hoch, 4 runter - gemischte bis negative Tendenz",
+          "Kursziel-Mittel 36.40 vs. Kurs 27.00 = 34.8% Potenzial (Spanne 31.00 bis 45.00)",
+          "Kurs 27.00, 5T -4.6%, Volumen 0.1x vs. 20T, ueber MA20/MA50: nein/nein",
+          "0 News in den letzten 7 Tagen",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 4,
+            "summary": "EPS-Revisionen: 0 hoch, 4 runter - gemischte bis negative Tendenz"
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 18,
+            "summary": "Kursziel-Mittel 36.40 vs. Kurs 27.00 = 34.8% Potenzial (Spanne 31.00 bis 45.00)"
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Kurs 27.00, 5T -4.6%, Volumen 0.1x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Consumer Cyclical",
+          "industry": "Auto Manufacturers",
+          "sector_average": 46.1,
+          "score_vs_sector": -24.1,
+          "sector_rank": 7,
+          "sector_count": 7,
+          "top_peer": {
+            "symbol": "ADS.DE",
+            "name": "adidas AG",
+            "score": 72
+          }
+        }
+      },
+      {
+        "symbol": "AAD.VI",
+        "name": "Amadeus FiRe AG",
+        "input_name": "AAD.VI",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Industrials",
+        "industry": "Staffing & Employment Services",
+        "brodel_score": 11,
+        "signal_items": [
+          "Keine EPS-Revisionen verfuegbar.",
+          "Kursziel-Daten vorhanden, aber nicht sauber vergleichbar.",
+          "Kurs 19.10, 5T -10.5%, Volumen 0.0x vs. 20T, ueber MA20/MA50: nein/nein",
+          "0 News in den letzten 7 Tagen",
+          "Naechster Termin in 24 Tagen"
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 0,
+            "summary": "Keine EPS-Revisionen verfuegbar."
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 0,
+            "summary": "Kursziel-Daten vorhanden, aber nicht sauber vergleichbar."
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 6,
+            "summary": "Kurs 19.10, 5T -10.5%, Volumen 0.0x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 5,
+            "summary": "Naechster Termin in 24 Tagen"
+          }
+        },
+        "peer_context": {
+          "sector": "Industrials",
+          "industry": "Staffing & Employment Services",
+          "sector_average": 44.2,
+          "score_vs_sector": -33.2,
+          "sector_rank": 11,
+          "sector_count": 11,
+          "top_peer": {
+            "symbol": "AIR.PA",
+            "name": "Airbus SE",
+            "score": 70
+          }
+        }
+      },
+      {
+        "symbol": "433.MU",
+        "name": "Appen Ltd",
+        "input_name": "433.MU",
+        "resolved": false,
+        "resolution_note": "Direkt als Symbol interpretiert.",
+        "sector": "Unbekannt",
+        "industry": "Unbekannt",
+        "brodel_score": 0,
+        "signal_items": [
+          "Keine EPS-Revisionen verfuegbar.",
+          "Keine Kursziel-Daten verfuegbar.",
+          "Kurs 0.56, 5T -3.3%, Volumen 0.0x vs. 20T, ueber MA20/MA50: nein/nein",
+          "0 News in den letzten 7 Tagen",
+          "Keine nahen Termine erkannt."
+        ],
+        "signal_breakdown": {
+          "EPS-Revisionen": {
+            "name": "EPS-Revisionen",
+            "score": 0,
+            "summary": "Keine EPS-Revisionen verfuegbar."
+          },
+          "Kursziele": {
+            "name": "Kursziele",
+            "score": 0,
+            "summary": "Keine Kursziel-Daten verfuegbar."
+          },
+          "Preis/Volumen": {
+            "name": "Preis/Volumen",
+            "score": 0,
+            "summary": "Kurs 0.56, 5T -3.3%, Volumen 0.0x vs. 20T, ueber MA20/MA50: nein/nein"
+          },
+          "News-Dichte": {
+            "name": "News-Dichte",
+            "score": 0,
+            "summary": "0 News in den letzten 7 Tagen"
+          },
+          "Event-Druck": {
+            "name": "Event-Druck",
+            "score": 0,
+            "summary": "Keine nahen Termine erkannt."
+          }
+        },
+        "peer_context": {
+          "sector": "Unbekannt",
+          "industry": "Unbekannt",
+          "sector_average": 0.0,
+          "score_vs_sector": 0.0,
+          "sector_rank": 1,
+          "sector_count": 1,
+          "top_peer": null
+        }
+      }
+    ]
+  }
+]

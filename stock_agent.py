@@ -1082,6 +1082,14 @@ def _format_date_value(value: Any) -> str | None:
             return str(value)
 
     parsed = pd.to_datetime(value, errors="coerce")
+    
+    # NEW: Ensure parsed is a scalar before calling pd.notna
+    if hasattr(parsed, "__iter__") and not isinstance(parsed, str):
+        if len(parsed) > 0:
+            parsed = parsed[0]
+        else:
+            parsed = pd.NaT
+
     if pd.notna(parsed):
         parsed_ts = pd.Timestamp(parsed)
         return parsed_ts.strftime("%Y-%m-%d")
