@@ -441,27 +441,34 @@ def render_watchlist_signal_monitor(mapping_text: str):
 
     st.markdown("**Delta-Alerts seit letztem Snapshot**")
     if delta_items:
-        hard_alerts = [item for item in delta_items if item["score_delta"] >= alert_threshold or item["change_type"] == "Neu"]
+        real_deltas = [item for item in delta_items if item["change_type"] != "Neu"]
+        new_stocks = [item for item in delta_items if item["change_type"] == "Neu"]
+        hard_alerts = [item for item in real_deltas if item["score_delta"] >= alert_threshold]
+        
         if hard_alerts:
-            st.warning(f"{len(hard_alerts)} harte Delta-Alerts ueberschreiten den Schwellwert von +{alert_threshold}.")
-            for item in hard_alerts:
-                st.markdown(
-                    f"- {item['symbol']}: {item['change_type']} | {item['previous_score']} -> {item['current_score']} | Delta {item['score_delta']}"
-                )
+            st.warning(f"🚨 {len(hard_alerts)} Aktien ueberschreiten den Alert-Schwellwert von +{alert_threshold} Punkten seit dem letzten Snapshot!")
 
         delta_rows = []
-        for item in delta_items:
-            delta_rows.append(
-                {
-                    "Symbol": item["symbol"],
-                    "Aenderung": item["change_type"],
-                    "Score jetzt": item["current_score"],
-                    "Score davor": item["previous_score"],
-                    "Delta": item["score_delta"],
-                    "Neue Signale": " | ".join(item["new_signals"]) if item["new_signals"] else "-",
-                }
-            )
-        st.dataframe(pd.DataFrame(delta_rows), use_container_width=True, hide_index=True)
+        for item in real_deltas:
+            if item["score_delta"] != 0 or item["new_signals"]:
+                delta_rows.append(
+                    {
+                        "Symbol": item["symbol"],
+                        "Aenderung": item["change_type"],
+                        "Score jetzt": item["current_score"],
+                        "Score davor": item["previous_score"],
+                        "Delta": item["score_delta"],
+                        "Neue Signale": " | ".join(item["new_signals"]) if item["new_signals"] else "-",
+                    }
+                )
+                
+        if delta_rows:
+            st.dataframe(pd.DataFrame(delta_rows), use_container_width=True, hide_index=True)
+        else:
+            st.info("Keine relevanten Score-Veraenderungen oder neue Signale bei bestehenden Aktien.")
+            
+        if new_stocks:
+            st.caption(f"Info: {len(new_stocks)} Aktien wurden seit dem letzten Snapshot neu in die Watchlist aufgenommen.")
     else:
         st.info("Noch kein vorheriger Snapshot oder keine relevanten Veraenderungen seit dem letzten Snapshot.")
 
