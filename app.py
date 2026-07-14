@@ -361,7 +361,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
 
     alert_threshold = st.slider("Harter Delta-Alert ab Score-Anstieg von", min_value=1, max_value=30, value=10)
 
-    if st.button("Signal Monitor erstellen"):
+    if st.button("Signale aktualisieren"):
         if not st.session_state.watchlist_text.strip():
             st.warning("Bitte eine Watchlist-Datei hochladen, laden oder mindestens ein Symbol eingeben.")
             return
@@ -407,9 +407,16 @@ def render_watchlist_signal_monitor(mapping_text: str):
             progress_bar.empty()
             live_table.empty()
 
+    if "signal_monitor_items" not in st.session_state:
+        current_watchlist = st.session_state.get("active_watchlist_name", DEFAULT_WATCHLIST_NAME)
+        history = load_signal_snapshot_history(current_watchlist)
+        if history:
+            st.session_state.signal_monitor_items = history[-1].get("items", [])
+            st.session_state.signal_monitor_watchlist_name = current_watchlist
+
     signal_items = st.session_state.get("signal_monitor_items", [])
     if not signal_items:
-        st.info("Noch kein Signal Monitor berechnet. Starte die Analyse mit 'Signal Monitor erstellen'.")
+        st.info("Noch kein Signal Monitor vorhanden. Starte die Analyse mit 'Signale aktualisieren'.")
         return
 
     if not signal_items:
