@@ -491,7 +491,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
                 "Symbol": item["symbol"],
                 "Name": item["name"],
                 "Sektor": peer_context.get("sector", "Unbekannt"),
-                "Score": item["brodel_score"],
+                "Score": item.get("brodel_score", 0),
                 "EPS": breakdown.get("EPS-Revisionen", {}).get("score", 0),
                 "Kursziel": breakdown.get("Kursziele", {}).get("score", 0),
                 "P/V": breakdown.get("Preis/Volumen", {}).get("score", 0),
@@ -526,8 +526,8 @@ def render_watchlist_signal_monitor(mapping_text: str):
             col1, col2 = st.columns(2)
             with col1:
                 st.markdown("**Signal-Zusammenfassung**")
-                if item["signal_items"]:
-                    for detail in item["signal_items"]:
+                if item.get("signal_items"):
+                    for detail in item.get("signal_items", []):
                         st.markdown(f"- {detail}")
                 else:
                     st.markdown("- Keine aussagekraeftigen Fruehsignale erkannt.")
@@ -539,7 +539,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     "Short Interest": 8, "Relative Staerke": 5,
                 }
                 breakdown_rows = []
-                for component in item["signal_breakdown"].values():
+                for component in item.get("signal_breakdown", {}).values():
                     breakdown_rows.append({
                         "Komponente": component["name"],
                         "Punkte": component["score"],
