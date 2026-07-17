@@ -366,3 +366,18 @@ def test_load_index_constituents_nikkei_float(mock_get, mock_read_html):
     
     result = load_index_constituents("Nikkei 225")
     assert result == ["9983.T", "8035.T"]
+
+
+@patch("stock_agent.yf.Ticker")
+def test_build_symbol_signal_monitor_no_nameerror_on_quote_type(mock_ticker_class):
+    """Ensure that build_symbol_signal_monitor extracts quoteType and doesn't crash."""
+    from stock_agent import build_symbol_signal_monitor
+    
+    mock_instance = MagicMock()
+    mock_ticker_class.return_value = mock_instance
+    mock_instance.get_info.return_value = {"quoteType": "EQUITY", "shortName": "Apple"}
+    
+    res = build_symbol_signal_monitor("AAPL")
+    assert isinstance(res, dict)
+    assert res["symbol"] == "AAPL"
+    assert "brodel_score" in res
