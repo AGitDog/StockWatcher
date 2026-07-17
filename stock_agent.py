@@ -72,6 +72,41 @@ INDEX_DEFINITIONS = {
         "ticker_column": "Ticker",
         "suffix": ".L",
     },
+    "SMI": {
+        "aliases": {"SMI", "SWISS MARKET INDEX", "INDEX:SMI", "^SSMI"},
+        "url": "https://en.wikipedia.org/wiki/Swiss_Market_Index",
+        "table_index": 2,
+        "ticker_column": "Ticker",
+        "suffix": ".SW",
+    },
+    "Nifty 50": {
+        "aliases": {"NIFTY", "NIFTY 50", "NIFTY50", "INDEX:NIFTY50", "^NSEI"},
+        "url": "https://en.wikipedia.org/wiki/NIFTY_50",
+        "table_index": 1,
+        "ticker_column": "Symbol",
+        "suffix": ".NS",
+    },
+    "S&P/TSX 60": {
+        "aliases": {"TSX 60", "TSX", "S&P/TSX 60", "INDEX:TSX60", "^GSPTSE"},
+        "url": "https://en.wikipedia.org/wiki/S%26P/TSX_60",
+        "table_index": 1,
+        "ticker_column": "Symbol",
+        "suffix": ".TO",
+    },
+    "TecDAX": {
+        "aliases": {"TECDAX", "INDEX:TECDAX", "^TECDAXI"},
+        "url": "https://de.wikipedia.org/wiki/TecDAX",
+        "table_index": 5,
+        "ticker_column": "Symbol[9]",
+        "suffix": ".DE",
+    },
+    "Nikkei 225": {
+        "aliases": {"NIKKEI", "NIKKEI 225", "NIKKEI225", "^N225", "INDEX:NIKKEI"},
+        "url": "https://de.wikipedia.org/wiki/Nikkei_225",
+        "table_index": 8,
+        "ticker_column": "Code",
+        "suffix": ".T",
+    },
 }
 
 
@@ -358,6 +393,8 @@ def load_index_constituents(index_name: str) -> list[str]:
             symbol = raw_symbol.strip().replace("\n", " ")
             if not symbol:
                 continue
+            if symbol.endswith(".0"):
+                symbol = symbol[:-2]
             if suffix and not symbol.endswith(suffix):
                 symbol += suffix
             symbols.append(symbol)

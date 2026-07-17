@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 from stock_agent import (
     parse_watchlist_text,
     expand_watchlist_entry,
+    load_index_constituents,
     _summarize_eps_revisions,
     _summarize_price_targets,
     _summarize_price_volume,
@@ -328,3 +329,40 @@ def test_signal_component_count():
     max_scores = [20, 15, 20, 12, 10, 10, 8, 5]
     assert len(max_scores) == 8
     assert sum(max_scores) == 100
+
+
+# ── New Index Parsing Tests ──────────────────────────────────────────────────
+
+@patch("stock_agent.pd.read_html")
+@patch("stock_agent.requests.get")
+def test_load_index_constituents_smi(mock_get, mock_read_html):
+    """Test Swiss Market Index constituent parsing with suffix .SW"""
+    mock_response = MagicMock()
+    mock_response.text = "dummy"
+    mock_get.return_value = mock_response
+
+    mock_df = pd.DataFrame({"Ticker": ["NOVN", "ROG"]})
+    # SMI table_index is 2, so return list with 3 dataframes
+    mock_read_html.return_value = [None, None, mock_df]
+
+    load_index_constituents.cache_clear()
+    
+    result = load_index_constituents("SMI")
+    assert result == ["NOVN.SW", "ROG.SW"]
+
+@patch("stock_agent.pd.read_html")
+@patch("stock_agent.requests.get")
+def test_load_index_constituents_nikkei_float(mock_get, mock_read_html):
+    """Test Nikkei 225 parsing where tickers are floats and need .T suffix"""
+    mock_response = MagicMock()
+    mock_response.text = "dummy"
+    mock_get.return_value = mock_response
+
+    mock_df = pd.DataFrame({"Code": [9983.0, 8035.0]})
+    # Nikkei table_index is 8, so return list with 9 dataframes
+    mock_read_html.return_value = [None]*8 + [mock_df]
+
+    load_index_constituents.cache_clear()
+    
+    result = load_index_constituents("Nikkei 225")
+    assert result == ["9983.T", "8035.T"]
