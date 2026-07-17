@@ -440,13 +440,6 @@ def render_watchlist_signal_monitor(mapping_text: str):
     with history_cols[1]:
         st.caption(f"Snapshot-Historie: {len(history)} vorhandene Snapshots fuer {watchlist_name}")
 
-    st.markdown("**Score-Verlauf (tabellarisch)**")
-    if not score_history.empty:
-        pivot_frame = score_history.pivot_table(index="timestamp", columns="symbol", values="brodel_score", aggfunc="last")
-        pivot_frame = pivot_frame.sort_index(ascending=False)
-        st.dataframe(pivot_frame, use_container_width=True)
-    else:
-        st.info("Noch keine gespeicherten Verlaufsdaten vorhanden. Speichere einen Snapshot, um Trends zu sehen.")
 
     st.markdown("**Delta-Alerts seit letztem Snapshot**")
     if delta_items:
@@ -565,6 +558,25 @@ def render_watchlist_signal_monitor(mapping_text: str):
                 else:
                     st.markdown("- Kein weiterer Peer im gleichen Sektor innerhalb der Watchlist.")
 
+            st.markdown("---")
+            st.markdown("**Score-Verlauf (letzte 100 Tage)**")
+            if not score_history.empty:
+                symbol_history = score_history[score_history["symbol"] == selected_symbol].copy()
+                if not symbol_history.empty:
+                    symbol_history["timestamp"] = pd.to_datetime(symbol_history["timestamp"])
+                    last_100_days = pd.Timestamp.utcnow().normalize() - pd.Timedelta(days=100)
+                    symbol_history = symbol_history[symbol_history["timestamp"] >= last_100_days]
+                    symbol_history = symbol_history.sort_values("timestamp")
+                    
+                    if len(symbol_history) > 1:
+                        chart_data = symbol_history.set_index("timestamp")[["brodel_score"]]
+                        st.line_chart(chart_data)
+                    else:
+                        st.info("Nicht genuegend Historien-Daten fuer ein Diagramm (mindestens 2 Snapshots benoetigt).")
+                else:
+                    st.info("Noch keine Verlaufsdaten fuer diese Aktie vorhanden.")
+            else:
+                st.info("Noch keine Verlaufsdaten vorhanden.")
 
 def render_stock_agent():
     st.title("Aktien-Agent")
