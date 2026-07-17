@@ -464,6 +464,7 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
 
     ticker = yf.Ticker(symbol)
     info = _safe_get(lambda: ticker.get_info(), {})
+    quote_type = str(info.get("quoteType") or "").lower()
     name = info.get("longName") or info.get("shortName") or symbol
     history = _safe_dataframe(lambda: ticker.history(period="6mo", auto_adjust=False))
 
