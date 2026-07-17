@@ -582,23 +582,22 @@ def render_stock_agent():
     st.title("Aktien-Agent")
     st.caption("Watchlist-Monitor fuer Marktveraenderungen, Fruehsignale und priorisierte Beobachtung.")
 
-    st.subheader("Watchlist-Quelle")
-    st.write(
-        "Der Agent kann gespeicherte Watchlists aus dem Projekt laden, neue Watchlists als Datei speichern "
-        "und daraus sowohl ein Briefing als auch Alerts erzeugen."
-    )
-    st.caption("Manuelle Namens-zu-Ticker-Zuordnungen werden aus stock_mappings.txt geladen.")
-
-    render_watchlist_source_controls()
     mapping_text = load_mapping_text()
 
-    stock_tabs = st.tabs(["Watchlist Briefing", "Watchlist Alerts", "Signal Monitor V2"])
+    stock_tabs = st.tabs(["Watchlist Briefing", "Watchlist Alerts", "Signal Monitor V2", "Watchlist Verwaltung"])
     with stock_tabs[0]:
         render_watchlist_briefing(mapping_text)
     with stock_tabs[1]:
         render_watchlist_alerts(mapping_text)
     with stock_tabs[2]:
         render_watchlist_signal_monitor(mapping_text)
+    with stock_tabs[3]:
+        st.subheader("Watchlist-Quelle")
+        st.write(
+            "Hier kannst du gespeicherte Watchlists aus dem Projekt laden oder neue Watchlists als Datei speichern."
+        )
+        st.caption("Manuelle Namens-zu-Ticker-Zuordnungen werden aus stock_mappings.txt geladen.")
+        render_watchlist_source_controls()
 
     st.divider()
     st.subheader("Hinweise")
