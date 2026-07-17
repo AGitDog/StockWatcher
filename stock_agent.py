@@ -46,6 +46,32 @@ INDEX_DEFINITIONS = {
         "table_index": 0,
         "ticker_column": "Ticker",
     },
+    "MDAX": {
+        "aliases": {"MDAX", "INDEX:MDAX", "^MDAXI"},
+        "url": "https://en.wikipedia.org/wiki/MDAX",
+        "table_index": 2,
+        "ticker_column": "Symbol",
+        "suffix": ".DE",
+    },
+    "CAC 40": {
+        "aliases": {"CAC 40", "CAC40", "CAC", "INDEX:CAC40", "INDEX:CAC 40", "^FCHI"},
+        "url": "https://en.wikipedia.org/wiki/CAC_40",
+        "table_index": 4,
+        "ticker_column": "Ticker",
+    },
+    "EURO STOXX 50": {
+        "aliases": {"EURO STOXX 50", "EURO STOXX", "STOXX 50", "STOXX50E", "INDEX:STOXX50E", "^STOXX50E"},
+        "url": "https://en.wikipedia.org/wiki/EURO_STOXX_50",
+        "table_index": 3,
+        "ticker_column": "Ticker",
+    },
+    "FTSE 100": {
+        "aliases": {"FTSE 100", "FTSE", "FTSE100", "UK100", "INDEX:FTSE", "^FTSE"},
+        "url": "https://en.wikipedia.org/wiki/FTSE_100_Index",
+        "table_index": 6,
+        "ticker_column": "Ticker",
+        "suffix": ".L",
+    },
 }
 
 
@@ -327,10 +353,13 @@ def load_index_constituents(index_name: str) -> list[str]:
             return []
 
         symbols = []
+        suffix = config.get("suffix", "")
         for raw_symbol in constituents[config["ticker_column"]].dropna().astype(str).tolist():
             symbol = raw_symbol.strip().replace("\n", " ")
             if not symbol:
                 continue
+            if suffix and not symbol.endswith(suffix):
+                symbol += suffix
             symbols.append(symbol)
         return symbols
     except Exception:
@@ -406,6 +435,9 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
     price_volume_signal = _summarize_price_volume(history)
     news_signal = _summarize_news_intensity(ticker)
     event_signal = _summarize_event_pressure(ticker, info)
+    insider_signal = _summarize_insider_signal(ticker, quote_type == "etf")
+    short_interest_signal = _summarize_short_interest(info)
+    relative_strength_signal = _summarize_relative_strength(history)
 
     signal_components = [
         eps_revision_signal,
@@ -413,6 +445,9 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
         price_volume_signal,
         news_signal,
         event_signal,
+        insider_signal,
+        short_interest_signal,
+        relative_strength_signal,
     ]
 
     brodel_score = min(sum(component["score"] for component in signal_components), 100)
@@ -806,7 +841,7 @@ def _summarize_eps_revisions(ticker: yf.Ticker) -> dict[str, Any]:
     net_revisions = total_up - total_down
     score = 0
     if net_revisions > 0:
-        score = min(25, 8 + net_revisions * 3)
+        score = min(20, 8 + net_revisions * 3)
     elif net_revisions < 0:
         score = 4
 
@@ -835,11 +870,11 @@ def _summarize_price_targets(ticker: yf.Ticker, info: dict[str, Any], history: p
     target_gap_percent = ((target_mean - current_price) / current_price) * 100
     score = 0
     if target_gap_percent >= 20:
-        score = 18
+        score = 15
     elif target_gap_percent >= 10:
-        score = 10
+        score = 8
     elif target_gap_percent > 0:
-        score = 5
+        score = 4
 
     range_text = ""
     if target_low is not None and target_high is not None:
@@ -869,19 +904,19 @@ def _summarize_price_volume(history: pd.DataFrame | None) -> dict[str, Any]:
 
     score = 0
     if latest_close > ma20:
-        score += 6
+        score += 5
     if latest_close > ma50:
-        score += 8
-    if volume_ratio >= 1.5:
-        score += 8
-    if abs(return_5d) >= 7:
         score += 6
+    if volume_ratio >= 1.5:
+        score += 6
+    if abs(return_5d) >= 7:
+        score += 5
 
     summary = (
         f"Kurs {latest_close:.2f}, 5T {return_5d:.1f}%, Volumen {volume_ratio:.1f}x vs. 20T, "
         f"ueber MA20/MA50: {'ja' if latest_close > ma20 else 'nein'}/{'ja' if latest_close > ma50 else 'nein'}"
     )
-    return {"name": "Preis/Volumen", "score": min(score, 25), "summary": summary}
+    return {"name": "Preis/Volumen", "score": min(score, 20), "summary": summary}
 
 
 def _summarize_news_intensity(ticker: yf.Ticker) -> dict[str, Any]:
@@ -902,11 +937,11 @@ def _summarize_news_intensity(ticker: yf.Ticker) -> dict[str, Any]:
 
     score = 0
     if recent_count >= 6:
-        score = 18
-    elif recent_count >= 4:
         score = 12
+    elif recent_count >= 4:
+        score = 8
     elif recent_count >= 2:
-        score = 6
+        score = 4
 
     summary = f"{recent_count} News in den letzten {DEFAULT_SIGNAL_NEWS_WINDOW_DAYS} Tagen"
     return {"name": "News-Dichte", "score": score, "summary": summary}
@@ -932,14 +967,147 @@ def _summarize_event_pressure(ticker: yf.Ticker, info: dict[str, Any]) -> dict[s
     nearest = min(upcoming_days)
     score = 0
     if nearest <= 7:
-        score = 15
-    elif nearest <= 21:
         score = 10
+    elif nearest <= 21:
+        score = 7
     elif nearest <= 45:
-        score = 5
+        score = 3
 
     summary = f"Naechster Termin in {nearest} Tagen"
     return {"name": "Event-Druck", "score": score, "summary": summary}
+
+
+def _summarize_insider_signal(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]:
+    """Score insider buying activity. Cluster purchases are a strong bullish signal."""
+    if is_etf:
+        return {"name": "Insider-Aktivitaet", "score": 0, "summary": "Nicht relevant fuer ETFs."}
+
+    purchases = _safe_dataframe(lambda: ticker.get_insider_purchases())
+    transactions = _safe_dataframe(lambda: ticker.get_insider_transactions())
+
+    purchase_count = 0
+    sell_count = 0
+
+    if purchases is not None and not purchases.empty:
+        for _, row in purchases.iterrows():
+            shares_val = _clean_scalar(row.get("Shares")) or _clean_scalar(row.get("shares"))
+            if shares_val:
+                try:
+                    shares_num = float(str(shares_val).replace(",", "").replace("+", ""))
+                    if shares_num > 0:
+                        purchase_count += 1
+                except (ValueError, TypeError):
+                    pass
+
+    if transactions is not None and not transactions.empty:
+        columns = {str(col).lower(): col for col in transactions.columns}
+        text_col = columns.get("text") or columns.get("transaction")
+        if text_col:
+            for _, row in transactions.head(20).iterrows():
+                text_val = str(row.get(text_col, "")).lower()
+                if any(kw in text_val for kw in ("purchase", "buy", "kauf", "acquisition")):
+                    purchase_count += 1
+                elif any(kw in text_val for kw in ("sale", "sell", "verkauf", "disposition")):
+                    sell_count += 1
+
+    score = 0
+    if purchase_count >= 4:
+        score = 10
+    elif purchase_count >= 2:
+        score = 7
+    elif purchase_count >= 1:
+        score = 4
+
+    if sell_count > purchase_count * 2:
+        score = max(0, score - 3)
+
+    if purchase_count == 0 and sell_count == 0:
+        summary = "Keine Insider-Transaktionen erkannt."
+    else:
+        summary = f"{purchase_count} Kaeufe, {sell_count} Verkaeufe erkannt"
+        if purchase_count >= 4:
+            summary += " - starkes Insider-Kaufsignal"
+        elif purchase_count >= 2:
+            summary += " - mehrfache Insiderkaeufe"
+
+    return {"name": "Insider-Aktivitaet", "score": score, "summary": summary}
+
+
+def _summarize_short_interest(info: dict[str, Any]) -> dict[str, Any]:
+    """Score based on short interest. High short float can indicate squeeze potential."""
+    short_pct = _safe_float(info.get("shortPercentOfFloat"))
+    short_ratio = _safe_float(info.get("shortRatio"))
+
+    if short_pct is None and short_ratio is None:
+        return {"name": "Short Interest", "score": 0, "summary": "Keine Short-Interest-Daten verfuegbar."}
+
+    score = 0
+    parts = []
+
+    if short_pct is not None:
+        short_pct_display = short_pct * 100 if short_pct < 1 else short_pct
+        parts.append(f"Short-Float: {short_pct_display:.1f}%")
+        if short_pct_display >= 20:
+            score = 8
+        elif short_pct_display >= 10:
+            score = 6
+        elif short_pct_display >= 5:
+            score = 3
+
+    if short_ratio is not None:
+        parts.append(f"Short-Ratio: {short_ratio:.1f} Tage")
+        if short_ratio >= 5 and score < 8:
+            score = max(score, 5)
+        elif short_ratio >= 3 and score < 6:
+            score = max(score, 3)
+
+    summary = ", ".join(parts) if parts else "Keine Short-Interest-Daten verfuegbar."
+    if score >= 6:
+        summary += " - erhoehtes Squeeze-Potenzial"
+    elif score >= 3:
+        summary += " - moderate Leerverkaufsaktivitaet"
+
+    return {"name": "Short Interest", "score": score, "summary": summary}
+
+
+def _summarize_relative_strength(history: pd.DataFrame | None) -> dict[str, Any]:
+    """Compare stock performance vs. broad market (SPY) over last month."""
+    if history is None or history.empty or len(history) < 20:
+        return {"name": "Relative Staerke", "score": 0, "summary": "Nicht genug Kursdaten fuer Relative-Staerke-Berechnung."}
+
+    close_series = pd.to_numeric(history.get("Close"), errors="coerce")
+    if close_series is None or close_series.isna().all():
+        return {"name": "Relative Staerke", "score": 0, "summary": "Kursdaten nicht lesbar."}
+
+    stock_return_1m = ((float(close_series.iloc[-1]) / float(close_series.iloc[-20])) - 1) * 100
+
+    spy_history = _safe_dataframe(lambda: yf.Ticker("SPY").history(period="1mo", auto_adjust=False))
+    if spy_history is not None and not spy_history.empty and len(spy_history) >= 10:
+        spy_close = pd.to_numeric(spy_history.get("Close"), errors="coerce")
+        if spy_close is not None and not spy_close.isna().all():
+            benchmark_return = ((float(spy_close.iloc[-1]) / float(spy_close.iloc[0])) - 1) * 100
+        else:
+            benchmark_return = 0.0
+    else:
+        benchmark_return = 0.0
+
+    relative_perf = stock_return_1m - benchmark_return
+
+    score = 0
+    if relative_perf >= 10:
+        score = 5
+    elif relative_perf >= 5:
+        score = 3
+    elif relative_perf >= 2:
+        score = 1
+
+    summary = f"1M-Perf: {stock_return_1m:.1f}% vs. Markt {benchmark_return:.1f}% = {relative_perf:+.1f}% relativ"
+    if relative_perf >= 10:
+        summary += " - starke Outperformance"
+    elif relative_perf >= 5:
+        summary += " - solide Outperformance"
+
+    return {"name": "Relative Staerke", "score": score, "summary": summary}
 
 
 def add_watchlist_peer_context(signal_items: list[dict[str, Any]]) -> list[dict[str, Any]]:

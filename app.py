@@ -341,23 +341,24 @@ def render_watchlist_alerts(mapping_text: str):
 def render_watchlist_signal_monitor(mapping_text: str):
     st.subheader("Signal Monitor V2")
     st.write(
-        "V2 priorisiert die Watchlist nach Fruehsignalen wie EPS-Revisionen, Kursziel-Potenzial, "
-        "News-Dichte, Preis/Volumen-Verhalten und Event-Naehe."
+        "V2 priorisiert die Watchlist nach 8 Fruehsignalen: EPS-Revisionen, Kursziel-Potenzial, "
+        "News-Dichte, Preis/Volumen-Verhalten, Event-Naehe, Insider-Aktivitaet, Short Interest und Relative Staerke."
     )
 
     with st.expander("Hilfe und Lesart des Signal Monitor V2", expanded=False):
-        st.markdown("Der **Brodel-Score** (0 bis 100) ist ein 'Fruehwarn-Thermometer'. Er setzt sich aus 5 Bausteinen zusammen:")
-        st.markdown("- **EPS-Revisionen (max. 25 Punkte):** Passten Analysten ihre Gewinnerwartungen zuletzt nach oben oder unten an? Mehr positive Korrekturen geben mehr Punkte.")
-        st.markdown("- **Kursziel-Potenzial (max. 18 Punkte):** Vergleicht das mittlere Analystenkursziel mit dem aktuellen Kurs. Ueber 20% Luft nach oben bringt die volle Punktzahl.")
-        st.markdown("- **Preis & Volumen Momentum (max. 25 Punkte):** Technische Lage. Gibt Punkte fuer Kurse ueber der 20- und 50-Tage-Linie, Volumenspitzen (>1,5x) und kurzfristige starke Schwankungen.")
-        st.markdown("- **News-Dichte (max. 18 Punkte):** Berichten die Medien gerade ungewoehnlich viel? 6 oder mehr Artikel in den letzten Tagen bringen die volle Punktzahl.")
-        st.markdown("- **Event-Druck (max. 15 Punkte):** Stehen bald Quartalszahlen oder Dividenden an? Je naeher der Termin (z.B. innerhalb von 7 Tagen), desto mehr Punkte.")
-        st.markdown("---")
-        st.markdown("**Das Linien-Diagramm (Score-Verlauf)**")
-        st.markdown("Jeder 'Snapshot' speichert den Brodel-Score des aktuellen Tages ab. Das Diagramm zeichnet dann den Verlauf über die Zeit. Oft ist nicht der absolute Wert entscheidend, sondern die *Richtung*. Schiesst die Linie einer Aktie plötzlich nach oben, baut sich dort gerade massiv Momentum auf!")
+        st.markdown("Der **Brodel-Score** (0 bis 100) ist ein 'Fruehwarn-Thermometer'. Er setzt sich aus 8 Bausteinen zusammen:")
+        st.markdown("- **EPS-Revisionen (max. 20 Punkte):** Passten Analysten ihre Gewinnerwartungen zuletzt nach oben oder unten an? Mehr positive Korrekturen geben mehr Punkte.")
+        st.markdown("- **Kursziel-Potenzial (max. 15 Punkte):** Vergleicht das mittlere Analystenkursziel mit dem aktuellen Kurs. Ueber 20% Luft nach oben bringt die volle Punktzahl.")
+        st.markdown("- **Preis & Volumen Momentum (max. 20 Punkte):** Technische Lage. Gibt Punkte fuer Kurse ueber der 20- und 50-Tage-Linie, Volumenspitzen (>1,5x) und kurzfristige starke Schwankungen.")
+        st.markdown("- **News-Dichte (max. 12 Punkte):** Berichten die Medien gerade ungewoehnlich viel? 6 oder mehr Artikel in den letzten Tagen bringen die volle Punktzahl.")
+        st.markdown("- **Event-Druck (max. 10 Punkte):** Stehen bald Quartalszahlen oder Dividenden an? Je naeher der Termin (z.B. innerhalb von 7 Tagen), desto mehr Punkte.")
+        st.markdown("- **Insider-Aktivitaet (max. 10 Punkte):** Kaufen oder verkaufen Insider gerade? Cluster-Kaeufe durch Fuehrungskraefte sind eines der staerksten Fruehsignale.")
+        st.markdown("- **Short Interest (max. 8 Punkte):** Wie hoch ist die Leerverkaufsquote? Hohe Short-Quoten koennen auf Squeeze-Potenzial hindeuten.")
+        st.markdown("- **Relative Staerke (max. 5 Punkte):** Vergleicht die Monatsperformance der Aktie mit dem breiten Markt (SPY). Outperformer erhalten Punkte.")
         st.markdown("---")
         st.markdown("- **Delta-Alerts** zeigen konkret, bei welcher Aktie sich der Score seit dem letzten Scan veraendert hat.")
         st.markdown("- **Peer-Kontext** ordnet die Aktie innerhalb deines eigenen Sektors/deiner eigenen Watchlist ein.")
+        st.markdown("- Die **Uebersichtstabelle** zeigt alle 8 Einzelkomponenten als separate Spalten, so dass sofort erkennbar ist, woher der Score kommt.")
 
     alert_threshold = st.slider("Harter Delta-Alert ab Score-Anstieg von", min_value=1, max_value=30, value=10)
 
@@ -439,10 +440,11 @@ def render_watchlist_signal_monitor(mapping_text: str):
     with history_cols[1]:
         st.caption(f"Snapshot-Historie: {len(history)} vorhandene Snapshots fuer {watchlist_name}")
 
-    st.markdown("**Score-Verlauf**")
+    st.markdown("**Score-Verlauf (tabellarisch)**")
     if not score_history.empty:
         pivot_frame = score_history.pivot_table(index="timestamp", columns="symbol", values="brodel_score", aggfunc="last")
-        st.line_chart(pivot_frame, use_container_width=True)
+        pivot_frame = pivot_frame.sort_index(ascending=False)
+        st.dataframe(pivot_frame, use_container_width=True)
     else:
         st.info("Noch keine gespeicherten Verlaufsdaten vorhanden. Speichere einen Snapshot, um Trends zu sehen.")
 
@@ -479,25 +481,27 @@ def render_watchlist_signal_monitor(mapping_text: str):
     else:
         st.info("Noch kein vorheriger Snapshot oder keine relevanten Veraenderungen seit dem letzten Snapshot.")
 
-    st.markdown("**Top 20 Aktien (Score)**")
-    top_20 = signal_items[:20]
-    if top_20:
-        top_20_df = pd.DataFrame([{"Symbol": item["symbol"], "Score": item["brodel_score"]} for item in top_20])
-        st.bar_chart(top_20_df.set_index("Symbol"))
-
-    st.markdown("**Alle Signale in der Uebersicht**")
+    st.markdown("**Alle Signale in der Uebersicht (detailliert)**")
     table_rows = []
     for item in signal_items:
         peer_context = item.get("peer_context", {})
+        breakdown = item.get("signal_breakdown", {})
         table_rows.append(
             {
                 "Symbol": item["symbol"],
                 "Name": item["name"],
                 "Sektor": peer_context.get("sector", "Unbekannt"),
-                "Brodel-Score": item["brodel_score"],
+                "Score": item["brodel_score"],
+                "EPS": breakdown.get("EPS-Revisionen", {}).get("score", 0),
+                "Kursziel": breakdown.get("Kursziele", {}).get("score", 0),
+                "P/V": breakdown.get("Preis/Volumen", {}).get("score", 0),
+                "News": breakdown.get("News-Dichte", {}).get("score", 0),
+                "Event": breakdown.get("Event-Druck", {}).get("score", 0),
+                "Insider": breakdown.get("Insider-Aktivitaet", {}).get("score", 0),
+                "Short": breakdown.get("Short Interest", {}).get("score", 0),
+                "Rel.St.": breakdown.get("Relative Staerke", {}).get("score", 0),
                 "Vs. Sektor": peer_context.get("score_vs_sector", 0),
-                "Sektor-Rang": f"{peer_context.get('sector_rank', 1)}/{peer_context.get('sector_count', 1)}",
-                "Top-Signal": item["signal_items"][0] if item["signal_items"] else "Keine Signale",
+                "Rang": f"{peer_context.get('sector_rank', 1)}/{peer_context.get('sector_count', 1)}",
             }
         )
 
@@ -529,8 +533,20 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     st.markdown("- Keine aussagekraeftigen Fruehsignale erkannt.")
 
                 st.markdown("**Signal-Breakdown**")
+                max_scores = {
+                    "EPS-Revisionen": 20, "Kursziele": 15, "Preis/Volumen": 20,
+                    "News-Dichte": 12, "Event-Druck": 10, "Insider-Aktivitaet": 10,
+                    "Short Interest": 8, "Relative Staerke": 5,
+                }
+                breakdown_rows = []
                 for component in item["signal_breakdown"].values():
-                    st.markdown(f"- {component['name']}: {component['score']} Punkte | {component['summary']}")
+                    breakdown_rows.append({
+                        "Komponente": component["name"],
+                        "Punkte": component["score"],
+                        "Max": max_scores.get(component["name"], "?"),
+                        "Detail": component["summary"],
+                    })
+                st.dataframe(pd.DataFrame(breakdown_rows), use_container_width=True, hide_index=True)
 
             with col2:
                 peer_context = item.get("peer_context", {})
