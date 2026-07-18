@@ -50,9 +50,9 @@ def run_update():
     sorted_results = sorted(enriched_results, key=lambda x: x.get("brodel_score", 0), reverse=True)
     
     print("Saving snapshot...")
-    snapshot_data = save_signal_snapshot(watchlist_name, sorted_results)
+    snapshot_path = save_signal_snapshot(watchlist_name, sorted_results)
     
-    print(f"Successfully saved snapshot to {snapshot_data['filepath']}")
+    print(f"Successfully saved snapshot to {snapshot_path}")
     print("Update complete.")
 
 if __name__ == "__main__":
