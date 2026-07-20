@@ -92,7 +92,9 @@ def append_indices_to_watchlist():
     st.session_state.pending_index_input_clear = True
 
 
-def render_watchlist_source_controls():
+def render_watchlist_source_controls()
+    with stock_tabs[2]:
+        render_help_tab():
     if "watchlist_initialized" not in st.session_state:
         default_name, default_text = load_default_watchlist_text()
         st.session_state.watchlist_text = default_text
@@ -419,6 +421,28 @@ def render_watchlist_signal_monitor(mapping_text: str):
             else:
                 st.info("Noch keine Verlaufsdaten vorhanden.")
 
+def render_help_tab():
+    st.subheader("Hilfe & Methodik")
+    st.write("Der **Brodel-Score** (Skala: -30 bis 100) ist ein 'Fruehwarn-Thermometer'. Er aggregiert Signale aus 10 Komponenten sowie einem Makro-Overlay.")
+    
+    st.markdown("### Die 10 Signalkomponenten")
+    st.markdown("- **EPS-Revisionen (max. 15 Punkte):** Passten Analysten ihre Gewinnerwartungen zuletzt nach oben oder unten an? Netto-positive Korrekturen (+3 Punkte je Revision).")
+    st.markdown("- **Kursziel & Konsens (max. 15 Punkte):** Misst den Upside-Prozentsatz zum mittleren Analystenziel (+1 Punkt je 2% Upside). Liegt der Anteil an 'Buy'-Ratings ueber 80%, gibt es 5 Extrapunkte.")
+    st.markdown("- **News-Sentiment (max. 15 Punkte):** Gemini (KI) analysiert den Textgehalt aktueller News. Bullishe News geben Punkte (+3 je Artikel), bearishe ziehen Punkte ab (-3 je Artikel).")
+    st.markdown("- **Technische Indikatoren (max. 10 Punkte):** Überverkaufter RSI (<30) gibt +4, Überkaufter RSI (>70) gibt -4. Ein positiver MACD gibt +3. Kurs unter dem Bollinger Band gibt +3.")
+    st.markdown("- **Fundamentale Bewertung (max. 10 Punkte):** Klassisches Value-Scoring. P/E < 15 (+2), PEG < 1 (+2), Debt/Equity < 50 (+2), FCF Yield > 5% (+2).")
+    st.markdown("- **Preis & Volumen Momentum (max. 10 Punkte):** Trendbestaetigung. Gibt Punkte fuer Kurse ueber der 20- und 50-Tage-Linie, Volumenspitzen und bestraft starke Abverkaeufe.")
+    st.markdown("- **Insider-Aktivitaet (max. 10 Punkte):** Kaufen oder verkaufen Manager eigene Aktien? Cluster-Kaeufe sind ein extrem starkes Fruehsignal (+4 Punkte für Insiderkaeufe, +6 für Transaktionen).")
+    st.markdown("- **Relative Staerke (max. 5 Punkte):** Outperformance gegenueber der jeweiligen Benchmark (DAX, S&P 500 etc.) im letzten Monat bringt Punkte.")
+    st.markdown("- **Event-Druck (max. 5 Punkte):** Stehen in Kuerze Quartalszahlen an? Weniger als 7 Tage = 5 Punkte, weniger als 14 Tage = 3 Punkte.")
+    st.markdown("- **Short Interest (max. 5 Punkte):** Hohe Leerverkaufsquoten (>20%) kombiniert mit Aufwaertstrends deuten auf einen Short-Squeeze hin (+5 Punkte).")
+    
+    st.markdown("### Das Makro-Overlay (Markt-Kontext)")
+    st.markdown("Nachdem der Basis-Score (Summe aller 10 Komponenten) berechnet wurde, wird das Marktumfeld (S&P 500 und VIX) geprueft:")
+    st.markdown("- **Bullenmarkt-Modifikator:** Steht der S&P 500 (SPY) über seiner 200-Tage-Linie, wird der Basis-Score mit **1.1x** multipliziert.")
+    st.markdown("- **Baerenmarkt-Modifikator:** Steht der S&P 500 darunter, wird der Score mit **0.8x** bestraft.")
+    st.markdown("- **Volatilitaets-Bremse:** Liegt der VIX über 25 (Panik-Modus), wird der Score zusatzlich um 10% gesenkt.")
+
 def render_stock_agent():
     st.title("Aktien-Agent")
     st.caption("Watchlist-Monitor fuer Marktveraenderungen, Fruehsignale und priorisierte Beobachtung.")
@@ -435,6 +459,8 @@ def render_stock_agent():
         )
         st.caption("Manuelle Namens-zu-Ticker-Zuordnungen werden aus stock_mappings.txt geladen.")
         render_watchlist_source_controls()
+    with stock_tabs[2]:
+        render_help_tab()
 
     st.divider()
     st.subheader("Hinweise")
@@ -450,5 +476,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
