@@ -1001,13 +1001,28 @@ def _summarize_eps_revisions(ticker: yf.Ticker) -> dict[str, Any]:
 
 
 def _summarize_price_targets(ticker: yf.Ticker, info: dict[str, Any], history: pd.DataFrame | None) -> dict[str, Any]:
-    targets = _safe_get(lambda: ticker.get_analyst_price_targets(), {})
-    recom_summary = _safe_dataframe(lambda: ticker.get_recommendations_summary())
+    import finnhub_cache
+    symbol = ticker.ticker
+    fh_targets, fh_recoms = finnhub_cache.get_analyst_data(symbol)
 
     current_price = _get_current_price(info, history)
-    target_mean = _safe_float(targets.get("mean") if isinstance(targets, dict) else None)
-    target_high = _safe_float(targets.get("high") if isinstance(targets, dict) else None)
-    target_low = _safe_float(targets.get("low") if isinstance(targets, dict) else None)
+    target_mean = None
+    target_high = None
+    target_low = None
+
+    # Try Finnhub first for targets
+    if fh_targets and "targetMean" in fh_targets and fh_targets["targetMean"]:
+        target_mean = _safe_float(fh_targets.get("targetMean"))
+        target_high = _safe_float(fh_targets.get("targetHigh"))
+        target_low = _safe_float(fh_targets.get("targetLow"))
+        
+    # Fallback to yfinance for targets
+    if target_mean is None:
+        targets = _safe_get(lambda: ticker.get_analyst_price_targets(), {})
+        if isinstance(targets, dict):
+            target_mean = _safe_float(targets.get("mean"))
+            target_high = _safe_float(targets.get("high"))
+            target_low = _safe_float(targets.get("low"))
 
     if current_price is None or target_mean is None or current_price <= 0:
         return {"name": "Kursziele & Konsens", "score": 0, "summary": "Kursziel-Daten vorhanden, aber nicht sauber vergleichbar."}
@@ -1023,8 +1038,10 @@ def _summarize_price_targets(ticker: yf.Ticker, info: dict[str, Any], history: p
 
     analyst_count = 0
     buy_ratio = 0.0
-    if recom_summary is not None and not recom_summary.empty:
-        latest = recom_summary.iloc[0]
+
+    # Try Finnhub first for recommendations
+    if fh_recoms and isinstance(fh_recoms, list) and len(fh_recoms) > 0:
+        latest = fh_recoms[0]
         strong_buy = _safe_float(latest.get("strongBuy", 0)) or 0
         buy = _safe_float(latest.get("buy", 0)) or 0
         hold = _safe_float(latest.get("hold", 0)) or 0
@@ -1034,17 +1051,33 @@ def _summarize_price_targets(ticker: yf.Ticker, info: dict[str, Any], history: p
         analyst_count = strong_buy + buy + hold + sell + strong_sell
         if analyst_count > 0:
             buy_ratio = (strong_buy + buy) / analyst_count
-            if analyst_count >= 5:
-                if buy_ratio >= 0.8:
-                    score += 5
-                elif buy_ratio >= 0.6:
-                    score += 3
+    else:
+        # Fallback to yfinance for recommendations
+        recom_summary = _safe_dataframe(lambda: ticker.get_recommendations_summary())
+        if recom_summary is not None and not recom_summary.empty:
+            latest = recom_summary.iloc[0]
+            strong_buy = _safe_float(latest.get("strongBuy", 0)) or 0
+            buy = _safe_float(latest.get("buy", 0)) or 0
+            hold = _safe_float(latest.get("hold", 0)) or 0
+            sell = _safe_float(latest.get("sell", 0)) or 0
+            strong_sell = _safe_float(latest.get("strongSell", 0)) or 0
+
+            analyst_count = strong_buy + buy + hold + sell + strong_sell
+            if analyst_count > 0:
+                buy_ratio = (strong_buy + buy) / analyst_count
+
+    if analyst_count >= 5:
+        if buy_ratio >= 0.8:
+            score += 5
+        elif buy_ratio >= 0.6:
+            score += 3
 
     range_text = ""
     if target_low is not None and target_high is not None:
         range_text = f" (Spanne {target_low:.2f} bis {target_high:.2f})"
 
-    summary = f"Mittel {target_mean:.2f} vs. Kurs {current_price:.2f} = {target_gap_percent:.1f}% Potenzial{range_text}"
+    provider = "Finnhub" if (fh_targets and "targetMean" in fh_targets) else "YFinance"
+    summary = f"[{provider}] Mittel {target_mean:.2f} vs. Kurs {current_price:.2f} = {target_gap_percent:.1f}% Potenzial{range_text}"
     if analyst_count > 0:
         summary += f" | Konsens: {buy_ratio*100:.0f}% Buys ({int(analyst_count)} Analysten)"
 

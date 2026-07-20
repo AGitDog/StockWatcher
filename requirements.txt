@@ -4,4 +4,4 @@ plotly>=5.18.0
 numpy>=1.20.0
 yfinance>=0.2.65
 lxml>=4.9.0
-google-genai>=1.0.0
+google-genai>=1.0.0requests>=2.31.0
