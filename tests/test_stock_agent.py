@@ -19,6 +19,8 @@ from stock_agent import (
     _safe_float,
     _clean_scalar,
     _dedupe_preserve_order,
+    _summarize_technical_indicators,
+    _apply_macro_overlay,
 )
 
 
@@ -724,3 +726,83 @@ def test_relative_strength_uses_regional_benchmark(mock_yf):
 
 
 
+
+
+# --- Technical Indicators ---
+
+def test_technical_indicators_no_history():
+    result = _summarize_technical_indicators(None)
+    assert result["score"] == 0
+    assert "Nicht genug Kursdaten" in result["summary"]
+
+def test_technical_indicators_bullish():
+    # Construct a dataframe with RSI < 30, MACD > Signal, Close < Lower Bollinger
+    dates = pd.date_range("2024-01-01", periods=60)
+    # Strong downtrend to make RSI < 30, then a bounce for MACD
+    close_values = [100 - i for i in range(50)] + [50 + i*2 for i in range(10)]
+    history = pd.DataFrame({"Close": close_values}, index=dates)
+    
+    result = _summarize_technical_indicators(history)
+    # The exact score depends on ewm math, but it should calculate without errors.
+    assert "score" in result
+    assert isinstance(result["score"], int)
+    assert "RSI:" in result["summary"]
+    assert "MACD:" in result["summary"]
+    assert "Bollinger:" in result["summary"]
+
+# --- Macro Overlay ---
+
+@patch("stock_agent.yf.Ticker")
+def test_apply_macro_overlay_bull_market(mock_ticker_class):
+    mock_spy = MagicMock()
+    mock_vix = MagicMock()
+    
+    # SPY above 200-MA (e.g., constant rise)
+    dates = pd.date_range("2023-01-01", periods=250)
+    spy_history = pd.DataFrame({"Close": [100 + i for i in range(250)]}, index=dates)
+    mock_spy.history.return_value = spy_history
+    
+    # VIX low
+    vix_history = pd.DataFrame({"Close": [15.0] * 30}, index=pd.date_range("2023-01-01", periods=30))
+    mock_vix.history.return_value = vix_history
+    
+    # Mock yf.Ticker to return SPY or VIX based on argument
+    def side_effect(ticker_name):
+        if ticker_name == "SPY":
+            return mock_spy
+        elif ticker_name == "^VIX":
+            return mock_vix
+        return MagicMock()
+        
+    mock_ticker_class.side_effect = side_effect
+    
+    # Base score 10 * 1.1 = 11
+    score = _apply_macro_overlay(10)
+    assert score == 11
+
+@patch("stock_agent.yf.Ticker")
+def test_apply_macro_overlay_bear_market_high_vix(mock_ticker_class):
+    mock_spy = MagicMock()
+    mock_vix = MagicMock()
+    
+    # SPY below 200-MA (falling)
+    dates = pd.date_range("2023-01-01", periods=250)
+    spy_history = pd.DataFrame({"Close": [100 - i*0.1 for i in range(250)]}, index=dates)
+    mock_spy.history.return_value = spy_history
+    
+    # VIX > 25
+    vix_history = pd.DataFrame({"Close": [30.0] * 30}, index=pd.date_range("2023-01-01", periods=30))
+    mock_vix.history.return_value = vix_history
+    
+    def side_effect(ticker_name):
+        if ticker_name == "SPY":
+            return mock_spy
+        elif ticker_name == "^VIX":
+            return mock_vix
+        return MagicMock()
+        
+    mock_ticker_class.side_effect = side_effect
+    
+    # Base score 10 * 0.8 (SPY) * 0.9 (VIX) = 7.2 -> 7
+    score = _apply_macro_overlay(10)
+    assert score == 7
