@@ -1,4 +1,4 @@
-import os
+ï»¿import os
 
 import pandas as pd
 import streamlit as st
@@ -92,9 +92,7 @@ def append_indices_to_watchlist():
     st.session_state.pending_index_input_clear = True
 
 
-def render_watchlist_source_controls()
-    with stock_tabs[2]:
-        render_help_tab():
+def render_watchlist_source_controls():
     if "watchlist_initialized" not in st.session_state:
         default_name, default_text = load_default_watchlist_text()
         st.session_state.watchlist_text = default_text
@@ -429,19 +427,19 @@ def render_help_tab():
     st.markdown("- **EPS-Revisionen (max. 15 Punkte):** Passten Analysten ihre Gewinnerwartungen zuletzt nach oben oder unten an? Netto-positive Korrekturen (+3 Punkte je Revision).")
     st.markdown("- **Kursziel & Konsens (max. 15 Punkte):** Misst den Upside-Prozentsatz zum mittleren Analystenziel (+1 Punkt je 2% Upside). Liegt der Anteil an 'Buy'-Ratings ueber 80%, gibt es 5 Extrapunkte.")
     st.markdown("- **News-Sentiment (max. 15 Punkte):** Gemini (KI) analysiert den Textgehalt aktueller News. Bullishe News geben Punkte (+3 je Artikel), bearishe ziehen Punkte ab (-3 je Artikel).")
-    st.markdown("- **Technische Indikatoren (max. 10 Punkte):** Überverkaufter RSI (<30) gibt +4, Überkaufter RSI (>70) gibt -4. Ein positiver MACD gibt +3. Kurs unter dem Bollinger Band gibt +3.")
+    st.markdown("- **Technische Indikatoren (max. 10 Punkte):** ï¿½berverkaufter RSI (<30) gibt +4, ï¿½berkaufter RSI (>70) gibt -4. Ein positiver MACD gibt +3. Kurs unter dem Bollinger Band gibt +3.")
     st.markdown("- **Fundamentale Bewertung (max. 10 Punkte):** Klassisches Value-Scoring. P/E < 15 (+2), PEG < 1 (+2), Debt/Equity < 50 (+2), FCF Yield > 5% (+2).")
     st.markdown("- **Preis & Volumen Momentum (max. 10 Punkte):** Trendbestaetigung. Gibt Punkte fuer Kurse ueber der 20- und 50-Tage-Linie, Volumenspitzen und bestraft starke Abverkaeufe.")
-    st.markdown("- **Insider-Aktivitaet (max. 10 Punkte):** Kaufen oder verkaufen Manager eigene Aktien? Cluster-Kaeufe sind ein extrem starkes Fruehsignal (+4 Punkte für Insiderkaeufe, +6 für Transaktionen).")
+    st.markdown("- **Insider-Aktivitaet (max. 10 Punkte):** Kaufen oder verkaufen Manager eigene Aktien? Cluster-Kaeufe sind ein extrem starkes Fruehsignal (+4 Punkte fï¿½r Insiderkaeufe, +6 fï¿½r Transaktionen).")
     st.markdown("- **Relative Staerke (max. 5 Punkte):** Outperformance gegenueber der jeweiligen Benchmark (DAX, S&P 500 etc.) im letzten Monat bringt Punkte.")
     st.markdown("- **Event-Druck (max. 5 Punkte):** Stehen in Kuerze Quartalszahlen an? Weniger als 7 Tage = 5 Punkte, weniger als 14 Tage = 3 Punkte.")
     st.markdown("- **Short Interest (max. 5 Punkte):** Hohe Leerverkaufsquoten (>20%) kombiniert mit Aufwaertstrends deuten auf einen Short-Squeeze hin (+5 Punkte).")
     
     st.markdown("### Das Makro-Overlay (Markt-Kontext)")
     st.markdown("Nachdem der Basis-Score (Summe aller 10 Komponenten) berechnet wurde, wird das Marktumfeld (S&P 500 und VIX) geprueft:")
-    st.markdown("- **Bullenmarkt-Modifikator:** Steht der S&P 500 (SPY) über seiner 200-Tage-Linie, wird der Basis-Score mit **1.1x** multipliziert.")
+    st.markdown("- **Bullenmarkt-Modifikator:** Steht der S&P 500 (SPY) ï¿½ber seiner 200-Tage-Linie, wird der Basis-Score mit **1.1x** multipliziert.")
     st.markdown("- **Baerenmarkt-Modifikator:** Steht der S&P 500 darunter, wird der Score mit **0.8x** bestraft.")
-    st.markdown("- **Volatilitaets-Bremse:** Liegt der VIX über 25 (Panik-Modus), wird der Score zusatzlich um 10% gesenkt.")
+    st.markdown("- **Volatilitaets-Bremse:** Liegt der VIX ï¿½ber 25 (Panik-Modus), wird der Score zusatzlich um 10% gesenkt.")
 
 def render_stock_agent():
     st.title("Aktien-Agent")
@@ -476,6 +474,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
