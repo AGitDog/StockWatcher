@@ -13,6 +13,12 @@ import pandas as pd
 import requests
 import yfinance as yf
 
+try:
+    from google import genai
+    _GEMINI_AVAILABLE = True
+except ImportError:
+    _GEMINI_AVAILABLE = False
+
 
 DEFAULT_ANALYST_LOOKBACK_DAYS = 120
 DEFAULT_NEWS_ITEMS = 5
@@ -476,6 +482,7 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
     insider_signal = _summarize_insider_signal(ticker, quote_type == "etf")
     short_interest_signal = _summarize_short_interest(info, history)
     relative_strength_signal = _summarize_relative_strength(history, symbol)
+    fundamental_signal = _summarize_fundamentals(info)
 
     signal_components = [
         eps_revision_signal,
@@ -486,9 +493,10 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
         insider_signal,
         short_interest_signal,
         relative_strength_signal,
+        fundamental_signal,
     ]
 
-    brodel_score = min(sum(component["score"] for component in signal_components), 100)
+    brodel_score = max(0, min(sum(component["score"] for component in signal_components), 100))
     signal_items = [component["summary"] for component in signal_components if component["summary"]]
 
     return {
@@ -879,7 +887,7 @@ def _summarize_eps_revisions(ticker: yf.Ticker) -> dict[str, Any]:
     net_revisions = total_up - total_down
     score = 0
     if net_revisions > 0:
-        score = min(20, 8 + net_revisions * 3)
+        score = min(18, 6 + net_revisions * 3)
     elif net_revisions < 0:
         score = 0
 
@@ -894,32 +902,53 @@ def _summarize_eps_revisions(ticker: yf.Ticker) -> dict[str, Any]:
 
 def _summarize_price_targets(ticker: yf.Ticker, info: dict[str, Any], history: pd.DataFrame | None) -> dict[str, Any]:
     targets = _safe_get(lambda: ticker.get_analyst_price_targets(), {})
-    if not isinstance(targets, dict) or not targets:
-        return {"name": "Kursziele", "score": 0, "summary": "Keine Kursziel-Daten verfuegbar."}
+    recom_summary = _safe_dataframe(lambda: ticker.get_recommendations_summary())
 
     current_price = _get_current_price(info, history)
-    target_mean = _safe_float(targets.get("mean"))
-    target_high = _safe_float(targets.get("high"))
-    target_low = _safe_float(targets.get("low"))
+    target_mean = _safe_float(targets.get("mean") if isinstance(targets, dict) else None)
+    target_high = _safe_float(targets.get("high") if isinstance(targets, dict) else None)
+    target_low = _safe_float(targets.get("low") if isinstance(targets, dict) else None)
 
     if current_price is None or target_mean is None or current_price <= 0:
-        return {"name": "Kursziele", "score": 0, "summary": "Kursziel-Daten vorhanden, aber nicht sauber vergleichbar."}
+        return {"name": "Kursziele & Konsens", "score": 0, "summary": "Kursziel-Daten vorhanden, aber nicht sauber vergleichbar."}
 
     target_gap_percent = ((target_mean - current_price) / current_price) * 100
     score = 0
     if target_gap_percent >= 20:
-        score = 15
+        score += 10
     elif target_gap_percent >= 10:
-        score = 8
+        score += 5
     elif target_gap_percent > 0:
-        score = 4
+        score += 2
+
+    analyst_count = 0
+    buy_ratio = 0.0
+    if recom_summary is not None and not recom_summary.empty:
+        latest = recom_summary.iloc[0]
+        strong_buy = _safe_float(latest.get("strongBuy", 0)) or 0
+        buy = _safe_float(latest.get("buy", 0)) or 0
+        hold = _safe_float(latest.get("hold", 0)) or 0
+        sell = _safe_float(latest.get("sell", 0)) or 0
+        strong_sell = _safe_float(latest.get("strongSell", 0)) or 0
+
+        analyst_count = strong_buy + buy + hold + sell + strong_sell
+        if analyst_count > 0:
+            buy_ratio = (strong_buy + buy) / analyst_count
+            if analyst_count >= 5:
+                if buy_ratio >= 0.8:
+                    score += 5
+                elif buy_ratio >= 0.6:
+                    score += 3
 
     range_text = ""
     if target_low is not None and target_high is not None:
         range_text = f" (Spanne {target_low:.2f} bis {target_high:.2f})"
 
-    summary = f"Kursziel-Mittel {target_mean:.2f} vs. Kurs {current_price:.2f} = {target_gap_percent:.1f}% Potenzial{range_text}"
-    return {"name": "Kursziele", "score": score, "summary": summary}
+    summary = f"Mittel {target_mean:.2f} vs. Kurs {current_price:.2f} = {target_gap_percent:.1f}% Potenzial{range_text}"
+    if analyst_count > 0:
+        summary += f" | Konsens: {buy_ratio*100:.0f}% Buys ({int(analyst_count)} Analysten)"
+
+    return {"name": "Kursziele & Konsens", "score": score, "summary": summary}
 
 
 def _summarize_price_volume(history: pd.DataFrame | None) -> dict[str, Any]:
@@ -939,33 +968,41 @@ def _summarize_price_volume(history: pd.DataFrame | None) -> dict[str, Any]:
     avg_volume_20 = float(volume_series.tail(20).mean())
     volume_ratio = latest_volume / avg_volume_20 if avg_volume_20 > 0 else 0
     return_5d = ((latest_close / float(close_series.iloc[-6])) - 1) * 100 if len(close_series) >= 6 else 0
+    
+    # Check if the latest day is an up day
+    prev_close = float(close_series.iloc[-2]) if len(close_series) >= 2 else latest_close
+    is_up_day = latest_close >= prev_close
 
-    score = 0
+    base_score = 0
     if latest_close > ma20:
-        score += 5
+        base_score += 5
     if latest_close > ma50:
-        score += 6
-    if volume_ratio >= 1.5 and return_5d >= 0:
-        score += 6
+        base_score += 6
     if return_5d >= 7:
-        score += 5
+        base_score += 4
     elif return_5d <= -7:
-        score = max(0, score - 3)
+        base_score -= 3
+
+    vol_score = 0
+    if is_up_day and latest_volume > (avg_volume_20 * 1.5):
+        vol_score = 5
+
+    total_score = max(-10, min(15, base_score + vol_score))
 
     summary = (
         f"Kurs {latest_close:.2f}, 5T {return_5d:.1f}%, Volumen {volume_ratio:.1f}x vs. 20T, "
         f"ueber MA20/MA50: {'ja' if latest_close > ma20 else 'nein'}/{'ja' if latest_close > ma50 else 'nein'}"
     )
-    return {"name": "Preis/Volumen", "score": min(score, 20), "summary": summary}
+    return {"name": "Preis/Volumen", "score": total_score, "summary": summary}
 
 
 def _summarize_news_intensity(ticker: yf.Ticker) -> dict[str, Any]:
     news_items = _safe_get(lambda: ticker.get_news(count=10), [])
     if not isinstance(news_items, list) or not news_items:
-        return {"name": "News-Dichte", "score": 0, "summary": "Keine aktuelle News-Dichte erkennbar."}
+        return {"name": "News-Sentiment", "score": 0, "summary": "Keine aktuelle News-Dichte erkennbar."}
 
     cutoff = datetime.utcnow().date() - pd.Timedelta(days=DEFAULT_SIGNAL_NEWS_WINDOW_DAYS)
-    recent_count = 0
+    recent_headlines: list[str] = []
     for item in news_items:
         published_at = item.get("providerPublishTime") or item.get("content", {}).get("pubDate")
         date_text = _format_date_value(published_at)
@@ -973,18 +1010,133 @@ def _summarize_news_intensity(ticker: yf.Ticker) -> dict[str, Any]:
             continue
         parsed = _extract_first_date(date_text)
         if parsed and parsed.date() >= cutoff:
-            recent_count += 1
+            title = item.get("title") or item.get("content", {}).get("title", "")
+            if title:
+                recent_headlines.append(title)
 
-    score = 0
+    recent_count = len(recent_headlines)
+
+    # Density sub-score (0–7)
+    density_score = 0
     if recent_count >= 6:
-        score = 12
+        density_score = 7
     elif recent_count >= 4:
-        score = 8
+        density_score = 5
     elif recent_count >= 2:
-        score = 4
+        density_score = 3
 
-    summary = f"{recent_count} News in den letzten {DEFAULT_SIGNAL_NEWS_WINDOW_DAYS} Tagen"
-    return {"name": "News-Dichte", "score": score, "summary": summary}
+    # Sentiment sub-score via Gemini (-8 to +8)
+    sentiment_result = _analyze_news_sentiment(recent_headlines)
+    sentiment_score = sentiment_result["score"]
+    sentiment_label = sentiment_result["label"]
+
+    total_score = max(-10, min(15, density_score + sentiment_score))
+
+    summary = f"{recent_count} News in {DEFAULT_SIGNAL_NEWS_WINDOW_DAYS}T"
+    if sentiment_label:
+        summary += f" | Sentiment: {sentiment_label} ({sentiment_score:+d})"
+
+    return {"name": "News-Sentiment", "score": total_score, "summary": summary}
+
+
+def _analyze_news_sentiment(headlines: list[str]) -> dict[str, Any]:
+    """Use Gemini to classify a batch of headlines as bullish/neutral/bearish.
+    Returns a score between -8 and +8 and a human-readable label.
+    Falls back to keyword-based analysis if Gemini is unavailable."""
+    if not headlines:
+        return {"score": 0, "label": ""}
+
+    # Try Gemini first
+    if _GEMINI_AVAILABLE:
+        try:
+            return _analyze_sentiment_gemini(headlines)
+        except Exception:
+            pass
+
+    # Fallback: keyword-based
+    return _analyze_sentiment_keywords(headlines)
+
+
+def _analyze_sentiment_gemini(headlines: list[str]) -> dict[str, Any]:
+    """Call Gemini Flash to analyze sentiment of news headlines."""
+    import os
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", "")
+    if not api_key:
+        raise RuntimeError("No Gemini API key configured")
+
+    client = genai.Client(api_key=api_key)
+
+    numbered = "\n".join(f"{i+1}. {h}" for i, h in enumerate(headlines[:10]))
+    prompt = (
+        "Analyze the sentiment of these stock news headlines. "
+        "For each headline, respond with exactly one word: BULLISH, NEUTRAL, or BEARISH.\n"
+        "Respond ONLY with the numbered results, one per line, like:\n"
+        "1. BULLISH\n2. NEUTRAL\n"
+        f"\nHeadlines:\n{numbered}"
+    )
+
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt,
+    )
+
+    text = response.text.upper()
+    bullish = text.count("BULLISH")
+    bearish = text.count("BEARISH")
+    total = bullish + bearish + text.count("NEUTRAL")
+
+    if total == 0:
+        return {"score": 0, "label": "unklar"}
+
+    net = bullish - bearish
+    # Scale: each net bullish headline = +2, capped at ±8
+    score = max(-8, min(8, net * 2))
+
+    if net >= 2:
+        label = f"positiv ({bullish}↑ {bearish}↓)"
+    elif net <= -2:
+        label = f"negativ ({bullish}↑ {bearish}↓)"
+    else:
+        label = f"neutral ({bullish}↑ {bearish}↓)"
+
+    return {"score": score, "label": label}
+
+
+def _analyze_sentiment_keywords(headlines: list[str]) -> dict[str, Any]:
+    """Fallback keyword-based sentiment analysis when Gemini is not available."""
+    BULLISH_KEYWORDS = (
+        "beat", "beats", "upgrade", "upgraded", "raises", "raised", "outperform",
+        "growth", "surge", "surges", "soars", "jumps", "rally", "record",
+        "positive", "profit", "buy", "bullish", "strong", "higher",
+    )
+    BEARISH_KEYWORDS = (
+        "miss", "misses", "downgrade", "downgraded", "cuts", "cut", "sell",
+        "lawsuit", "investigation", "fraud", "crash", "plunge", "plunges",
+        "decline", "loss", "losses", "warns", "warning", "bearish", "lower",
+        "recall", "layoff", "layoffs", "bankruptcy",
+    )
+
+    bullish = 0
+    bearish = 0
+    for headline in headlines:
+        lower = headline.lower()
+        words = set(re.findall(r'\b\w+\b', lower))
+        if words & set(BULLISH_KEYWORDS):
+            bullish += 1
+        if words & set(BEARISH_KEYWORDS):
+            bearish += 1
+
+    net = bullish - bearish
+    score = max(-8, min(8, net * 2))
+
+    if net >= 2:
+        label = f"positiv ({bullish}↑ {bearish}↓)"
+    elif net <= -2:
+        label = f"negativ ({bullish}↑ {bearish}↓)"
+    else:
+        label = f"neutral ({bullish}↑ {bearish}↓)"
+
+    return {"score": score, "label": label}
 
 
 def _summarize_event_pressure(ticker: yf.Ticker, info: dict[str, Any]) -> dict[str, Any]:
@@ -1007,11 +1159,11 @@ def _summarize_event_pressure(ticker: yf.Ticker, info: dict[str, Any]) -> dict[s
     nearest = min(upcoming_days)
     score = 0
     if nearest <= 7:
-        score = 10
-    elif nearest <= 21:
-        score = 7
-    elif nearest <= 45:
-        score = 3
+        score = 8
+    elif nearest <= 14:
+        score = 5
+    elif nearest <= 30:
+        score = 2
 
     summary = f"Naechster Termin in {nearest} Tagen"
     return {"name": "Event-Druck", "score": score, "summary": summary}
@@ -1043,7 +1195,7 @@ def _summarize_insider_signal(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]
     if purchase_count >= 4:
         score = 10
     elif purchase_count >= 2:
-        score = 7
+        score = 6
     elif purchase_count >= 1:
         score = 4
 
@@ -1069,9 +1221,6 @@ def _summarize_short_interest(info: dict[str, Any], history: pd.DataFrame | None
     short_pct = _safe_float(info.get("shortPercentOfFloat"))
     short_ratio = _safe_float(info.get("shortRatio"))
 
-    if short_pct is None and short_ratio is None:
-        return {"name": "Short Interest", "score": 0, "summary": "Keine Short-Interest-Daten verfuegbar."}
-
     # Determine price vs MA50 for dual interpretation
     above_ma50 = True  # default: assume bullish if no history
     if history is not None and not history.empty and len(history) >= 50:
@@ -1081,6 +1230,11 @@ def _summarize_short_interest(info: dict[str, Any], history: pd.DataFrame | None
             ma50 = float(close_series.tail(50).mean())
             above_ma50 = latest_close > ma50
 
+
+
+    if short_pct is None and short_ratio is None:
+        return {"name": "Short Interest", "score": 0, "summary": "Keine Short-Interest-Daten verfuegbar."}
+
     score = 0
     parts = []
 
@@ -1088,23 +1242,22 @@ def _summarize_short_interest(info: dict[str, Any], history: pd.DataFrame | None
         short_pct_display = short_pct * 100 if short_pct < 1 else short_pct
         parts.append(f"Short-Float: {short_pct_display:.1f}%")
         if above_ma50:
-            # Bullish: squeeze potential
             if short_pct_display >= 20:
-                score = 8
-            elif short_pct_display >= 10:
                 score = 6
+            elif short_pct_display >= 10:
+                score = 4
             elif short_pct_display >= 5:
-                score = 3
+                score = 2
         else:
-            # Bearish: confirmed selling pressure, score 0
+            # Bearish: confirmed selling pressure
             score = 0
 
     if short_ratio is not None:
         parts.append(f"Short-Ratio: {short_ratio:.1f} Tage")
         if above_ma50:
-            if short_ratio >= 5 and score < 8:
+            if short_ratio >= 5 and score < 6:
                 score = max(score, 5)
-            elif short_ratio >= 3 and score < 6:
+            elif short_ratio >= 3 and score < 4:
                 score = max(score, 3)
 
     summary = ", ".join(parts) if parts else "Keine Short-Interest-Daten verfuegbar."
@@ -1114,12 +1267,64 @@ def _summarize_short_interest(info: dict[str, Any], history: pd.DataFrame | None
             summary += " - Kurs unter MA50, baerischer Druck"
         else:
             summary += " - moderate Leerverkaufsaktivitaet"
-    elif score >= 6:
-        summary += " - erhoehtes Squeeze-Potenzial"
-    elif score >= 3:
-        summary += " - moderate Leerverkaufsaktivitaet"
+    elif score >= 4:
+        summary += " - erhoehtes Squeeze-Potenzial (bullisch)."
+    elif score > 0:
+        summary += " - erhoehtes Squeeze-Potenzial (bullisch)."
+    elif not above_ma50:
+        score = 0
+        summary += " - unter MA50 (baerisch)."
 
     return {"name": "Short Interest", "score": score, "summary": summary}
+
+
+def _summarize_fundamentals(info: dict[str, Any]) -> dict[str, Any]:
+    """Berechnet einen Score basierend auf P/E, PEG, Debt/Equity und FCF Yield."""
+    score = 0
+    components = []
+
+    forward_pe = _safe_float(info.get("forwardPE"))
+    peg_ratio = _safe_float(info.get("pegRatio"))
+    debt_equity = _safe_float(info.get("debtToEquity"))
+    fcf = _safe_float(info.get("freeCashflow"))
+    mcap = _safe_float(info.get("marketCap"))
+
+    if forward_pe is not None and forward_pe > 0:
+        if forward_pe < 15:
+            score += 3
+            components.append(f"P/E {forward_pe:.1f}")
+        elif forward_pe < 25:
+            score += 1
+            components.append(f"P/E {forward_pe:.1f}")
+
+    if peg_ratio is not None and peg_ratio > 0:
+        if peg_ratio < 1.0:
+            score += 3
+            components.append(f"PEG {peg_ratio:.2f}")
+        elif peg_ratio < 1.5:
+            score += 1
+            components.append(f"PEG {peg_ratio:.2f}")
+
+    if debt_equity is not None:
+        if debt_equity < 50:
+            score += 3
+            components.append(f"D/E {debt_equity:.1f}")
+        elif debt_equity < 100:
+            score += 1
+
+    if fcf is not None and mcap is not None and mcap > 0:
+        fcf_yield = (fcf / mcap) * 100
+        if fcf_yield > 5:
+            score += 3
+            components.append(f"FCF-Rendite {fcf_yield:.1f}%")
+        elif fcf_yield > 2:
+            score += 1
+
+    summary = "Stark: " + ", ".join(components) if components else "Fundamentaldaten unauffaellig."
+    if score == 0:
+        summary = "Fundamentaldaten unauffaellig oder nicht verfuegbar."
+
+    return {"name": "Fundamentale Bewertung", "score": score, "summary": summary}
 
 
 # Regional benchmark mapping for relative strength comparison

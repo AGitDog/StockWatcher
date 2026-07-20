@@ -341,20 +341,21 @@ def render_watchlist_alerts(mapping_text: str):
 def render_watchlist_signal_monitor(mapping_text: str):
     st.subheader("Signal Monitor V2")
     st.write(
-        "V2 priorisiert die Watchlist nach 8 Fruehsignalen: EPS-Revisionen, Kursziel-Potenzial, "
-        "News-Dichte, Preis/Volumen-Verhalten, Event-Naehe, Insider-Aktivitaet, Short Interest und Relative Staerke."
+        "V2 priorisiert die Watchlist nach 9 Fruehsignalen: EPS-Revisionen, Kursziel-Potenzial & Konsens, "
+        "News-Sentiment, Preis/Volumen-Verhalten, Event-Naehe, Insider-Aktivitaet, Short Interest, Relative Staerke und Fundamentaldaten."
     )
 
     with st.expander("Hilfe und Lesart des Signal Monitor V2", expanded=False):
-        st.markdown("Der **Brodel-Score** (0 bis 100) ist ein 'Fruehwarn-Thermometer'. Er setzt sich aus 8 Bausteinen zusammen:")
-        st.markdown("- **EPS-Revisionen (max. 20 Punkte):** Passten Analysten ihre Gewinnerwartungen zuletzt nach oben oder unten an? Mehr positive Korrekturen geben mehr Punkte.")
-        st.markdown("- **Kursziel-Potenzial (max. 15 Punkte):** Vergleicht das mittlere Analystenkursziel mit dem aktuellen Kurs. Ueber 20% Luft nach oben bringt die volle Punktzahl.")
-        st.markdown("- **Preis & Volumen Momentum (max. 20 Punkte):** Technische Lage. Gibt Punkte fuer Kurse ueber der 20- und 50-Tage-Linie, Volumenspitzen (>1,5x) und kurzfristige starke Schwankungen.")
-        st.markdown("- **News-Dichte (max. 12 Punkte):** Berichten die Medien gerade ungewoehnlich viel? 6 oder mehr Artikel in den letzten Tagen bringen die volle Punktzahl.")
-        st.markdown("- **Event-Druck (max. 10 Punkte):** Stehen bald Quartalszahlen oder Dividenden an? Je naeher der Termin (z.B. innerhalb von 7 Tagen), desto mehr Punkte.")
+        st.markdown("Der **Brodel-Score** (0 bis 100) ist ein 'Fruehwarn-Thermometer'. Er setzt sich aus 9 Bausteinen zusammen:")
+        st.markdown("- **EPS-Revisionen (max. 18 Punkte):** Passten Analysten ihre Gewinnerwartungen zuletzt nach oben oder unten an? Mehr positive Korrekturen geben mehr Punkte.")
+        st.markdown("- **Kursziel & Konsens (max. 15 Punkte):** Vergleicht das mittlere Analystenkursziel mit dem aktuellen Kurs und bewertet die Konsens-Staerk (Anteil Buys).")
+        st.markdown("- **Preis & Volumen Momentum (max. 15 Punkte):** Technische Lage. Gibt Punkte fuer Kurse ueber der 20- und 50-Tage-Linie, Volumenspitzen und bestraft Crashs.")
+        st.markdown("- **News-Sentiment (max. 15 Punkte):** Analysiert nicht nur die Nachrichtenmenge, sondern auch die Stimmung per KI (Gemini). Positive Nachrichten geben Punkte, negative ziehen ab.")
+        st.markdown("- **Event-Druck (max. 8 Punkte):** Stehen bald Quartalszahlen oder Dividenden an?")
         st.markdown("- **Insider-Aktivitaet (max. 10 Punkte):** Kaufen oder verkaufen Insider gerade? Cluster-Kaeufe durch Fuehrungskraefte sind eines der staerksten Fruehsignale.")
-        st.markdown("- **Short Interest (max. 8 Punkte):** Wie hoch ist die Leerverkaufsquote? Hohe Short-Quoten koennen auf Squeeze-Potenzial hindeuten.")
-        st.markdown("- **Relative Staerke (max. 5 Punkte):** Vergleicht die Monatsperformance der Aktie mit dem breiten Markt (SPY). Outperformer erhalten Punkte.")
+        st.markdown("- **Short Interest (max. 6 Punkte):** Interpretation abhaengig vom Kurstrend: ueber MA50 = Squeeze-Potenzial, darunter = baerischer Druck.")
+        st.markdown("- **Relative Staerke (max. 8 Punkte):** Vergleicht die Monatsperformance der Aktie mit dem regionalen Benchmark (DAX, SMI, Nikkei etc.).")
+        st.markdown("- **Fundamentale Bewertung (max. 12 Punkte):** Bewertung anhand von P/E, PEG, Debt/Equity und FCF Yield.")
         st.markdown("---")
         st.markdown("- **Delta-Alerts** zeigen konkret, bei welcher Aktie sich der Score seit dem letzten Scan veraendert hat.")
         st.markdown("- **Peer-Kontext** ordnet die Aktie innerhalb deines eigenen Sektors/deiner eigenen Watchlist ein.")
@@ -486,13 +487,14 @@ def render_watchlist_signal_monitor(mapping_text: str):
                 "Sektor": peer_context.get("sector", "Unbekannt"),
                 "Score": item.get("brodel_score", 0),
                 "EPS": breakdown.get("EPS-Revisionen", {}).get("score", 0),
-                "Kursziel": breakdown.get("Kursziele", {}).get("score", 0),
+                "Kursziel": breakdown.get("Kursziele & Konsens", {}).get("score", 0),
                 "P/V": breakdown.get("Preis/Volumen", {}).get("score", 0),
-                "News": breakdown.get("News-Dichte", {}).get("score", 0),
+                "News": breakdown.get("News-Sentiment", {}).get("score", 0),
                 "Event": breakdown.get("Event-Druck", {}).get("score", 0),
                 "Insider": breakdown.get("Insider-Aktivitaet", {}).get("score", 0),
                 "Short": breakdown.get("Short Interest", {}).get("score", 0),
                 "Rel.St.": breakdown.get("Relative Staerke", {}).get("score", 0),
+                "Fundam.": breakdown.get("Fundamentale Bewertung", {}).get("score", 0),
                 "Vs. Sektor": peer_context.get("score_vs_sector", 0),
                 "Rang": f"{peer_context.get('sector_rank', 1)}/{peer_context.get('sector_count', 1)}",
             }
@@ -527,9 +529,9 @@ def render_watchlist_signal_monitor(mapping_text: str):
 
                 st.markdown("**Signal-Breakdown**")
                 max_scores = {
-                    "EPS-Revisionen": 20, "Kursziele": 15, "Preis/Volumen": 20,
-                    "News-Dichte": 12, "Event-Druck": 10, "Insider-Aktivitaet": 10,
-                    "Short Interest": 8, "Relative Staerke": 5,
+                    "EPS-Revisionen": 18, "Kursziele & Konsens": 15, "Preis/Volumen": 15,
+                    "News-Sentiment": 15, "Event-Druck": 8, "Insider-Aktivitaet": 10,
+                    "Short Interest": 6, "Relative Staerke": 8, "Fundamentale Bewertung": 12,
                 }
                 breakdown_rows = []
                 for component in item.get("signal_breakdown", {}).values():

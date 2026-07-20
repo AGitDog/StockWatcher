@@ -14,6 +14,8 @@ from stock_agent import (
     _summarize_short_interest,
     _summarize_relative_strength,
     _get_benchmark_symbol,
+    _analyze_news_sentiment,
+    _analyze_sentiment_keywords,
     _safe_float,
     _clean_scalar,
     _dedupe_preserve_order,
@@ -105,7 +107,7 @@ def test_eps_revisions_max_capped_at_20():
     })
     ticker.get_eps_revisions.return_value = revisions_df
     result = _summarize_eps_revisions(ticker)
-    assert result["score"] <= 20
+    assert result["score"] <= 18
 
 def test_eps_revisions_empty():
     ticker = MagicMock()
@@ -123,8 +125,8 @@ def test_price_targets_large_gap():
     info = {"currentPrice": 90}
     history = pd.DataFrame({"Close": [90]})
     result = _summarize_price_targets(ticker, info, history)
-    assert result["name"] == "Kursziele"
-    assert result["score"] == 15
+    assert result["name"] == "Kursziele & Konsens"
+    assert result["score"] == 10  # 10 points for gap >= 20%, 0 for consensus
 
 def test_price_targets_no_data():
     ticker = MagicMock()
@@ -135,8 +137,8 @@ def test_price_targets_no_data():
 
 # ── Price/Volume (max 20) ────────────────────────────────────────────────────
 
-def test_price_volume_max_capped_at_20():
-    """Score should never exceed 20 even when all conditions are met."""
+def test_price_volume_max_capped_at_15():
+    """Score should never exceed 15 even when all conditions are met."""
     # Create a DataFrame where close is above MA20/MA50, volume is high, and 5d return is big
     dates = pd.date_range("2024-01-01", periods=60)
     close_values = [100 + i * 0.5 for i in range(54)] + [100, 100, 100, 100, 100, 200]
@@ -144,7 +146,7 @@ def test_price_volume_max_capped_at_20():
     history = pd.DataFrame({"Close": close_values, "Volume": volume_values}, index=dates)
     result = _summarize_price_volume(history)
     assert result["name"] == "Preis/Volumen"
-    assert result["score"] <= 20
+    assert result["score"] <= 15
 
 def test_price_volume_insufficient_data():
     history = pd.DataFrame({"Close": [100] * 10, "Volume": [1000] * 10})
@@ -152,18 +154,18 @@ def test_price_volume_insufficient_data():
     assert result["score"] == 0
 
 
-# ── News Intensity (max 12) ──────────────────────────────────────────────────
+# ── News Sentiment (max 15, min -10) ─────────────────────────────────────────
 
 def test_news_intensity_high():
-    """6+ recent news should give max score of 12."""
+    """6+ recent news should contribute to score."""
     ticker = MagicMock()
     import time
     now_ts = int(time.time())
     news = [{"title": f"News {i}", "providerPublishTime": now_ts - 3600 * i} for i in range(8)]
     ticker.get_news.return_value = news
     result = _summarize_news_intensity(ticker)
-    assert result["name"] == "News-Dichte"
-    assert result["score"] <= 12
+    assert result["name"] == "News-Sentiment"
+    assert result["score"] <= 15
 
 def test_news_intensity_empty():
     ticker = MagicMock()
@@ -227,17 +229,14 @@ def test_insider_signal_single_purchase():
 # ── NEW: Short Interest (max 8) ──────────────────────────────────────────────
 
 def test_short_interest_high():
-    """20%+ short float should give max score of 8."""
     info = {"shortPercentOfFloat": 0.25, "shortRatio": 6.0}
     result = _summarize_short_interest(info)
-    assert result["name"] == "Short Interest"
-    assert result["score"] == 8
+    assert result["score"] == 6
 
 def test_short_interest_moderate():
-    """10-20% short float should give score of 6."""
     info = {"shortPercentOfFloat": 0.12}
     result = _summarize_short_interest(info)
-    assert result["score"] == 6
+    assert result["score"] == 4
 
 def test_short_interest_low():
     """<5% short float should give 0."""
@@ -251,7 +250,6 @@ def test_short_interest_missing():
     assert result["score"] == 0
 
 def test_short_interest_only_ratio():
-    """High short ratio without short float should still score."""
     info = {"shortRatio": 6.0}
     result = _summarize_short_interest(info)
     assert result["score"] == 5  # shortRatio >= 5
@@ -422,17 +420,14 @@ def test_insider_signal_single_purchase():
 # ── NEW: Short Interest (max 8) ──────────────────────────────────────────────
 
 def test_short_interest_high():
-    """20%+ short float should give max score of 8."""
     info = {"shortPercentOfFloat": 0.25, "shortRatio": 6.0}
     result = _summarize_short_interest(info)
-    assert result["name"] == "Short Interest"
-    assert result["score"] == 8
+    assert result["score"] == 6
 
 def test_short_interest_moderate():
-    """10-20% short float should give score of 6."""
     info = {"shortPercentOfFloat": 0.12}
     result = _summarize_short_interest(info)
-    assert result["score"] == 6
+    assert result["score"] == 4
 
 def test_short_interest_low():
     """<5% short float should give 0."""
@@ -446,7 +441,6 @@ def test_short_interest_missing():
     assert result["score"] == 0
 
 def test_short_interest_only_ratio():
-    """High short ratio without short float should still score."""
     info = {"shortRatio": 6.0}
     result = _summarize_short_interest(info)
     assert result["score"] == 5  # shortRatio >= 5
@@ -616,20 +610,20 @@ def test_price_volume_rally_rewards():
     history = pd.DataFrame({"Close": close_values, "Volume": volume_values}, index=dates)
     result = _summarize_price_volume(history)
     # latest = 110, MA20 ~ 103, MA50 ~ 101 → above both = +5 + +6 = 11
-    # return_5d = +10% → +5 = 16
-    assert result["score"] >= 16
+    # return_5d = +10% → +4 = 15
+    assert result["score"] >= 15
 
 def test_price_volume_volume_spike_only_on_up_day():
-    """Volume spike should only give +6 when price is flat or rising."""
+    """Volume spike should only give +5 when price is flat or rising."""
     dates = pd.date_range("2024-01-01", periods=60)
     # Crash with huge volume spike
     close_values = [100] * 54 + [100, 97, 94, 91, 88, 85]
     volume_values = [1000] * 59 + [5000]  # big volume on crash day
     history = pd.DataFrame({"Close": close_values, "Volume": volume_values}, index=dates)
     result = _summarize_price_volume(history)
-    # return_5d ~ -15% (negative), so volume spike should NOT score +6
+    # return_5d ~ -15% (negative), so volume spike should NOT score +5
     # And the crash should penalize
-    assert result["score"] <= 3, "Volume spike on crash should not give +6"
+    assert result["score"] <= 0, "Volume spike on crash should not give +5"
 
 
 # ── 1.3 Short Interest: Dual interpretation ──────────────────────────────────
@@ -641,7 +635,7 @@ def test_short_interest_above_ma50_bullish():
     history = pd.DataFrame({"Close": close_values}, index=dates)
     info = {"shortPercentOfFloat": 0.25}
     result = _summarize_short_interest(info, history)
-    assert result["score"] == 8, f"Expected 8 (squeeze), got {result['score']}"
+    assert result["score"] == 6, f"Expected 6 (squeeze), got {result['score']}"
     assert "Squeeze" in result["summary"]
 
 def test_short_interest_below_ma50_bearish():
@@ -658,7 +652,7 @@ def test_short_interest_no_history_defaults_bullish():
     """Without history, short interest should default to bullish interpretation."""
     info = {"shortPercentOfFloat": 0.25}
     result = _summarize_short_interest(info)
-    assert result["score"] == 8, "Without history, should default to bullish"
+    assert result["score"] == 6, "Without history, should default to bullish"
 
 
 # ── 1.4 Insider: No double-counting ──────────────────────────────────────────
@@ -674,7 +668,7 @@ def test_insider_no_double_counting():
     ticker.get_insider_transactions.return_value = transactions_df
     # Should NOT call get_insider_purchases at all
     result = _summarize_insider_signal(ticker, False)
-    assert result["score"] == 7  # 2 purchases = 7
+    assert result["score"] == 6  # 2 purchases = 6
     ticker.get_insider_purchases.assert_not_called()
 
 
@@ -726,3 +720,4 @@ def test_relative_strength_uses_regional_benchmark(mock_yf):
     # Verify DAX was used, not SPY
     mock_yf.Ticker.assert_called_with("^GDAXI")
     assert "^GDAXI" in result["summary"]
+
