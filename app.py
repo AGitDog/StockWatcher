@@ -421,31 +421,95 @@ def render_watchlist_signal_monitor(mapping_text: str):
 
 def render_help_tab():
     st.subheader("Hilfe & Methodik")
-    st.write("Der **Brodel-Score** (Skala: -30 bis 100) ist ein 'Fruehwarn-Thermometer'. Er aggregiert Signale aus 10 Komponenten sowie einem Makro-Overlay.")
+    st.write("Der **Brodel-Score** (Skala: -30 bis 100) ist ein proprietäres 'Frühwarn-Thermometer' dieses Systems. "
+             "Er aggregiert Signale aus 10 verschiedenen Finanzkategorien und wendet abschließend ein Makro-Overlay an. "
+             "Das Ziel ist es, starke Aktien in schwachen Märkten, ausbrechende Momentum-Titel und Value-Chancen zu identifizieren.")
     
+    st.markdown("---")
     st.markdown("### Die 10 Signalkomponenten")
-    st.markdown("- **EPS-Revisionen (max. 15 Punkte):** Passten Analysten ihre Gewinnerwartungen zuletzt nach oben oder unten an? Netto-positive Korrekturen (+3 Punkte je Revision).")
-    st.markdown("- **Kursziel & Konsens (max. 15 Punkte):** Misst den Upside-Prozentsatz zum mittleren Analystenziel (+1 Punkt je 2% Upside). Liegt der Anteil an 'Buy'-Ratings ueber 80%, gibt es 5 Extrapunkte.")
-    st.markdown("- **News-Sentiment (max. 15 Punkte):** Gemini (KI) analysiert den Textgehalt aktueller News. Bullishe News geben Punkte (+3 je Artikel), bearishe ziehen Punkte ab (-3 je Artikel).")
-    st.markdown("- **Technische Indikatoren (max. 10 Punkte):** �berverkaufter RSI (<30) gibt +4, �berkaufter RSI (>70) gibt -4. Ein positiver MACD gibt +3. Kurs unter dem Bollinger Band gibt +3.")
-    st.markdown("- **Fundamentale Bewertung (max. 10 Punkte):** Klassisches Value-Scoring. P/E < 15 (+2), PEG < 1 (+2), Debt/Equity < 50 (+2), FCF Yield > 5% (+2), Gewinnmarge > 20% (+2). Extrem hohe P/E > 50 gibt -2 Punkte.")
-    st.markdown("- **Preis & Volumen Momentum (max. 10 Punkte):** Trendbestaetigung. Gibt Punkte fuer Kurse ueber der 20- und 50-Tage-Linie, Volumenspitzen und bestraft starke Abverkaeufe.")
-    st.markdown("- **Insider-Aktivitaet (max. 10 Punkte):** Kaufen oder verkaufen Manager eigene Aktien? Cluster-Kaeufe sind ein extrem starkes Fruehsignal (+4 Punkte f�r Insiderkaeufe, +6 f�r Transaktionen).")
-    st.markdown("- **Relative Staerke (max. 5 Punkte):** Outperformance gegenueber der jeweiligen Benchmark (DAX, S&P 500 etc.) im letzten Monat bringt Punkte.")
-    st.markdown("- **Event-Druck (max. 5 Punkte):** Stehen in Kuerze Quartalszahlen an? Weniger als 7 Tage = 5 Punkte, weniger als 14 Tage = 3 Punkte.")
-    st.markdown("- **Short Interest (max. 5 Punkte):** Hohe Leerverkaufsquoten (>20%) kombiniert mit Aufwaertstrends deuten auf einen Short-Squeeze hin (+5 Punkte).")
     
+    with st.expander("📊 EPS-Revisionen (Max. 15 Punkte)"):
+        st.write("**Was es misst:** Haben Analysten ihre Gewinnerwartungen (Earnings per Share) in letzter Zeit nach oben oder unten korrigiert?")
+        st.write("**Bewertungslogik:**")
+        st.markdown("- **+3 Punkte** für jede netto-positive Revision (Upgrades minus Downgrades).")
+        st.markdown("- **0 Punkte** bei negativen Netto-Revisionen.")
+        st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
+        st.info("💡 **Warum wichtig:** Steigende Gewinnerwartungen treiben historisch die Aktienkurse am stärksten. Ein 'Upward Earnings Revision' Trend ist ein starkes Kaufsignal.")
+
+    with st.expander("🎯 Kursziel & Analystenkonsens (Max. 15 Punkte)"):
+        st.write("**Was es misst:** Wo sehen professionelle Analysten den fairen Wert der Aktie in 12 Monaten?")
+        st.write("**Bewertungslogik:**")
+        st.markdown("- **+1 Punkt** für jede 2% Aufwärtspotenzial (Upside) zum durchschnittlichen Kursziel (max. 10 Punkte).")
+        st.markdown("- **+5 Bonuspunkte**, wenn der Anteil der 'Buy' und 'Strong Buy' Ratings bei über 80% liegt.")
+        st.write("**Datenquelle:** Finnhub (Echtzeit REST-API, 24h gecached)")
+        st.warning("⚠️ **Blind Spot:** Analysten hinken dem Markt oft hinterher. Bei schnell fallenden Kursen wirkt das Upside oft künstlich hoch.")
+
+    with st.expander("📰 News-Sentiment (Max. 15 Punkte)"):
+        st.write("**Was es misst:** Wie ist die aktuelle Nachrichtenlage rund um das Unternehmen in den letzten 7 Tagen?")
+        st.write("**Bewertungslogik:**")
+        st.markdown("- Die Nachrichtenüberschriften werden per LLM (KI) semantisch analysiert.")
+        st.markdown("- **+3 Punkte** für jede klar positive/bullishe Nachricht (z.B. neue Rekordumsätze, FDA-Zulassung).")
+        st.markdown("- **-3 Punkte** für jede stark negative/bearishe Nachricht (z.B. Klagen, Produktionsausfälle).")
+        st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
+
+    with st.expander("📈 Technische Indikatoren (Max. 10 Punkte)"):
+        st.write("**Was es misst:** Ist die Aktie rein mathematisch/technisch überkauft oder überverkauft?")
+        st.write("**Bewertungslogik:**")
+        st.markdown("- **RSI (Relative Strength Index):** Unter 30 (überverkauft) gibt **+4 Punkte**. Über 70 (überkauft) gibt **-4 Punkte**.")
+        st.markdown("- **MACD:** Ein positiver Trend gibt **+3 Punkte**.")
+        st.markdown("- **Bollinger Bänder:** Wenn der aktuelle Kurs unter dem unteren Bollinger Band liegt (Rückschlagspotenzial), gibt das **+3 Punkte**.")
+        st.write("**Datenquelle:** Yahoo Finance (berechnet auf Basis der 1-Jahres-Historie)")
+
+    with st.expander("🏦 Fundamentale Bewertung (Max. 10 Punkte)"):
+        st.write("**Was es misst:** Ist die Aktie basierend auf harten Bilanzen günstig bewertet?")
+        st.write("**Bewertungslogik:**")
+        st.markdown("- **KGV (Forward P/E):** Unter 15 (+2 Punkte), unter 25 (+1 Punkt), über 50 (-2 Punkte Abzug).")
+        st.markdown("- **PEG-Ratio (Wachstums-KGV):** Unter 1.0 (+2 Punkte), unter 1.5 (+1 Punkt).")
+        st.markdown("- **Debt/Equity (Verschuldung):** Unter 50% (+2 Punkte), unter 100% (+1 Punkt).")
+        st.markdown("- **Free Cashflow Yield:** Über 5% (+2 Punkte), über 2% (+1 Punkt).")
+        st.markdown("- **Gewinnmarge:** Über 20% (+2 Punkte), über 10% (+1 Punkt).")
+        st.write("**Datenquelle:** Alpha Vantage (Overview-Endpoint, 30 Tage Rolling-Cache) mit Fallback auf Yahoo Finance.")
+
+    with st.expander("🚀 Preis- & Volumen-Momentum (Max. 10 Punkte)"):
+        st.write("**Was es misst:** Fließt aktuell viel Kapital (Volumen) in die Aktie und stimmt der Trend?")
+        st.write("**Bewertungslogik:**")
+        st.markdown("- **Kurstrend:** Kurs über der 20-Tage-Linie (+3 Punkte), Kurs über der 50-Tage-Linie (+2 Punkte).")
+        st.markdown("- **Volumenspitzen:** Letztes Volumen > 200% des Durchschnitts an einem 'Up-Day' (+3 Punkte).")
+        st.markdown("- **Crash-Penaltie:** Fiel der Kurs in den letzten 5 Tagen um mehr als 10%, gibt das **-5 Punkte** Abzug.")
+        st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
+
+    with st.expander("👔 Insider-Aktivität (Max. 10 Punkte)"):
+        st.write("**Was es misst:** Kauft das Management (CEOs, Direktoren) mit eigenem Geld Aktien des Unternehmens?")
+        st.write("**Bewertungslogik:**")
+        st.markdown("- Wir werten das 'Insider Sentiment' der letzten 3 Monate aus.")
+        st.markdown("- **+4 bis +10 Punkte** gestaffelt nach Volumen und Anzahl der Käufe.")
+        st.markdown("- Starker Überhang an Verkäufen führt zu Punktabzug (**-3 Punkte**).")
+        st.write("**Datenquelle:** Finnhub (Insider Sentiment API) basierend auf echten SEC Form 4 Filings.")
+        st.info("💡 **Warum wichtig:** Insider verkaufen aus vielen Gründen (Hauskauf, Steuern), aber sie kaufen nur aus einem Grund: Sie glauben, der Kurs wird steigen.")
+
+    with st.expander("💪 Relative Stärke (Max. 5 Punkte)"):
+        st.write("**Was es misst:** Schlägt die Aktie den allgemeinen Markt?")
+        st.write("**Bewertungslogik:**")
+        st.markdown("- Die Performance der letzten 20 Handelstage wird mit einem regionalen Benchmark-Index (z.B. DAX, S&P 500, SMI, Nikkei 225) verglichen.")
+        st.markdown("- Übertrifft die Aktie den Benchmark, gibt das **+5 Punkte**.")
+        st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
+
+    with st.expander("📅 Event-Druck (Max. 5 Punkte)"):
+        st.write("**Was es misst:** Stehen kurzfristige Katalysatoren (wie Quartalszahlen) an?")
+        st.write("**Bewertungslogik:**")
+        st.markdown("- Quartalszahlen in < 7 Tagen: **+5 Punkte**")
+        st.markdown("- Quartalszahlen in < 14 Tagen: **+3 Punkte**")
+        st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
+
+    with st.expander("🔥 Short Interest (Max. 5 Punkte)"):
+        st.write("**Was es misst:** Setzen viele Leerverkäufer (Shorter) auf fallende Kurse?")
+        st.write("**Bewertungslogik:**")
+        st.markdown("- Short Quote über 20%: **+5 Punkte** (Short-Squeeze Potenzial).")
+        st.markdown("- Das Signal entfaltet seine volle positive Punktzahl besonders, wenn der Kurs gleichzeitig über der 50-Tage-Linie notiert (Shorter geraten unter Druck).")
+        st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
+
+    st.markdown("---")
     st.markdown("### Das Makro-Overlay (Markt-Kontext)")
-    st.markdown("Nachdem der Basis-Score (Summe aller 10 Komponenten) berechnet wurde, wird das Marktumfeld (S&P 500 und VIX) geprueft:")
-    st.markdown("- **Bullenmarkt-Modifikator:** Steht der S&P 500 (SPY) �ber seiner 200-Tage-Linie, wird der Basis-Score mit **1.1x** multipliziert.")
-    st.markdown("- **Baerenmarkt-Modifikator:** Steht der S&P 500 darunter, wird der Score mit **0.8x** bestraft.")
-    st.markdown("- **Volatilitaets-Bremse:** Liegt der VIX �ber 25 (Panik-Modus), wird der Score zusatzlich um 10% gesenkt.")
-
-def render_stock_agent():
-    st.title("Aktien-Agent")
-    st.caption("Watchlist-Monitor fuer Marktveraenderungen, Fruehsignale und priorisierte Beobachtung.")
-
-    mapping_text = load_mapping_text()
 
     stock_tabs = st.tabs(["Signal Monitor V2", "Watchlist Verwaltung", "Hilfe & Methodik"])
     with stock_tabs[0]:
@@ -474,6 +538,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
