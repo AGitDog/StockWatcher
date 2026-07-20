@@ -13,6 +13,7 @@ from stock_agent import (
     _summarize_insider_signal,
     _summarize_short_interest,
     _summarize_relative_strength,
+    _get_benchmark_symbol,
     _safe_float,
     _clean_scalar,
     _dedupe_preserve_order,
@@ -185,15 +186,13 @@ def test_event_pressure_no_dates():
 # ── NEW: Insider Signal (max 10) ─────────────────────────────────────────────
 
 def test_insider_signal_with_purchases():
-    """Multiple insider purchases should give high score."""
+    """Multiple insider purchases should give high score (via transactions only)."""
     ticker = MagicMock()
-    purchases_df = pd.DataFrame({
-        "Insider": ["CEO", "CFO", "COO", "VP"],
+    transactions_df = pd.DataFrame({
+        "Text": ["Purchase", "Purchase", "Buy", "Purchase"],
         "Shares": [1000, 2000, 500, 800],
-        "Value": [50000, 100000, 25000, 40000],
     })
-    ticker.get_insider_purchases.return_value = purchases_df
-    ticker.get_insider_transactions.return_value = pd.DataFrame()
+    ticker.get_insider_transactions.return_value = transactions_df
     result = _summarize_insider_signal(ticker, False)
     assert result["name"] == "Insider-Aktivitaet"
     assert result["score"] == 10  # 4+ purchases = max score
@@ -216,13 +215,206 @@ def test_insider_signal_empty():
 def test_insider_signal_single_purchase():
     """A single insider purchase should give 4 points."""
     ticker = MagicMock()
-    purchases_df = pd.DataFrame({
-        "Insider": ["CEO"],
+    transactions_df = pd.DataFrame({
+        "Text": ["Purchase"],
         "Shares": [1000],
-        "Value": [50000],
     })
-    ticker.get_insider_purchases.return_value = purchases_df
+    ticker.get_insider_transactions.return_value = transactions_df
+    result = _summarize_insider_signal(ticker, False)
+    assert result["score"] == 4
+
+
+# ── NEW: Short Interest (max 8) ──────────────────────────────────────────────
+
+def test_short_interest_high():
+    """20%+ short float should give max score of 8."""
+    info = {"shortPercentOfFloat": 0.25, "shortRatio": 6.0}
+    result = _summarize_short_interest(info)
+    assert result["name"] == "Short Interest"
+    assert result["score"] == 8
+
+def test_short_interest_moderate():
+    """10-20% short float should give score of 6."""
+    info = {"shortPercentOfFloat": 0.12}
+    result = _summarize_short_interest(info)
+    assert result["score"] == 6
+
+def test_short_interest_low():
+    """<5% short float should give 0."""
+    info = {"shortPercentOfFloat": 0.02}
+    result = _summarize_short_interest(info)
+    assert result["score"] == 0
+
+def test_short_interest_missing():
+    """No short interest data should give 0."""
+    result = _summarize_short_interest({})
+    assert result["score"] == 0
+
+def test_short_interest_only_ratio():
+    """High short ratio without short float should still score."""
+    info = {"shortRatio": 6.0}
+    result = _summarize_short_interest(info)
+    assert result["score"] == 5  # shortRatio >= 5
+
+
+# ── NEW: Relative Strength (max 5) ───────────────────────────────────────────
+
+@patch("stock_agent.yf")
+def test_relative_strength_outperformance(mock_yf):
+    """Strong outperformance vs market should score 5."""
+    dates = pd.date_range("2024-01-01", periods=25)
+    # Stock: starts at 100, ends at 120
+    close_values = [100] * 5 + [100] * 19 + [120]
+    history = pd.DataFrame({"Close": close_values}, index=dates)
+
+    # SPY: flat
+    spy_dates = pd.date_range("2024-01-01", periods=20)
+    spy_history = pd.DataFrame({"Close": [100] * 20}, index=spy_dates)
+    mock_ticker = MagicMock()
+    mock_ticker.history.return_value = spy_history
+    mock_yf.Ticker.return_value = mock_ticker
+
+    result = _summarize_relative_strength(history)
+    assert result["name"] == "Relative Staerke"
+    assert result["score"] == 5
+
+@patch("stock_agent.yf")
+def test_relative_strength_underperformance(mock_yf):
+    """Underperformance vs market should score 0."""
+    dates = pd.date_range("2024-01-01", periods=25)
+    # Stock: -5% over last 20 days
+    close_values = [100] * 5 + [95] * 20
+    history = pd.DataFrame({"Close": close_values}, index=dates)
+
+    # SPY: +5%
+    spy_dates = pd.date_range("2024-01-01", periods=20)
+    spy_history = pd.DataFrame({"Close": [100] + [105] * 19}, index=spy_dates)
+    mock_ticker = MagicMock()
+    mock_ticker.history.return_value = spy_history
+    mock_yf.Ticker.return_value = mock_ticker
+
+    result = _summarize_relative_strength(history)
+    assert result["score"] == 0
+
+def test_relative_strength_insufficient_data():
+    """Less than 20 data points should give score 0."""
+    history = pd.DataFrame({"Close": [100] * 10})
+    result = _summarize_relative_strength(history)
+    assert result["score"] == 0
+
+
+# ── Integration: Signal component count and score cap ────────────────────────
+
+def test_brodel_score_max_100():
+    """The brodel_score should never exceed 100 even if all components score max."""
+    # Simulate all components at their max
+    components = [
+        {"name": "EPS-Revisionen", "score": 20, "summary": ""},
+        {"name": "Kursziele", "score": 15, "summary": ""},
+        {"name": "Preis/Volumen", "score": 20, "summary": ""},
+        {"name": "News-Dichte", "score": 12, "summary": ""},
+        {"name": "Event-Druck", "score": 10, "summary": ""},
+        {"name": "Insider-Aktivitaet", "score": 10, "summary": ""},
+        {"name": "Short Interest", "score": 8, "summary": ""},
+        {"name": "Relative Staerke", "score": 5, "summary": ""},
+    ]
+    brodel_score = min(sum(c["score"] for c in components), 100)
+    assert brodel_score == 100
+
+def test_signal_component_count():
+    """There should be exactly 8 signal components at max values summing to 100."""
+    max_scores = [20, 15, 20, 12, 10, 10, 8, 5]
+    assert len(max_scores) == 8
+    assert sum(max_scores) == 100
+
+
+# ── New Index Parsing Tests ──────────────────────────────────────────────────
+
+@patch("stock_agent.pd.read_html")
+@patch("stock_agent.requests.get")
+def test_load_index_constituents_smi(mock_get, mock_read_html):
+    """Test Swiss Market Index constituent parsing with suffix .SW"""
+    mock_response = MagicMock()
+    mock_response.text = "dummy"
+    mock_get.return_value = mock_response
+
+    mock_df = pd.DataFrame({"Ticker": ["NOVN", "ROG"]})
+    # SMI table_index is 2, so return list with 3 dataframes
+    mock_read_html.return_value = [None, None, mock_df]
+
+    load_index_constituents.cache_clear()
+    
+    result = load_index_constituents("SMI")
+    assert result == ["NOVN.SW", "ROG.SW"]
+
+@patch("stock_agent.pd.read_html")
+@patch("stock_agent.requests.get")
+def test_load_index_constituents_nikkei_float(mock_get, mock_read_html):
+    """Test Nikkei 225 parsing where tickers are floats and need .T suffix"""
+    mock_response = MagicMock()
+    mock_response.text = "dummy"
+    mock_get.return_value = mock_response
+
+    mock_df = pd.DataFrame({"Code": [9983.0, 8035.0]})
+    # Nikkei table_index is 8, so return list with 9 dataframes
+    mock_read_html.return_value = [None]*8 + [mock_df]
+
+    load_index_constituents.cache_clear()
+    
+    result = load_index_constituents("Nikkei 225")
+    ticker.get_news.return_value = []
+    result = _summarize_news_intensity(ticker)
+    assert result["score"] == 0
+
+
+# ── Event Pressure (max 10) ──────────────────────────────────────────────────
+
+def test_event_pressure_no_dates():
+    ticker = MagicMock()
+    ticker.get_earnings_dates.return_value = pd.DataFrame()
+    ticker.get_calendar.return_value = {}
+    result = _summarize_event_pressure(ticker, {})
+    assert result["name"] == "Event-Druck"
+    assert result["score"] == 0
+
+
+# ── NEW: Insider Signal (max 10) ─────────────────────────────────────────────
+
+def test_insider_signal_with_purchases():
+    """Multiple insider purchases should give high score (via transactions only)."""
+    ticker = MagicMock()
+    transactions_df = pd.DataFrame({
+        "Text": ["Purchase", "Purchase", "Buy", "Purchase"],
+        "Shares": [1000, 2000, 500, 800],
+    })
+    ticker.get_insider_transactions.return_value = transactions_df
+    result = _summarize_insider_signal(ticker, False)
+    assert result["name"] == "Insider-Aktivitaet"
+    assert result["score"] == 10  # 4+ purchases = max score
+
+def test_insider_signal_etf():
+    """ETFs should return score 0."""
+    ticker = MagicMock()
+    result = _summarize_insider_signal(ticker, True)
+    assert result["score"] == 0
+    assert "ETF" in result["summary"]
+
+def test_insider_signal_empty():
+    """No insider data should return score 0."""
+    ticker = MagicMock()
+    ticker.get_insider_purchases.return_value = pd.DataFrame()
     ticker.get_insider_transactions.return_value = pd.DataFrame()
+    result = _summarize_insider_signal(ticker, False)
+    assert result["score"] == 0
+
+def test_insider_signal_single_purchase():
+    """A single insider purchase should give 4 points."""
+    ticker = MagicMock()
+    transactions_df = pd.DataFrame({
+        "Text": ["Purchase"],
+        "Shares": [1000],
+    })
+    ticker.get_insider_transactions.return_value = transactions_df
     result = _summarize_insider_signal(ticker, False)
     assert result["score"] == 4
 
@@ -381,3 +573,156 @@ def test_build_symbol_signal_monitor_no_nameerror_on_quote_type(mock_ticker_clas
     assert isinstance(res, dict)
     assert res["symbol"] == "AAPL"
     assert "brodel_score" in res
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Phase 1 Tests — Quick Wins
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── 1.1 EPS Revisions: Negative net → 0 points ──────────────────────────────
+
+def test_eps_revisions_negative_net_scores_zero():
+    """Negative net EPS revisions should score 0, not 4."""
+    ticker = MagicMock()
+    revisions_df = pd.DataFrame({
+        "UpLast7Days": [0, 0],
+        "DownLast30Days": [5, 3],
+    })
+    ticker.get_eps_revisions.return_value = revisions_df
+    result = _summarize_eps_revisions(ticker)
+    assert result["score"] == 0, f"Expected 0 for negative net, got {result['score']}"
+
+
+# ── 1.2 Price/Volume: Direction matters ──────────────────────────────────────
+
+def test_price_volume_crash_penalizes():
+    """A 7%+ crash should penalize score, not reward it."""
+    dates = pd.date_range("2024-01-01", periods=60)
+    # Stock crashes from 100 to 90 in last 5 days, but is still above MAs
+    close_values = [100] * 54 + [100, 98, 96, 94, 92, 90]
+    volume_values = [1000] * 60
+    history = pd.DataFrame({"Close": close_values, "Volume": volume_values}, index=dates)
+    result = _summarize_price_volume(history)
+    # With crash: should NOT get the +5 for return, should get penalty
+    # MA20 ~ 95.5, MA50 ~ 98.0, latest = 90 → below both → 0 base
+    # return_5d ~ -10% → penalty of -3 → capped at 0
+    assert result["score"] <= 0 or result["score"] < 5, "Crash should not be rewarded"
+
+def test_price_volume_rally_rewards():
+    """A 7%+ rally should get +5 points."""
+    dates = pd.date_range("2024-01-01", periods=60)
+    close_values = [100] * 54 + [100, 102, 104, 106, 108, 110]
+    volume_values = [1000] * 60
+    history = pd.DataFrame({"Close": close_values, "Volume": volume_values}, index=dates)
+    result = _summarize_price_volume(history)
+    # latest = 110, MA20 ~ 103, MA50 ~ 101 → above both = +5 + +6 = 11
+    # return_5d = +10% → +5 = 16
+    assert result["score"] >= 16
+
+def test_price_volume_volume_spike_only_on_up_day():
+    """Volume spike should only give +6 when price is flat or rising."""
+    dates = pd.date_range("2024-01-01", periods=60)
+    # Crash with huge volume spike
+    close_values = [100] * 54 + [100, 97, 94, 91, 88, 85]
+    volume_values = [1000] * 59 + [5000]  # big volume on crash day
+    history = pd.DataFrame({"Close": close_values, "Volume": volume_values}, index=dates)
+    result = _summarize_price_volume(history)
+    # return_5d ~ -15% (negative), so volume spike should NOT score +6
+    # And the crash should penalize
+    assert result["score"] <= 3, "Volume spike on crash should not give +6"
+
+
+# ── 1.3 Short Interest: Dual interpretation ──────────────────────────────────
+
+def test_short_interest_above_ma50_bullish():
+    """High short + price above MA50 = squeeze potential (bullish score)."""
+    dates = pd.date_range("2024-01-01", periods=60)
+    close_values = [90] * 50 + [100] * 10  # Rising → above MA50
+    history = pd.DataFrame({"Close": close_values}, index=dates)
+    info = {"shortPercentOfFloat": 0.25}
+    result = _summarize_short_interest(info, history)
+    assert result["score"] == 8, f"Expected 8 (squeeze), got {result['score']}"
+    assert "Squeeze" in result["summary"]
+
+def test_short_interest_below_ma50_bearish():
+    """High short + price below MA50 = bearish pressure (score 0)."""
+    dates = pd.date_range("2024-01-01", periods=60)
+    close_values = [110] * 50 + [90] * 10  # Falling → below MA50
+    history = pd.DataFrame({"Close": close_values}, index=dates)
+    info = {"shortPercentOfFloat": 0.25}
+    result = _summarize_short_interest(info, history)
+    assert result["score"] == 0, f"Expected 0 (bearish), got {result['score']}"
+    assert "baerisch" in result["summary"]
+
+def test_short_interest_no_history_defaults_bullish():
+    """Without history, short interest should default to bullish interpretation."""
+    info = {"shortPercentOfFloat": 0.25}
+    result = _summarize_short_interest(info)
+    assert result["score"] == 8, "Without history, should default to bullish"
+
+
+# ── 1.4 Insider: No double-counting ──────────────────────────────────────────
+
+def test_insider_no_double_counting():
+    """Insider signal should use only transactions, not purchases + transactions."""
+    ticker = MagicMock()
+    # Transactions has 2 purchases
+    transactions_df = pd.DataFrame({
+        "Text": ["Purchase", "Buy"],
+        "Shares": [1000, 500],
+    })
+    ticker.get_insider_transactions.return_value = transactions_df
+    # Should NOT call get_insider_purchases at all
+    result = _summarize_insider_signal(ticker, False)
+    assert result["score"] == 7  # 2 purchases = 7
+    ticker.get_insider_purchases.assert_not_called()
+
+
+# ── 1.5 Regional Benchmark ──────────────────────────────────────────────────
+
+def test_benchmark_german_stock():
+    """German stocks (.DE) should use DAX as benchmark."""
+    assert _get_benchmark_symbol("SAP.DE") == "^GDAXI"
+
+def test_benchmark_swiss_stock():
+    """Swiss stocks (.SW) should use SMI."""
+    assert _get_benchmark_symbol("NOVN.SW") == "^SSMI"
+
+def test_benchmark_japanese_stock():
+    """Japanese stocks (.T) should use Nikkei 225."""
+    assert _get_benchmark_symbol("9983.T") == "^N225"
+
+def test_benchmark_us_stock_default():
+    """US stocks (no suffix) should default to SPY."""
+    assert _get_benchmark_symbol("AAPL") == "SPY"
+
+def test_benchmark_brazilian_stock():
+    """Brazilian stocks (.SA) should use Bovespa."""
+    assert _get_benchmark_symbol("PETR4.SA") == "^BVSP"
+
+def test_benchmark_canadian_stock():
+    """Canadian stocks (.TO) should use TSX."""
+    assert _get_benchmark_symbol("RY.TO") == "^GSPTSE"
+
+def test_benchmark_indian_stock():
+    """Indian stocks (.NS) should use Nifty 50."""
+    assert _get_benchmark_symbol("RELIANCE.NS") == "^NSEI"
+
+@patch("stock_agent.yf")
+def test_relative_strength_uses_regional_benchmark(mock_yf):
+    """Relative strength for a German stock should compare against DAX, not SPY."""
+    dates = pd.date_range("2024-01-01", periods=25)
+    close_values = [100] * 5 + [100] * 19 + [120]
+    history = pd.DataFrame({"Close": close_values}, index=dates)
+
+    dax_dates = pd.date_range("2024-01-01", periods=20)
+    dax_history = pd.DataFrame({"Close": [100] * 20}, index=dax_dates)
+    mock_ticker = MagicMock()
+    mock_ticker.history.return_value = dax_history
+    mock_yf.Ticker.return_value = mock_ticker
+
+    result = _summarize_relative_strength(history, symbol="SAP.DE")
+    assert result["score"] == 5
+    # Verify DAX was used, not SPY
+    mock_yf.Ticker.assert_called_with("^GDAXI")
+    assert "^GDAXI" in result["summary"]

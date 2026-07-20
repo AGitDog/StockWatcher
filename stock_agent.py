@@ -474,8 +474,8 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
     news_signal = _summarize_news_intensity(ticker)
     event_signal = _summarize_event_pressure(ticker, info)
     insider_signal = _summarize_insider_signal(ticker, quote_type == "etf")
-    short_interest_signal = _summarize_short_interest(info)
-    relative_strength_signal = _summarize_relative_strength(history)
+    short_interest_signal = _summarize_short_interest(info, history)
+    relative_strength_signal = _summarize_relative_strength(history, symbol)
 
     signal_components = [
         eps_revision_signal,
@@ -881,7 +881,7 @@ def _summarize_eps_revisions(ticker: yf.Ticker) -> dict[str, Any]:
     if net_revisions > 0:
         score = min(20, 8 + net_revisions * 3)
     elif net_revisions < 0:
-        score = 4
+        score = 0
 
     summary = f"EPS-Revisionen: {total_up} hoch, {total_down} runter"
     if net_revisions > 0:
@@ -945,10 +945,12 @@ def _summarize_price_volume(history: pd.DataFrame | None) -> dict[str, Any]:
         score += 5
     if latest_close > ma50:
         score += 6
-    if volume_ratio >= 1.5:
+    if volume_ratio >= 1.5 and return_5d >= 0:
         score += 6
-    if abs(return_5d) >= 7:
+    if return_5d >= 7:
         score += 5
+    elif return_5d <= -7:
+        score = max(0, score - 3)
 
     summary = (
         f"Kurs {latest_close:.2f}, 5T {return_5d:.1f}%, Volumen {volume_ratio:.1f}x vs. 20T, "
@@ -1016,26 +1018,15 @@ def _summarize_event_pressure(ticker: yf.Ticker, info: dict[str, Any]) -> dict[s
 
 
 def _summarize_insider_signal(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]:
-    """Score insider buying activity. Cluster purchases are a strong bullish signal."""
+    """Score insider buying activity. Uses only get_insider_transactions()
+    to avoid double-counting with get_insider_purchases()."""
     if is_etf:
         return {"name": "Insider-Aktivitaet", "score": 0, "summary": "Nicht relevant fuer ETFs."}
 
-    purchases = _safe_dataframe(lambda: ticker.get_insider_purchases())
     transactions = _safe_dataframe(lambda: ticker.get_insider_transactions())
 
     purchase_count = 0
     sell_count = 0
-
-    if purchases is not None and not purchases.empty:
-        for _, row in purchases.iterrows():
-            shares_val = _clean_scalar(row.get("Shares")) or _clean_scalar(row.get("shares"))
-            if shares_val:
-                try:
-                    shares_num = float(str(shares_val).replace(",", "").replace("+", ""))
-                    if shares_num > 0:
-                        purchase_count += 1
-                except (ValueError, TypeError):
-                    pass
 
     if transactions is not None and not transactions.empty:
         columns = {str(col).lower(): col for col in transactions.columns}
@@ -1043,7 +1034,7 @@ def _summarize_insider_signal(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]
         if text_col:
             for _, row in transactions.head(20).iterrows():
                 text_val = str(row.get(text_col, "")).lower()
-                if any(kw in text_val for kw in ("purchase", "buy", "kauf", "acquisition")):
+                if any(kw in text_val for kw in ("purchase", "buy", "kauf")):
                     purchase_count += 1
                 elif any(kw in text_val for kw in ("sale", "sell", "verkauf", "disposition")):
                     sell_count += 1
@@ -1071,13 +1062,24 @@ def _summarize_insider_signal(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]
     return {"name": "Insider-Aktivitaet", "score": score, "summary": summary}
 
 
-def _summarize_short_interest(info: dict[str, Any]) -> dict[str, Any]:
-    """Score based on short interest. High short float can indicate squeeze potential."""
+def _summarize_short_interest(info: dict[str, Any], history: pd.DataFrame | None = None) -> dict[str, Any]:
+    """Score based on short interest with dual interpretation.
+    High short + price above MA50 = squeeze potential (bullish).
+    High short + price below MA50 = confirmed bearish pressure."""
     short_pct = _safe_float(info.get("shortPercentOfFloat"))
     short_ratio = _safe_float(info.get("shortRatio"))
 
     if short_pct is None and short_ratio is None:
         return {"name": "Short Interest", "score": 0, "summary": "Keine Short-Interest-Daten verfuegbar."}
+
+    # Determine price vs MA50 for dual interpretation
+    above_ma50 = True  # default: assume bullish if no history
+    if history is not None and not history.empty and len(history) >= 50:
+        close_series = pd.to_numeric(history.get("Close"), errors="coerce")
+        if close_series is not None and not close_series.isna().all():
+            latest_close = float(close_series.iloc[-1])
+            ma50 = float(close_series.tail(50).mean())
+            above_ma50 = latest_close > ma50
 
     score = 0
     parts = []
@@ -1085,22 +1087,34 @@ def _summarize_short_interest(info: dict[str, Any]) -> dict[str, Any]:
     if short_pct is not None:
         short_pct_display = short_pct * 100 if short_pct < 1 else short_pct
         parts.append(f"Short-Float: {short_pct_display:.1f}%")
-        if short_pct_display >= 20:
-            score = 8
-        elif short_pct_display >= 10:
-            score = 6
-        elif short_pct_display >= 5:
-            score = 3
+        if above_ma50:
+            # Bullish: squeeze potential
+            if short_pct_display >= 20:
+                score = 8
+            elif short_pct_display >= 10:
+                score = 6
+            elif short_pct_display >= 5:
+                score = 3
+        else:
+            # Bearish: confirmed selling pressure, score 0
+            score = 0
 
     if short_ratio is not None:
         parts.append(f"Short-Ratio: {short_ratio:.1f} Tage")
-        if short_ratio >= 5 and score < 8:
-            score = max(score, 5)
-        elif short_ratio >= 3 and score < 6:
-            score = max(score, 3)
+        if above_ma50:
+            if short_ratio >= 5 and score < 8:
+                score = max(score, 5)
+            elif short_ratio >= 3 and score < 6:
+                score = max(score, 3)
 
     summary = ", ".join(parts) if parts else "Keine Short-Interest-Daten verfuegbar."
-    if score >= 6:
+    if not above_ma50 and short_pct is not None:
+        short_pct_display = short_pct * 100 if short_pct < 1 else short_pct
+        if short_pct_display >= 10:
+            summary += " - Kurs unter MA50, baerischer Druck"
+        else:
+            summary += " - moderate Leerverkaufsaktivitaet"
+    elif score >= 6:
         summary += " - erhoehtes Squeeze-Potenzial"
     elif score >= 3:
         summary += " - moderate Leerverkaufsaktivitaet"
@@ -1108,8 +1122,36 @@ def _summarize_short_interest(info: dict[str, Any]) -> dict[str, Any]:
     return {"name": "Short Interest", "score": score, "summary": summary}
 
 
-def _summarize_relative_strength(history: pd.DataFrame | None) -> dict[str, Any]:
-    """Compare stock performance vs. broad market (SPY) over last month."""
+# Regional benchmark mapping for relative strength comparison
+REGIONAL_BENCHMARKS: dict[str, str] = {
+    ".DE": "^GDAXI",    # DAX (Germany)
+    ".F": "^GDAXI",     # Frankfurt
+    ".MU": "^GDAXI",    # Munich
+    ".DU": "^GDAXI",    # Duesseldorf
+    ".VI": "^GDAXI",    # Vienna (close to DAX)
+    ".SW": "^SSMI",     # Swiss SMI
+    ".T": "^N225",      # Tokyo / Nikkei
+    ".SA": "^BVSP",     # Bovespa (Brazil)
+    ".TO": "^GSPTSE",   # TSX (Canada)
+    ".NS": "^NSEI",     # Nifty 50 (India)
+    ".BO": "^NSEI",     # Bombay
+    ".L": "^FTSE",      # FTSE 100 (UK)
+    ".PA": "^FCHI",     # CAC 40 (France)
+    ".AS": "^AEX",      # AEX (Netherlands)
+    ".MI": "^FTSEMIB.MI",  # FTSE MIB (Italy)
+}
+
+
+def _get_benchmark_symbol(stock_symbol: str) -> str:
+    """Return the appropriate regional benchmark for a given stock symbol."""
+    for suffix, benchmark in REGIONAL_BENCHMARKS.items():
+        if stock_symbol.upper().endswith(suffix.upper()):
+            return benchmark
+    return "SPY"  # Default: S&P 500 for US and unknown
+
+
+def _summarize_relative_strength(history: pd.DataFrame | None, symbol: str = "") -> dict[str, Any]:
+    """Compare stock performance vs. regional benchmark over last month."""
     if history is None or history.empty or len(history) < 20:
         return {"name": "Relative Staerke", "score": 0, "summary": "Nicht genug Kursdaten fuer Relative-Staerke-Berechnung."}
 
@@ -1119,11 +1161,12 @@ def _summarize_relative_strength(history: pd.DataFrame | None) -> dict[str, Any]
 
     stock_return_1m = ((float(close_series.iloc[-1]) / float(close_series.iloc[-20])) - 1) * 100
 
-    spy_history = _safe_dataframe(lambda: yf.Ticker("SPY").history(period="1mo", auto_adjust=False))
-    if spy_history is not None and not spy_history.empty and len(spy_history) >= 10:
-        spy_close = pd.to_numeric(spy_history.get("Close"), errors="coerce")
-        if spy_close is not None and not spy_close.isna().all():
-            benchmark_return = ((float(spy_close.iloc[-1]) / float(spy_close.iloc[0])) - 1) * 100
+    benchmark_symbol = _get_benchmark_symbol(symbol)
+    bench_history = _safe_dataframe(lambda: yf.Ticker(benchmark_symbol).history(period="1mo", auto_adjust=False))
+    if bench_history is not None and not bench_history.empty and len(bench_history) >= 10:
+        bench_close = pd.to_numeric(bench_history.get("Close"), errors="coerce")
+        if bench_close is not None and not bench_close.isna().all():
+            benchmark_return = ((float(bench_close.iloc[-1]) / float(bench_close.iloc[0])) - 1) * 100
         else:
             benchmark_return = 0.0
     else:
@@ -1139,7 +1182,7 @@ def _summarize_relative_strength(history: pd.DataFrame | None) -> dict[str, Any]
     elif relative_perf >= 2:
         score = 1
 
-    summary = f"1M-Perf: {stock_return_1m:.1f}% vs. Markt {benchmark_return:.1f}% = {relative_perf:+.1f}% relativ"
+    summary = f"1M-Perf: {stock_return_1m:.1f}% vs. {benchmark_symbol} {benchmark_return:.1f}% = {relative_perf:+.1f}% relativ"
     if relative_perf >= 10:
         summary += " - starke Outperformance"
     elif relative_perf >= 5:
