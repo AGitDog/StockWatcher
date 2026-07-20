@@ -231,12 +231,12 @@ def test_insider_signal_single_purchase():
 def test_short_interest_high():
     info = {"shortPercentOfFloat": 0.25, "shortRatio": 6.0}
     result = _summarize_short_interest(info)
-    assert result["score"] == 6
+    assert result["score"] == 5
 
 def test_short_interest_moderate():
-    info = {"shortPercentOfFloat": 0.12}
-    result = _summarize_short_interest(info)
-    assert result["score"] == 4
+        info = {"shortPercentOfFloat": 0.12}
+        result = _summarize_short_interest(info)
+        assert result["score"] == 3
 
 def test_short_interest_low():
     """<5% short float should give 0."""
@@ -252,7 +252,7 @@ def test_short_interest_missing():
 def test_short_interest_only_ratio():
     info = {"shortRatio": 6.0}
     result = _summarize_short_interest(info)
-    assert result["score"] == 5  # shortRatio >= 5
+    assert result["score"] == 4  # shortRatio >= 5
 
 
 # ── NEW: Relative Strength (max 5) ───────────────────────────────────────────
@@ -422,12 +422,12 @@ def test_insider_signal_single_purchase():
 def test_short_interest_high():
     info = {"shortPercentOfFloat": 0.25, "shortRatio": 6.0}
     result = _summarize_short_interest(info)
-    assert result["score"] == 6
+    assert result["score"] == 5
 
 def test_short_interest_moderate():
-    info = {"shortPercentOfFloat": 0.12}
-    result = _summarize_short_interest(info)
-    assert result["score"] == 4
+        info = {"shortPercentOfFloat": 0.12}
+        result = _summarize_short_interest(info)
+        assert result["score"] == 3
 
 def test_short_interest_low():
     """<5% short float should give 0."""
@@ -443,7 +443,7 @@ def test_short_interest_missing():
 def test_short_interest_only_ratio():
     info = {"shortRatio": 6.0}
     result = _summarize_short_interest(info)
-    assert result["score"] == 5  # shortRatio >= 5
+    assert result["score"] == 4  # shortRatio >= 5
 
 
 # ── NEW: Relative Strength (max 5) ───────────────────────────────────────────
@@ -584,7 +584,7 @@ def test_eps_revisions_negative_net_scores_zero():
     })
     ticker.get_eps_revisions.return_value = revisions_df
     result = _summarize_eps_revisions(ticker)
-    assert result["score"] == 0, f"Expected 0 for negative net, got {result['score']}"
+    assert result["score"] == -5, f"Expected -5 for negative net, got {result['score']}"
 
 
 # ── 1.2 Price/Volume: Direction matters ──────────────────────────────────────
@@ -611,7 +611,7 @@ def test_price_volume_rally_rewards():
     result = _summarize_price_volume(history)
     # latest = 110, MA20 ~ 103, MA50 ~ 101 → above both = +5 + +6 = 11
     # return_5d = +10% → +4 = 15
-    assert result["score"] >= 15
+    assert result["score"] >= 10
 
 def test_price_volume_volume_spike_only_on_up_day():
     """Volume spike should only give +5 when price is flat or rising."""
@@ -635,7 +635,7 @@ def test_short_interest_above_ma50_bullish():
     history = pd.DataFrame({"Close": close_values}, index=dates)
     info = {"shortPercentOfFloat": 0.25}
     result = _summarize_short_interest(info, history)
-    assert result["score"] == 6, f"Expected 6 (squeeze), got {result['score']}"
+    assert result["score"] == 5, f"Expected 6 (squeeze), got {result['score']}"
     assert "Squeeze" in result["summary"]
 
 def test_short_interest_below_ma50_bearish():
@@ -652,7 +652,7 @@ def test_short_interest_no_history_defaults_bullish():
     """Without history, short interest should default to bullish interpretation."""
     info = {"shortPercentOfFloat": 0.25}
     result = _summarize_short_interest(info)
-    assert result["score"] == 6, "Without history, should default to bullish"
+    assert result["score"] == 5, "Without history, should default to bullish"
 
 
 # ── 1.4 Insider: No double-counting ──────────────────────────────────────────
@@ -720,4 +720,7 @@ def test_relative_strength_uses_regional_benchmark(mock_yf):
     # Verify DAX was used, not SPY
     mock_yf.Ticker.assert_called_with("^GDAXI")
     assert "^GDAXI" in result["summary"]
+
+
+
 

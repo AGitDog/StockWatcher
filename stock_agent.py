@@ -452,6 +452,102 @@ def build_symbol_summary(symbol_or_name: str, symbol_mappings: dict[str, str] | 
     }
 
 
+
+def _summarize_technical_indicators(history: pd.DataFrame | None) -> dict[str, Any]:
+    if history is None or history.empty or len(history) < 26:
+        return {"name": "Technische Indikatoren", "score": 0, "summary": "Nicht genug Kursdaten fuer Technische Indikatoren."}
+
+    close = pd.to_numeric(history.get("Close"), errors="coerce")
+    if close is None or close.isna().all():
+        return {"name": "Technische Indikatoren", "score": 0, "summary": "Kursdaten nicht lesbar."}
+
+    # RSI
+    delta = close.diff()
+    up, down = delta.copy(), delta.copy()
+    up[up < 0] = 0
+    down[down > 0] = 0
+    roll_up = up.ewm(span=14).mean()
+    roll_down = down.abs().ewm(span=14).mean()
+    rs = roll_up / roll_down
+    rsi = 100.0 - (100.0 / (1.0 + rs))
+    current_rsi = float(rsi.iloc[-1]) if not pd.isna(rsi.iloc[-1]) else 50.0
+
+    # MACD
+    exp1 = close.ewm(span=12, adjust=False).mean()
+    exp2 = close.ewm(span=26, adjust=False).mean()
+    macd = exp1 - exp2
+    signal = macd.ewm(span=9, adjust=False).mean()
+    current_macd = float(macd.iloc[-1]) if not pd.isna(macd.iloc[-1]) else 0.0
+    current_signal = float(signal.iloc[-1]) if not pd.isna(signal.iloc[-1]) else 0.0
+
+    # Bollinger Bands
+    ma20 = close.rolling(window=20).mean()
+    std20 = close.rolling(window=20).std()
+    upper_band = ma20 + (std20 * 2)
+    lower_band = ma20 - (std20 * 2)
+    current_close = float(close.iloc[-1])
+    current_upper = float(upper_band.iloc[-1]) if not pd.isna(upper_band.iloc[-1]) else float('inf')
+    current_lower = float(lower_band.iloc[-1]) if not pd.isna(lower_band.iloc[-1]) else 0.0
+
+    score = 0
+    parts = []
+
+    # Evaluate RSI
+    if current_rsi < 30:
+        score += 4
+        parts.append(f"RSI: {current_rsi:.1f} (Ueberverkauft)")
+    elif current_rsi > 70:
+        score -= 4
+        parts.append(f"RSI: {current_rsi:.1f} (Ueberkauft)")
+    else:
+        parts.append(f"RSI: {current_rsi:.1f}")
+
+    # Evaluate MACD
+    if current_macd > current_signal:
+        score += 3
+        parts.append("MACD: Bullisch")
+    else:
+        score -= 1
+        parts.append("MACD: Baerisch")
+
+    # Evaluate Bollinger
+    if current_close < current_lower:
+        score += 3
+        parts.append("Bollinger: Unteres Band")
+    elif current_close > current_upper:
+        score -= 3
+        parts.append("Bollinger: Oberes Band")
+
+    score = max(-8, min(10, score))
+    summary = " | ".join(parts)
+    return {"name": "Technische Indikatoren", "score": score, "summary": summary}
+
+
+def _apply_macro_overlay(score: int) -> int:
+    try:
+        spy = _safe_dataframe(lambda: yf.Ticker("SPY").history(period="1y"))
+        vix = _safe_dataframe(lambda: yf.Ticker("^VIX").history(period="1mo"))
+        
+        multiplier = 1.0
+        
+        if spy is not None and not spy.empty and len(spy) >= 200:
+            spy_close = float(spy["Close"].iloc[-1])
+            spy_ma200 = float(spy["Close"].tail(200).mean())
+            if spy_close > spy_ma200:
+                multiplier *= 1.1
+            else:
+                multiplier *= 0.8
+                
+        if vix is not None and not vix.empty:
+            vix_close = float(vix["Close"].iloc[-1])
+            if vix_close > 25:
+                multiplier *= 0.9
+                
+        return int(round(score * multiplier))
+    except Exception:
+        return score
+
+
 def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, str] | None = None) -> dict[str, Any]:
     resolution = resolve_symbol(symbol_or_name, symbol_mappings)
     symbol = resolution["symbol"]
@@ -483,6 +579,7 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
     short_interest_signal = _summarize_short_interest(info, history)
     relative_strength_signal = _summarize_relative_strength(history, symbol)
     fundamental_signal = _summarize_fundamentals(info)
+    technical_signal = _summarize_technical_indicators(history)
 
     signal_components = [
         eps_revision_signal,
@@ -494,9 +591,12 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
         short_interest_signal,
         relative_strength_signal,
         fundamental_signal,
+        technical_signal,
     ]
 
-    brodel_score = max(0, min(sum(component["score"] for component in signal_components), 100))
+    raw_score = sum(component["score"] for component in signal_components)
+    macro_adjusted_score = _apply_macro_overlay(raw_score)
+    brodel_score = max(-30, min(macro_adjusted_score, 100))
     signal_items = [component["summary"] for component in signal_components if component["summary"]]
 
     return {
@@ -887,9 +987,9 @@ def _summarize_eps_revisions(ticker: yf.Ticker) -> dict[str, Any]:
     net_revisions = total_up - total_down
     score = 0
     if net_revisions > 0:
-        score = min(18, 6 + net_revisions * 3)
+        score = min(15, 6 + net_revisions * 3)
     elif net_revisions < 0:
-        score = 0
+        score = max(-5, net_revisions)
 
     summary = f"EPS-Revisionen: {total_up} hoch, {total_down} runter"
     if net_revisions > 0:
@@ -985,9 +1085,9 @@ def _summarize_price_volume(history: pd.DataFrame | None) -> dict[str, Any]:
 
     vol_score = 0
     if is_up_day and latest_volume > (avg_volume_20 * 1.5):
-        vol_score = 5
+        vol_score = 3
 
-    total_score = max(-10, min(15, base_score + vol_score))
+    total_score = max(-10, min(10, base_score + vol_score))
 
     summary = (
         f"Kurs {latest_close:.2f}, 5T {return_5d:.1f}%, Volumen {volume_ratio:.1f}x vs. 20T, "
@@ -1159,11 +1259,11 @@ def _summarize_event_pressure(ticker: yf.Ticker, info: dict[str, Any]) -> dict[s
     nearest = min(upcoming_days)
     score = 0
     if nearest <= 7:
-        score = 8
-    elif nearest <= 14:
         score = 5
+    elif nearest <= 14:
+        score = 3
     elif nearest <= 30:
-        score = 2
+        score = 1
 
     summary = f"Naechster Termin in {nearest} Tagen"
     return {"name": "Event-Druck", "score": score, "summary": summary}
@@ -1243,11 +1343,11 @@ def _summarize_short_interest(info: dict[str, Any], history: pd.DataFrame | None
         parts.append(f"Short-Float: {short_pct_display:.1f}%")
         if above_ma50:
             if short_pct_display >= 20:
-                score = 6
+                score = 5
             elif short_pct_display >= 10:
-                score = 4
+                score = 3
             elif short_pct_display >= 5:
-                score = 2
+                score = 1
         else:
             # Bearish: confirmed selling pressure
             score = 0
@@ -1255,10 +1355,10 @@ def _summarize_short_interest(info: dict[str, Any], history: pd.DataFrame | None
     if short_ratio is not None:
         parts.append(f"Short-Ratio: {short_ratio:.1f} Tage")
         if above_ma50:
-            if short_ratio >= 5 and score < 6:
-                score = max(score, 5)
-            elif short_ratio >= 3 and score < 4:
-                score = max(score, 3)
+            if short_ratio >= 5 and score < 5:
+                score = max(score, 4)
+            elif short_ratio >= 3 and score < 3:
+                score = max(score, 2)
 
     summary = ", ".join(parts) if parts else "Keine Short-Interest-Daten verfuegbar."
     if not above_ma50 and short_pct is not None:
@@ -1291,7 +1391,7 @@ def _summarize_fundamentals(info: dict[str, Any]) -> dict[str, Any]:
 
     if forward_pe is not None and forward_pe > 0:
         if forward_pe < 15:
-            score += 3
+            score += 2
             components.append(f"P/E {forward_pe:.1f}")
         elif forward_pe < 25:
             score += 1
@@ -1299,7 +1399,7 @@ def _summarize_fundamentals(info: dict[str, Any]) -> dict[str, Any]:
 
     if peg_ratio is not None and peg_ratio > 0:
         if peg_ratio < 1.0:
-            score += 3
+            score += 2
             components.append(f"PEG {peg_ratio:.2f}")
         elif peg_ratio < 1.5:
             score += 1
@@ -1307,7 +1407,7 @@ def _summarize_fundamentals(info: dict[str, Any]) -> dict[str, Any]:
 
     if debt_equity is not None:
         if debt_equity < 50:
-            score += 3
+            score += 2
             components.append(f"D/E {debt_equity:.1f}")
         elif debt_equity < 100:
             score += 1
@@ -1315,7 +1415,7 @@ def _summarize_fundamentals(info: dict[str, Any]) -> dict[str, Any]:
     if fcf is not None and mcap is not None and mcap > 0:
         fcf_yield = (fcf / mcap) * 100
         if fcf_yield > 5:
-            score += 3
+            score += 2
             components.append(f"FCF-Rendite {fcf_yield:.1f}%")
         elif fcf_yield > 2:
             score += 1

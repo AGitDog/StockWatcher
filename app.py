@@ -495,6 +495,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
                 "Short": breakdown.get("Short Interest", {}).get("score", 0),
                 "Rel.St.": breakdown.get("Relative Staerke", {}).get("score", 0),
                 "Fundam.": breakdown.get("Fundamentale Bewertung", {}).get("score", 0),
+                "Tech.": breakdown.get("Technische Indikatoren", {}).get("score", 0),
                 "Vs. Sektor": peer_context.get("score_vs_sector", 0),
                 "Rang": f"{peer_context.get('sector_rank', 1)}/{peer_context.get('sector_count', 1)}",
             }
@@ -529,16 +530,17 @@ def render_watchlist_signal_monitor(mapping_text: str):
 
                 st.markdown("**Signal-Breakdown**")
                 max_scores = {
-                    "EPS-Revisionen": 18, "Kursziele & Konsens": 15, "Preis/Volumen": 15,
-                    "News-Sentiment": 15, "Event-Druck": 8, "Insider-Aktivitaet": 10,
-                    "Short Interest": 6, "Relative Staerke": 8, "Fundamentale Bewertung": 12,
+                    "EPS-Revisionen": 15, "Kursziele & Konsens": 15, "Preis/Volumen": 10,
+                    "News-Sentiment": 15, "Event-Druck": 5, "Insider-Aktivitaet": 10,
+                    "Short Interest": 5, "Relative Staerke": 5, "Fundamentale Bewertung": 10,
+                    "Technische Indikatoren": 10,
                 }
                 breakdown_rows = []
                 for component in item.get("signal_breakdown", {}).values():
                     breakdown_rows.append({
                         "Komponente": component["name"],
                         "Punkte": component["score"],
-                        "Max": max_scores.get(component["name"], "?"),
+                        "Maximal": max_scores.get(component["name"], 0),
                         "Detail": component["summary"],
                     })
                 st.dataframe(pd.DataFrame(breakdown_rows), use_container_width=True, hide_index=True)
