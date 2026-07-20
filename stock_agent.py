@@ -578,7 +578,7 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
     insider_signal = _summarize_insider_signal(ticker, quote_type == "etf")
     short_interest_signal = _summarize_short_interest(info, history)
     relative_strength_signal = _summarize_relative_strength(history, symbol)
-    fundamental_signal = _summarize_fundamentals(info)
+    fundamental_signal = _summarize_fundamentals(ticker, info)
     technical_signal = _summarize_technical_indicators(history)
 
     signal_components = [
@@ -1411,17 +1411,35 @@ def _summarize_short_interest(info: dict[str, Any], history: pd.DataFrame | None
     return {"name": "Short Interest", "score": score, "summary": summary}
 
 
-def _summarize_fundamentals(info: dict[str, Any]) -> dict[str, Any]:
+def _summarize_fundamentals(ticker: yf.Ticker, info: dict[str, Any]) -> dict[str, Any]:
     """Berechnet einen Score basierend auf P/E, PEG, Debt/Equity, FCF Yield und Gewinnmarge."""
+    import alpha_vantage_cache
     score = 0
     components = []
-
-    forward_pe = _safe_float(info.get("forwardPE"))
-    peg_ratio = _safe_float(info.get("pegRatio"))
-    debt_equity = _safe_float(info.get("debtToEquity"))
-    fcf = _safe_float(info.get("freeCashflow"))
-    mcap = _safe_float(info.get("marketCap"))
-    profit_margin = _safe_float(info.get("profitMargins"))
+    
+    symbol = ticker.ticker
+    av_data = alpha_vantage_cache.get_fundamentals(symbol)
+    
+    # Try Alpha Vantage first, fallback to yfinance info
+    if av_data and av_data.get("PERatio") and av_data.get("PERatio") != "None":
+        forward_pe = _safe_float(av_data.get("PERatio"))
+        peg_ratio = _safe_float(av_data.get("PEGRatio"))
+        profit_margin = _safe_float(av_data.get("ProfitMargin"))
+        
+        # AV doesn't provide debtToEquity and freeCashflow directly in OVERVIEW in a simple usable way
+        # so we merge from yfinance if available
+        debt_equity = _safe_float(info.get("debtToEquity"))
+        fcf = _safe_float(info.get("freeCashflow"))
+        mcap = _safe_float(av_data.get("MarketCapitalization")) or _safe_float(info.get("marketCap"))
+        provider = "AV"
+    else:
+        forward_pe = _safe_float(info.get("forwardPE"))
+        peg_ratio = _safe_float(info.get("pegRatio"))
+        debt_equity = _safe_float(info.get("debtToEquity"))
+        fcf = _safe_float(info.get("freeCashflow"))
+        mcap = _safe_float(info.get("marketCap"))
+        profit_margin = _safe_float(info.get("profitMargins"))
+        provider = "YF"
 
     if forward_pe is not None and forward_pe > 0:
         if forward_pe < 15:
@@ -1466,9 +1484,7 @@ def _summarize_fundamentals(info: dict[str, Any]) -> dict[str, Any]:
             components.append(f"Marge {profit_margin*100:.1f}%")
 
     score = max(-2, min(10, score))
-    summary = "Stark: " + ", ".join(components) if components else "Fundamentaldaten unauffaellig."
-    if score == 0:
-        summary = "Fundamentaldaten unauffaellig oder nicht verfuegbar."
+    summary = f"[{provider}] Stark: " + ", ".join(components) if components else f"[{provider}] Fundamentaldaten unauffaellig."
 
     return {"name": "Fundamentale Bewertung", "score": score, "summary": summary}
 

@@ -813,7 +813,9 @@ def test_apply_macro_overlay_bear_market_high_vix(mock_ticker_class):
 
 def test_fundamentals_empty_info():
     """Empty info dict should return score 0."""
-    result = _summarize_fundamentals({})
+    mock_ticker = MagicMock()
+    mock_ticker.ticker = "TEST"
+    result = _summarize_fundamentals(mock_ticker, {})
     assert result["score"] == 0
     assert result["name"] == "Fundamentale Bewertung"
 
@@ -828,7 +830,9 @@ def test_fundamentals_perfect_value_stock():
         "marketCap": 100e9,
         "profitMargins": 0.25,   # > 20% -> +2
     }
-    result = _summarize_fundamentals(info)
+    mock_ticker = MagicMock()
+    mock_ticker.ticker = "TEST"
+    result = _summarize_fundamentals(mock_ticker, info)
     assert result["score"] == 10, f"Expected max 10, got {result['score']}"
 
 
@@ -837,7 +841,9 @@ def test_fundamentals_overvalued_stock():
     info = {
         "forwardPE": 80.0,       # > 50 -> -2
     }
-    result = _summarize_fundamentals(info)
+    mock_ticker = MagicMock()
+    mock_ticker.ticker = "TEST"
+    result = _summarize_fundamentals(mock_ticker, info)
     assert result["score"] == -2, f"Expected -2 for overvalued, got {result['score']}"
 
 
@@ -851,7 +857,9 @@ def test_fundamentals_moderate_stock():
         "marketCap": 100e9,
         "profitMargins": 0.15,   # > 10% -> +1
     }
-    result = _summarize_fundamentals(info)
+    mock_ticker = MagicMock()
+    mock_ticker.ticker = "TEST"
+    result = _summarize_fundamentals(mock_ticker, info)
     assert result["score"] == 5, f"Expected 5, got {result['score']}"
 
 
@@ -865,14 +873,18 @@ def test_fundamentals_score_capped_at_10():
         "marketCap": 100e9,
         "profitMargins": 0.40,
     }
-    result = _summarize_fundamentals(info)
+    mock_ticker = MagicMock()
+    mock_ticker.ticker = "TEST"
+    result = _summarize_fundamentals(mock_ticker, info)
     assert result["score"] <= 10, f"Score {result['score']} exceeds max 10"
 
 
 def test_fundamentals_profit_margin_in_summary():
     """Profit margin should appear in the summary text."""
     info = {"profitMargins": 0.25}
-    result = _summarize_fundamentals(info)
+    mock_ticker = MagicMock()
+    mock_ticker.ticker = "TEST"
+    result = _summarize_fundamentals(mock_ticker, info)
     assert "Marge" in result["summary"]
 
 
