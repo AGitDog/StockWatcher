@@ -198,22 +198,6 @@ def render_watchlist_signal_monitor(mapping_text: str):
         "News-Sentiment, Preis/Volumen-Verhalten, Event-Naehe, Insider-Aktivitaet, Short Interest, Relative Staerke und Fundamentaldaten."
     )
 
-    with st.expander("Hilfe und Lesart des Signal Monitor V2", expanded=False):
-        st.markdown("Der **Brodel-Score** (0 bis 100) ist ein 'Fruehwarn-Thermometer'. Er setzt sich aus 9 Bausteinen zusammen:")
-        st.markdown("- **EPS-Revisionen (max. 18 Punkte):** Passten Analysten ihre Gewinnerwartungen zuletzt nach oben oder unten an? Mehr positive Korrekturen geben mehr Punkte.")
-        st.markdown("- **Kursziel & Konsens (max. 15 Punkte):** Vergleicht das mittlere Analystenkursziel mit dem aktuellen Kurs und bewertet die Konsens-Staerk (Anteil Buys).")
-        st.markdown("- **Preis & Volumen Momentum (max. 15 Punkte):** Technische Lage. Gibt Punkte fuer Kurse ueber der 20- und 50-Tage-Linie, Volumenspitzen und bestraft Crashs.")
-        st.markdown("- **News-Sentiment (max. 15 Punkte):** Analysiert nicht nur die Nachrichtenmenge, sondern auch die Stimmung per KI (Gemini). Positive Nachrichten geben Punkte, negative ziehen ab.")
-        st.markdown("- **Event-Druck (max. 8 Punkte):** Stehen bald Quartalszahlen oder Dividenden an?")
-        st.markdown("- **Insider-Aktivitaet (max. 10 Punkte):** Kaufen oder verkaufen Insider gerade? Cluster-Kaeufe durch Fuehrungskraefte sind eines der staerksten Fruehsignale.")
-        st.markdown("- **Short Interest (max. 6 Punkte):** Interpretation abhaengig vom Kurstrend: ueber MA50 = Squeeze-Potenzial, darunter = baerischer Druck.")
-        st.markdown("- **Relative Staerke (max. 8 Punkte):** Vergleicht die Monatsperformance der Aktie mit dem regionalen Benchmark (DAX, SMI, Nikkei etc.).")
-        st.markdown("- **Fundamentale Bewertung (max. 12 Punkte):** Bewertung anhand von P/E, PEG, Debt/Equity und FCF Yield.")
-        st.markdown("---")
-        st.markdown("- **Delta-Alerts** zeigen konkret, bei welcher Aktie sich der Score seit dem letzten Scan veraendert hat.")
-        st.markdown("- **Peer-Kontext** ordnet die Aktie innerhalb deines eigenen Sektors/deiner eigenen Watchlist ein.")
-        st.markdown("- Die **Uebersichtstabelle** zeigt alle 8 Einzelkomponenten als separate Spalten, so dass sofort erkennbar ist, woher der Score kommt.")
-
     alert_threshold = st.slider("Harter Delta-Alert ab Score-Anstieg von", min_value=1, max_value=30, value=10)
 
     if st.button("Signale aktualisieren"):
@@ -441,7 +425,7 @@ def render_stock_agent():
 
     mapping_text = load_mapping_text()
 
-    stock_tabs = st.tabs(["Signal Monitor V2", "Watchlist Verwaltung"])
+    stock_tabs = st.tabs(["Signal Monitor V2", "Watchlist Verwaltung", "Hilfe & Methodik"])
     with stock_tabs[0]:
         render_watchlist_signal_monitor(mapping_text)
     with stock_tabs[1]:
@@ -466,4 +450,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
