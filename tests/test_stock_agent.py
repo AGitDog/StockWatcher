@@ -177,196 +177,6 @@ def test_news_intensity_empty():
     assert result["score"] == 0
 
 
-# ── Event Pressure (max 10) ──────────────────────────────────────────────────
-
-def test_event_pressure_no_dates():
-    ticker = MagicMock()
-    ticker.get_earnings_dates.return_value = pd.DataFrame()
-    ticker.get_calendar.return_value = {}
-    result = _summarize_event_pressure(ticker, {})
-    assert result["name"] == "Event-Druck"
-    assert result["score"] == 0
-
-
-# ── NEW: Insider Signal (max 10) ─────────────────────────────────────────────
-
-def test_insider_signal_with_purchases():
-    """Multiple insider purchases should give high score (via transactions only)."""
-    ticker = MagicMock()
-    transactions_df = pd.DataFrame({
-        "Text": ["Purchase", "Purchase", "Buy", "Purchase"],
-        "Shares": [1000, 2000, 500, 800],
-    })
-    ticker.get_insider_transactions.return_value = transactions_df
-    result = _summarize_insider_signal(ticker, False)
-    assert result["name"] == "Insider-Aktivitaet"
-    assert result["score"] == 10  # 4+ purchases = max score
-
-def test_insider_signal_etf():
-    """ETFs should return score 0."""
-    ticker = MagicMock()
-    result = _summarize_insider_signal(ticker, True)
-    assert result["score"] == 0
-    assert "ETF" in result["summary"]
-
-def test_insider_signal_empty():
-    """No insider data should return score 0."""
-    ticker = MagicMock()
-    ticker.get_insider_purchases.return_value = pd.DataFrame()
-    ticker.get_insider_transactions.return_value = pd.DataFrame()
-    result = _summarize_insider_signal(ticker, False)
-    assert result["score"] == 0
-
-def test_insider_signal_single_purchase():
-    """A single insider purchase should give 4 points."""
-    ticker = MagicMock()
-    transactions_df = pd.DataFrame({
-        "Text": ["Purchase"],
-        "Shares": [1000],
-    })
-    ticker.get_insider_transactions.return_value = transactions_df
-    result = _summarize_insider_signal(ticker, False)
-    assert result["score"] == 4
-
-
-# ── NEW: Short Interest (max 8) ──────────────────────────────────────────────
-
-def test_short_interest_high():
-    info = {"shortPercentOfFloat": 0.25, "shortRatio": 6.0}
-    result = _summarize_short_interest(info)
-    assert result["score"] == 5
-
-def test_short_interest_moderate():
-        info = {"shortPercentOfFloat": 0.12}
-        result = _summarize_short_interest(info)
-        assert result["score"] == 3
-
-def test_short_interest_low():
-    """<5% short float should give 0."""
-    info = {"shortPercentOfFloat": 0.02}
-    result = _summarize_short_interest(info)
-    assert result["score"] == 0
-
-def test_short_interest_missing():
-    """No short interest data should give 0."""
-    result = _summarize_short_interest({})
-    assert result["score"] == 0
-
-def test_short_interest_only_ratio():
-    info = {"shortRatio": 6.0}
-    result = _summarize_short_interest(info)
-    assert result["score"] == 4  # shortRatio >= 5
-
-
-# ── NEW: Relative Strength (max 5) ───────────────────────────────────────────
-
-@patch("stock_agent.yf")
-def test_relative_strength_outperformance(mock_yf):
-    """Strong outperformance vs market should score 5."""
-    dates = pd.date_range("2024-01-01", periods=25)
-    # Stock: starts at 100, ends at 120
-    close_values = [100] * 5 + [100] * 19 + [120]
-    history = pd.DataFrame({"Close": close_values}, index=dates)
-
-    # SPY: flat
-    spy_dates = pd.date_range("2024-01-01", periods=20)
-    spy_history = pd.DataFrame({"Close": [100] * 20}, index=spy_dates)
-    mock_ticker = MagicMock()
-    mock_ticker.history.return_value = spy_history
-    mock_yf.Ticker.return_value = mock_ticker
-
-    result = _summarize_relative_strength(history)
-    assert result["name"] == "Relative Staerke"
-    assert result["score"] == 5
-
-@patch("stock_agent.yf")
-def test_relative_strength_underperformance(mock_yf):
-    """Underperformance vs market should score 0."""
-    dates = pd.date_range("2024-01-01", periods=25)
-    # Stock: -5% over last 20 days
-    close_values = [100] * 5 + [95] * 20
-    history = pd.DataFrame({"Close": close_values}, index=dates)
-
-    # SPY: +5%
-    spy_dates = pd.date_range("2024-01-01", periods=20)
-    spy_history = pd.DataFrame({"Close": [100] + [105] * 19}, index=spy_dates)
-    mock_ticker = MagicMock()
-    mock_ticker.history.return_value = spy_history
-    mock_yf.Ticker.return_value = mock_ticker
-
-    result = _summarize_relative_strength(history)
-    assert result["score"] == 0
-
-def test_relative_strength_insufficient_data():
-    """Less than 20 data points should give score 0."""
-    history = pd.DataFrame({"Close": [100] * 10})
-    result = _summarize_relative_strength(history)
-    assert result["score"] == 0
-
-
-# ── Integration: Signal component count and score cap ────────────────────────
-
-def test_brodel_score_max_100():
-    """The brodel_score should never exceed 100 even if all components score max."""
-    # Simulate all components at their max
-    components = [
-        {"name": "EPS-Revisionen", "score": 20, "summary": ""},
-        {"name": "Kursziele", "score": 15, "summary": ""},
-        {"name": "Preis/Volumen", "score": 20, "summary": ""},
-        {"name": "News-Dichte", "score": 12, "summary": ""},
-        {"name": "Event-Druck", "score": 10, "summary": ""},
-        {"name": "Insider-Aktivitaet", "score": 10, "summary": ""},
-        {"name": "Short Interest", "score": 8, "summary": ""},
-        {"name": "Relative Staerke", "score": 5, "summary": ""},
-    ]
-    brodel_score = min(sum(c["score"] for c in components), 100)
-    assert brodel_score == 100
-
-def test_signal_component_count():
-    """There should be exactly 8 signal components at max values summing to 100."""
-    max_scores = [20, 15, 20, 12, 10, 10, 8, 5]
-    assert len(max_scores) == 8
-    assert sum(max_scores) == 100
-
-
-# ── New Index Parsing Tests ──────────────────────────────────────────────────
-
-@patch("stock_agent.pd.read_html")
-@patch("stock_agent.requests.get")
-def test_load_index_constituents_smi(mock_get, mock_read_html):
-    """Test Swiss Market Index constituent parsing with suffix .SW"""
-    mock_response = MagicMock()
-    mock_response.text = "dummy"
-    mock_get.return_value = mock_response
-
-    mock_df = pd.DataFrame({"Ticker": ["NOVN", "ROG"]})
-    # SMI table_index is 2, so return list with 3 dataframes
-    mock_read_html.return_value = [None, None, mock_df]
-
-    load_index_constituents.cache_clear()
-    
-    result = load_index_constituents("SMI")
-    assert result == ["NOVN.SW", "ROG.SW"]
-
-@patch("stock_agent.pd.read_html")
-@patch("stock_agent.requests.get")
-def test_load_index_constituents_nikkei_float(mock_get, mock_read_html):
-    """Test Nikkei 225 parsing where tickers are floats and need .T suffix"""
-    mock_response = MagicMock()
-    mock_response.text = "dummy"
-    mock_get.return_value = mock_response
-
-    mock_df = pd.DataFrame({"Code": [9983.0, 8035.0]})
-    # Nikkei table_index is 8, so return list with 9 dataframes
-    mock_read_html.return_value = [None]*8 + [mock_df]
-
-    load_index_constituents.cache_clear()
-    
-    result = load_index_constituents("Nikkei 225")
-    ticker.get_news.return_value = []
-    result = _summarize_news_intensity(ticker)
-    assert result["score"] == 0
-
 
 # ── Event Pressure (max 10) ──────────────────────────────────────────────────
 
@@ -906,3 +716,43 @@ def test_component_max_scores_sum_to_100():
     }
     total = sum(expected_max.values())
     assert total == 100, f"Max scores sum to {total}, expected 100"
+
+
+
+def test_generate_delta_report_empty():
+    from stock_agent import build_signal_delta_report
+    assert build_signal_delta_report([], []) == []
+    assert build_signal_delta_report([{"symbol": "AAPL", "brodel_score": 10}], {}) == []
+
+def test_generate_delta_report_with_changes():
+    from stock_agent import build_signal_delta_report
+    prev_snapshot = {
+        "items": [
+            {"symbol": "AAPL", "brodel_score": 50, "signal_items": ["Old Signal"]},
+            {"symbol": "MSFT", "brodel_score": 60, "signal_items": ["Old Signal"]}
+        ]
+    }
+    current_items = [
+        {"symbol": "AAPL", "brodel_score": 60, "signal_items": ["Old Signal", "New Signal"]},
+        {"symbol": "MSFT", "brodel_score": 50, "signal_items": []},
+        {"symbol": "TSLA", "brodel_score": 40, "signal_items": ["Brand New"]}
+    ]
+    
+    deltas = build_signal_delta_report(current_items, prev_snapshot)
+    assert len(deltas) == 3
+    
+    aapl_delta = next(d for d in deltas if d["symbol"] == "AAPL")
+    assert aapl_delta["score_delta"] == 10
+    assert aapl_delta["change_type"] == "Gestiegen"
+    assert "New Signal" in aapl_delta["new_signals"]
+    
+    msft_delta = next(d for d in deltas if d["symbol"] == "MSFT")
+    assert msft_delta["score_delta"] == -10
+    assert msft_delta["change_type"] == "Gefallen"
+    
+    tsla_delta = next(d for d in deltas if d["symbol"] == "TSLA")
+    assert tsla_delta["score_delta"] == 40
+    assert tsla_delta["change_type"] == "Neu"
+
+
+
