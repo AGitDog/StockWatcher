@@ -525,6 +525,7 @@ def _summarize_technical_indicators(history: pd.DataFrame | None) -> dict[str, A
 
 def _apply_macro_overlay(score: int) -> int:
     try:
+        import fred_cache
         spy = _safe_dataframe(lambda: yf.Ticker("SPY").history(period="1y"))
         vix = _safe_dataframe(lambda: yf.Ticker("^VIX").history(period="1mo"))
         
@@ -542,6 +543,12 @@ def _apply_macro_overlay(score: int) -> int:
             vix_close = float(vix["Close"].iloc[-1])
             if vix_close > 25:
                 multiplier *= 0.9
+
+        # Yield Curve Overlay
+        yield_spread = fred_cache.get_yield_curve_spread()
+        if yield_spread is not None and yield_spread < 0:
+            # Yield curve is inverted (recession signal) -> reduce score
+            multiplier *= 0.95
                 
         return int(round(score * multiplier))
     except Exception:
@@ -1303,26 +1310,53 @@ def _summarize_event_pressure(ticker: yf.Ticker, info: dict[str, Any]) -> dict[s
 
 
 def _summarize_insider_signal(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]:
-    """Score insider buying activity. Uses only get_insider_transactions()
-    to avoid double-counting with get_insider_purchases()."""
+    """Score insider buying activity. Nutzt Finnhub Insider Sentiment als primäre Quelle, 
+    Fallback auf yfinance falls nicht verfügbar."""
     if is_etf:
         return {"name": "Insider-Aktivitaet", "score": 0, "summary": "Nicht relevant fuer ETFs."}
 
-    transactions = _safe_dataframe(lambda: ticker.get_insider_transactions())
-
+    import finnhub_cache
+    symbol = ticker.ticker
+    fh_insider = finnhub_cache.get_insider_sentiment(symbol)
+    
     purchase_count = 0
     sell_count = 0
+    provider = "YF"
 
-    if transactions is not None and not transactions.empty:
-        columns = {str(col).lower(): col for col in transactions.columns}
-        text_col = columns.get("text") or columns.get("transaction")
-        if text_col:
-            for _, row in transactions.head(20).iterrows():
-                text_val = str(row.get(text_col, "")).lower()
-                if any(kw in text_val for kw in ("purchase", "buy", "kauf")):
-                    purchase_count += 1
-                elif any(kw in text_val for kw in ("sale", "sell", "verkauf", "disposition")):
-                    sell_count += 1
+    # Try Finnhub First
+    if fh_insider and isinstance(fh_insider, list) and len(fh_insider) > 0:
+        provider = "Finnhub"
+        # Sum up changes (positive = buying, negative = selling) from the recent sentiment data
+        for item in fh_insider[-3:]: # Look at up to last 3 months
+            change = _safe_float(item.get("change")) or 0
+            if change > 0:
+                purchase_count += change
+            elif change < 0:
+                sell_count += abs(change)
+        
+        # Scale down large counts for our scoring model
+        if purchase_count > 100:
+            purchase_count = 4
+        elif purchase_count > 0:
+            purchase_count = 2
+            
+        if sell_count > 100:
+            sell_count = 4
+        elif sell_count > 0:
+            sell_count = 1
+    else:
+        # Fallback to yfinance
+        transactions = _safe_dataframe(lambda: ticker.get_insider_transactions())
+        if transactions is not None and not transactions.empty:
+            columns = {str(col).lower(): col for col in transactions.columns}
+            text_col = columns.get("text") or columns.get("transaction")
+            if text_col:
+                for _, row in transactions.head(20).iterrows():
+                    text_val = str(row.get(text_col, "")).lower()
+                    if any(kw in text_val for kw in ("purchase", "buy", "kauf")):
+                        purchase_count += 1
+                    elif any(kw in text_val for kw in ("sale", "sell", "verkauf", "disposition")):
+                        sell_count += 1
 
     score = 0
     if purchase_count >= 4:
@@ -1336,9 +1370,9 @@ def _summarize_insider_signal(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]
         score = max(0, score - 3)
 
     if purchase_count == 0 and sell_count == 0:
-        summary = "Keine Insider-Transaktionen erkannt."
+        summary = f"[{provider}] Keine Insider-Transaktionen erkannt."
     else:
-        summary = f"{purchase_count} Kaeufe, {sell_count} Verkaeufe erkannt"
+        summary = f"[{provider}] {int(purchase_count)} Kaeufe, {int(sell_count)} Verkaeufe"
         if purchase_count >= 4:
             summary += " - starkes Insider-Kaufsignal"
         elif purchase_count >= 2:

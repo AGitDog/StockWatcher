@@ -98,3 +98,39 @@ def get_analyst_data(symbol: str) -> tuple[dict[str, Any] | None, list[dict[str,
         _save_cache(cache_data)
         
     return price_target, recommendation
+def get_insider_sentiment(symbol: str) -> list[dict[str, Any]]:
+    """
+    Holt Insider Sentiment von Finnhub.
+    Returns: list of sentiment dicts (empty if no data or error).
+    """
+    api_key = get_finnhub_key()
+    if not api_key:
+        return []
+
+    cache_data = _load_cache()
+    now = time.time()
+    
+    symbol_data = cache_data.get(symbol)
+    if symbol_data and "insider" in symbol_data and (now - symbol_data.get("timestamp_insider", 0)) < 12 * 60 * 60:
+        return symbol_data.get("insider", [])
+
+    insider_data = []
+    try:
+        url = f"https://finnhub.io/api/v1/stock/insider-sentiment?symbol={symbol}&from=2024-01-01&to=2030-01-01&token={api_key}"
+        res = requests.get(url, timeout=10)
+        if res.status_code == 200:
+            data = res.json()
+            if "data" in data:
+                insider_data = data["data"]
+    except Exception as e:
+        print(f"Finnhub Insider API Error for {symbol}: {e}")
+        return []
+
+    if symbol not in cache_data:
+        cache_data[symbol] = {}
+        
+    cache_data[symbol]["timestamp_insider"] = now
+    cache_data[symbol]["insider"] = insider_data
+    _save_cache(cache_data)
+        
+    return insider_data
