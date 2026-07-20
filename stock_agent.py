@@ -1379,7 +1379,7 @@ def _summarize_short_interest(info: dict[str, Any], history: pd.DataFrame | None
 
 
 def _summarize_fundamentals(info: dict[str, Any]) -> dict[str, Any]:
-    """Berechnet einen Score basierend auf P/E, PEG, Debt/Equity und FCF Yield."""
+    """Berechnet einen Score basierend auf P/E, PEG, Debt/Equity, FCF Yield und Gewinnmarge."""
     score = 0
     components = []
 
@@ -1388,6 +1388,7 @@ def _summarize_fundamentals(info: dict[str, Any]) -> dict[str, Any]:
     debt_equity = _safe_float(info.get("debtToEquity"))
     fcf = _safe_float(info.get("freeCashflow"))
     mcap = _safe_float(info.get("marketCap"))
+    profit_margin = _safe_float(info.get("profitMargins"))
 
     if forward_pe is not None and forward_pe > 0:
         if forward_pe < 15:
@@ -1396,6 +1397,9 @@ def _summarize_fundamentals(info: dict[str, Any]) -> dict[str, Any]:
         elif forward_pe < 25:
             score += 1
             components.append(f"P/E {forward_pe:.1f}")
+        elif forward_pe > 50:
+            score -= 2
+            components.append(f"P/E {forward_pe:.1f} (hoch)")
 
     if peg_ratio is not None and peg_ratio > 0:
         if peg_ratio < 1.0:
@@ -1420,6 +1424,15 @@ def _summarize_fundamentals(info: dict[str, Any]) -> dict[str, Any]:
         elif fcf_yield > 2:
             score += 1
 
+    if profit_margin is not None:
+        if profit_margin > 0.20:
+            score += 2
+            components.append(f"Marge {profit_margin*100:.1f}%")
+        elif profit_margin > 0.10:
+            score += 1
+            components.append(f"Marge {profit_margin*100:.1f}%")
+
+    score = max(-2, min(10, score))
     summary = "Stark: " + ", ".join(components) if components else "Fundamentaldaten unauffaellig."
     if score == 0:
         summary = "Fundamentaldaten unauffaellig oder nicht verfuegbar."

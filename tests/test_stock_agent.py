@@ -13,6 +13,7 @@ from stock_agent import (
     _summarize_insider_signal,
     _summarize_short_interest,
     _summarize_relative_strength,
+    _summarize_fundamentals,
     _get_benchmark_symbol,
     _analyze_news_sentiment,
     _analyze_sentiment_keywords,
@@ -806,3 +807,90 @@ def test_apply_macro_overlay_bear_market_high_vix(mock_ticker_class):
     # Base score 10 * 0.8 (SPY) * 0.9 (VIX) = 7.2 -> 7
     score = _apply_macro_overlay(10)
     assert score == 7
+
+
+# --- Fundamentals ---
+
+def test_fundamentals_empty_info():
+    """Empty info dict should return score 0."""
+    result = _summarize_fundamentals({})
+    assert result["score"] == 0
+    assert result["name"] == "Fundamentale Bewertung"
+
+
+def test_fundamentals_perfect_value_stock():
+    """A stock with all 5 metrics in top tier should score 10 (the max)."""
+    info = {
+        "forwardPE": 10.0,       # < 15 -> +2
+        "pegRatio": 0.8,         # < 1.0 -> +2
+        "debtToEquity": 30.0,    # < 50 -> +2
+        "freeCashflow": 6e9,     # FCF yield = 6% > 5% -> +2
+        "marketCap": 100e9,
+        "profitMargins": 0.25,   # > 20% -> +2
+    }
+    result = _summarize_fundamentals(info)
+    assert result["score"] == 10, f"Expected max 10, got {result['score']}"
+
+
+def test_fundamentals_overvalued_stock():
+    """A stock with extreme P/E should get a negative penalty."""
+    info = {
+        "forwardPE": 80.0,       # > 50 -> -2
+    }
+    result = _summarize_fundamentals(info)
+    assert result["score"] == -2, f"Expected -2 for overvalued, got {result['score']}"
+
+
+def test_fundamentals_moderate_stock():
+    """A stock with moderate metrics gets partial points."""
+    info = {
+        "forwardPE": 20.0,       # < 25 -> +1
+        "pegRatio": 1.2,         # < 1.5 -> +1
+        "debtToEquity": 80.0,    # < 100 -> +1
+        "freeCashflow": 3e9,     # 3% > 2% -> +1
+        "marketCap": 100e9,
+        "profitMargins": 0.15,   # > 10% -> +1
+    }
+    result = _summarize_fundamentals(info)
+    assert result["score"] == 5, f"Expected 5, got {result['score']}"
+
+
+def test_fundamentals_score_capped_at_10():
+    """Score should never exceed 10 even with extreme inputs."""
+    info = {
+        "forwardPE": 5.0,
+        "pegRatio": 0.3,
+        "debtToEquity": 10.0,
+        "freeCashflow": 20e9,
+        "marketCap": 100e9,
+        "profitMargins": 0.40,
+    }
+    result = _summarize_fundamentals(info)
+    assert result["score"] <= 10, f"Score {result['score']} exceeds max 10"
+
+
+def test_fundamentals_profit_margin_in_summary():
+    """Profit margin should appear in the summary text."""
+    info = {"profitMargins": 0.25}
+    result = _summarize_fundamentals(info)
+    assert "Marge" in result["summary"]
+
+
+# --- Weight Verification ---
+
+def test_component_max_scores_sum_to_100():
+    """Verify that the max scores declared in app.py actually sum to 100."""
+    expected_max = {
+        "EPS-Revisionen": 15,
+        "Kursziele & Konsens": 15,
+        "News-Sentiment": 15,
+        "Technische Indikatoren": 10,
+        "Preis/Volumen": 10,
+        "Fundamentale Bewertung": 10,
+        "Insider-Aktivitaet": 10,
+        "Short Interest": 5,
+        "Relative Staerke": 5,
+        "Event-Druck": 5,
+    }
+    total = sum(expected_max.values())
+    assert total == 100, f"Max scores sum to {total}, expected 100"

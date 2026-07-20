@@ -1,4 +1,4 @@
-﻿import os
+import os
 
 import pandas as pd
 import streamlit as st
@@ -428,7 +428,7 @@ def render_help_tab():
     st.markdown("- **Kursziel & Konsens (max. 15 Punkte):** Misst den Upside-Prozentsatz zum mittleren Analystenziel (+1 Punkt je 2% Upside). Liegt der Anteil an 'Buy'-Ratings ueber 80%, gibt es 5 Extrapunkte.")
     st.markdown("- **News-Sentiment (max. 15 Punkte):** Gemini (KI) analysiert den Textgehalt aktueller News. Bullishe News geben Punkte (+3 je Artikel), bearishe ziehen Punkte ab (-3 je Artikel).")
     st.markdown("- **Technische Indikatoren (max. 10 Punkte):** �berverkaufter RSI (<30) gibt +4, �berkaufter RSI (>70) gibt -4. Ein positiver MACD gibt +3. Kurs unter dem Bollinger Band gibt +3.")
-    st.markdown("- **Fundamentale Bewertung (max. 10 Punkte):** Klassisches Value-Scoring. P/E < 15 (+2), PEG < 1 (+2), Debt/Equity < 50 (+2), FCF Yield > 5% (+2).")
+    st.markdown("- **Fundamentale Bewertung (max. 10 Punkte):** Klassisches Value-Scoring. P/E < 15 (+2), PEG < 1 (+2), Debt/Equity < 50 (+2), FCF Yield > 5% (+2), Gewinnmarge > 20% (+2). Extrem hohe P/E > 50 gibt -2 Punkte.")
     st.markdown("- **Preis & Volumen Momentum (max. 10 Punkte):** Trendbestaetigung. Gibt Punkte fuer Kurse ueber der 20- und 50-Tage-Linie, Volumenspitzen und bestraft starke Abverkaeufe.")
     st.markdown("- **Insider-Aktivitaet (max. 10 Punkte):** Kaufen oder verkaufen Manager eigene Aktien? Cluster-Kaeufe sind ein extrem starkes Fruehsignal (+4 Punkte f�r Insiderkaeufe, +6 f�r Transaktionen).")
     st.markdown("- **Relative Staerke (max. 5 Punkte):** Outperformance gegenueber der jeweiligen Benchmark (DAX, S&P 500 etc.) im letzten Monat bringt Punkte.")
