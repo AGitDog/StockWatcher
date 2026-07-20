@@ -191,153 +191,6 @@ def render_watchlist_source_controls():
         )
 
 
-def render_watchlist_briefing(mapping_text: str):
-    st.write(
-        "Erstellt pro Symbol eine Zusammenfassung zu News, Insideraktivitaet, "
-        "Analysten-Upgrades oder Downgrades und naechsten Terminen."
-    )
-
-    if st.button("Zusammenfassung erstellen", type="primary"):
-        if not st.session_state.watchlist_text.strip():
-            st.warning("Bitte eine Watchlist-Datei hochladen, laden oder mindestens ein Symbol eingeben.")
-            return
-
-        with st.spinner("Lade Marktdaten und erstelle Briefing..."):
-            entries = parse_watchlist_text(st.session_state.watchlist_text)
-            symbol_mappings = parse_symbol_mappings(mapping_text or "")
-            
-            if not entries:
-                st.warning("Es wurden keine gueltigen Symbole gefunden.")
-                return
-
-            progress_bar = st.progress(0, text="Lade Daten...")
-            summary_items = []
-            
-            for i, entry in enumerate(entries):
-                progress_bar.progress((i) / len(entries), text=f"Lade Daten für {entry} ({i}/{len(entries)})...")
-                item = get_symbol_summary(entry, symbol_mappings)
-                summary_items.append(item)
-            
-            progress_bar.progress(1.0, text="Laden abgeschlossen.")
-
-        st.success(f"{len(summary_items)} Symbole analysiert.")
-        for item in summary_items:
-            label = f"{item['symbol']} - {item['name']}"
-            with st.expander(label, expanded=False):
-                if item["resolved"]:
-                    st.caption(f"Eingabe: {item['input_name']} | {item['resolution_note']}")
-                st.write(item["summary"])
-
-                st.markdown("**Insideraktivitaet**")
-                st.write(item["insider_activity"]["headline"])
-                insider_items = item["insider_activity"]["items"] or ["Keine Detailzeilen verfuegbar."]
-                for detail in insider_items:
-                    st.markdown(f"- {detail}")
-
-                st.markdown("**Upgrades / Downgrades**")
-                analyst_items = item["analyst_actions"]["items"]
-                st.write(item["analyst_actions"]["headline"])
-                if analyst_items:
-                    for detail in analyst_items:
-                        st.markdown(f"- {detail}")
-
-                st.markdown("**Naechste Termine**")
-                next_dates = item["next_dates"] or ["Keine Termine verfuegbar."]
-                for detail in next_dates:
-                    st.markdown(f"- {detail}")
-
-                st.markdown("**News-Lage**")
-                news_items = item["news"]
-                if news_items:
-                    for detail in news_items:
-                        meta_parts = [part for part in (detail.get("date"), detail.get("publisher")) if part]
-                        meta_text = " | ".join(meta_parts)
-                        label = f"[{detail['title']}]({detail['url']})"
-                        if meta_text:
-                            st.markdown(f"- {meta_text} | {label}")
-                        else:
-                            st.markdown(f"- {label}")
-                else:
-                    st.markdown("- Keine aktuellen News gefunden.")
-
-
-def render_watchlist_alerts(mapping_text: str):
-    st.write("Filtert die Watchlist auf neue Analysten-Aenderungen, Insiderkaeufe und anstehende Termine.")
-    lookahead_days = st.slider("Termine innerhalb der naechsten Tage", min_value=1, max_value=365, value=30)
-
-    if st.button("Alerts erzeugen"):
-        if not st.session_state.watchlist_text.strip():
-            st.warning("Bitte eine Watchlist-Datei hochladen, laden oder mindestens ein Symbol eingeben.")
-            return
-
-        with st.spinner("Pruefe Watchlist auf Alerts..."):
-            entries = parse_watchlist_text(st.session_state.watchlist_text)
-            symbol_mappings = parse_symbol_mappings(mapping_text or "")
-            
-            if not entries:
-                st.warning("Es wurden keine gueltigen Symbole gefunden.")
-                return
-
-            progress_bar = st.progress(0, text="Prüfe Alerts...")
-            summary_items = []
-            
-            for i, entry in enumerate(entries):
-                progress_bar.progress((i) / len(entries), text=f"Prüfe {entry} ({i}/{len(entries)})...")
-                item = get_symbol_summary(entry, symbol_mappings)
-                summary_items.append(item)
-            
-            progress_bar.progress(1.0, text="Prüfung abgeschlossen.")
-
-            # Calculate alerts from summaries
-            import datetime
-            alert_items = []
-            for item in summary_items:
-                alert_parts = []
-                if item["analyst_actions"]["items"]:
-                    alert_parts.append(f"Analysten: {item['analyst_actions']['items'][0]}")
-                if item["insider_activity"]["items"]:
-                    alert_parts.append(f"Insider: {item['insider_activity']['items'][0]}")
-                
-                import re
-                for next_date in item["next_dates"]:
-                    match = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", next_date)
-                    if match:
-                        try:
-                            date_value = datetime.datetime.strptime(match.group(1), "%Y-%m-%d")
-                            if 0 <= (date_value.date() - datetime.datetime.utcnow().date()).days <= lookahead_days:
-                                alert_parts.append(f"Termin: {next_date}")
-                        except ValueError:
-                            pass
-                
-                if alert_parts:
-                    # Dedupe
-                    deduped = []
-                    seen = set()
-                    for p in alert_parts:
-                        if p not in seen:
-                            seen.add(p)
-                            deduped.append(p)
-                    alert_items.append({
-                        "symbol": item["symbol"],
-                        "name": item["name"],
-                        "input_name": item["input_name"],
-                        "resolution_note": item["resolution_note"],
-                        "items": deduped,
-                    })
-
-        if not alert_items:
-            st.info("Aktuell wurden keine Alerts fuer diese Watchlist gefunden.")
-            return
-
-        st.success(f"{len(alert_items)} Symbole mit Alerts gefunden.")
-        for item in alert_items:
-            header = f"{item['symbol']} - {item['name']}"
-            with st.expander(header, expanded=True):
-                st.caption(f"Eingabe: {item['input_name']} | {item['resolution_note']}")
-                for detail in item["items"]:
-                    st.markdown(f"- {detail}")
-
-
 def render_watchlist_signal_monitor(mapping_text: str):
     st.subheader("Signal Monitor V2")
     st.write(
@@ -588,14 +441,10 @@ def render_stock_agent():
 
     mapping_text = load_mapping_text()
 
-    stock_tabs = st.tabs(["Watchlist Briefing", "Watchlist Alerts", "Signal Monitor V2", "Watchlist Verwaltung"])
+    stock_tabs = st.tabs(["Signal Monitor V2", "Watchlist Verwaltung"])
     with stock_tabs[0]:
-        render_watchlist_briefing(mapping_text)
-    with stock_tabs[1]:
-        render_watchlist_alerts(mapping_text)
-    with stock_tabs[2]:
         render_watchlist_signal_monitor(mapping_text)
-    with stock_tabs[3]:
+    with stock_tabs[1]:
         st.subheader("Watchlist-Quelle")
         st.write(
             "Hier kannst du gespeicherte Watchlists aus dem Projekt laden oder neue Watchlists als Datei speichern."
@@ -617,3 +466,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
