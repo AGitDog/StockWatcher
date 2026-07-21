@@ -510,6 +510,19 @@ def render_help_tab():
 
     st.markdown("---")
     st.markdown("### Das Makro-Overlay (Markt-Kontext)")
+    st.write("Nachdem der Basis-Score (Maximal 100 Punkte) berechnet wurde, wird die Großwetterlage geprüft:")
+
+    st.markdown("- **Bullenmarkt-Bonus:** Steht der S&P 500 (SPY) über seiner 200-Tage-Linie, wird der Basis-Score um **10% angehoben (1.1x)**.")
+    st.markdown("- **Bärenmarkt-Malus:** Steht der S&P 500 unter der 200-Tage-Linie, wird der Score um **20% gekürzt (0.8x)**.")
+    st.markdown("- **Volatilitäts-Bremse:** Liegt der Angstindex (VIX) über 25 Punkten, wird der Score pauschal um **10% reduziert (0.9x)**.")
+    st.markdown("- **Rezessions-Indikator (FRED):** Wenn die US-Zinsstrukturkurve invertiert ist (10Y Rendite minus 2Y Rendite < 0), wird der Score aus Risiko-Erwägungen um weitere **5% (0.95x)** reduziert.")
+
+
+def render_stock_agent():
+    st.title("Aktien-Agent")
+    st.caption("Watchlist-Monitor fuer Marktveraenderungen, Fruehsignale und priorisierte Beobachtung.")
+
+    mapping_text = load_mapping_text()
 
     stock_tabs = st.tabs(["Signal Monitor V2", "Watchlist Verwaltung", "Hilfe & Methodik"])
     with stock_tabs[0]:
@@ -538,8 +551,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-

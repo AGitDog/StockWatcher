@@ -325,3 +325,63 @@ def test_save_signal_snapshot_produces_valid_json(tmp_path):
     symbols = [item["symbol"] for item in items]
     assert "AAPL" in symbols
     assert "MSFT" in symbols
+
+
+# ── Requirements.txt Vollstaendigkeitstest ────────────────────────────────────
+
+def test_requirements_txt_is_valid():
+    """requirements.txt muss gültig sein – jede Zeile darf nur EINE Abhängigkeit enthalten."""
+    req_path = Path("d:/Michael/StockWatcher/stock_monitor_app/requirements.txt")
+    content = req_path.read_text(encoding="utf-8")
+    lines = [l.strip() for l in content.splitlines() if l.strip() and not l.strip().startswith("#")]
+    
+    for line in lines:
+        # No line should contain multiple package names jammed together (e.g., "requests>=2.31.0numpy>=1.20.0")
+        # A valid specifier has at most one package name
+        # Check: no lowercase letter immediately followed by uppercase or digit-dot sequence typical of a new package
+        assert " " not in line, f"Leerzeichen in requirements-Zeile: '{line}'"
+        # A simple heuristic: splitting on known separators should yield exactly 2 parts
+        # Most importantly check the crucial packages are present
+    
+    package_names = [line.split(">=")[0].split("==")[0].split("<=")[0].strip().lower() for line in lines]
+    for required in ["streamlit", "pandas", "yfinance", "requests", "google-genai"]:
+        assert required in package_names, f"Paket '{required}' fehlt in requirements.txt"
+
+
+def test_requirements_packages_not_merged():
+    """Stellt sicher, dass 'google-genai' und 'requests' nicht auf einer Zeile stecken."""
+    req_path = Path("d:/Michael/StockWatcher/stock_monitor_app/requirements.txt")
+    content = req_path.read_text(encoding="utf-8")
+    assert "google-genai" in content, "google-genai nicht in requirements.txt"
+    assert "requests" in content, "requests nicht in requirements.txt"
+    
+    for line in content.splitlines():
+        assert not ("google-genai" in line and "requests" in line), \
+            f"google-genai und requests sind auf einer Zeile zusammengefügt: '{line}'"
+
+
+# ── Workflow API-Secrets Tests ────────────────────────────────────────────────
+
+def test_workflows_inject_api_secrets():
+    """Beide Workflows muessen die API-Keys als Umgebungsvariablen übergeben."""
+    required_secrets = [
+        "FINNHUB_API_KEY",
+        "ALPHAVANTAGE_API_KEY",
+        "FRED_API_KEY",
+        "GOOGLE_API_KEY",
+    ]
+    for name in ["update_signals.yml", "daily_run.yml"]:
+        path = Path(f"d:/Michael/StockWatcher/stock_monitor_app/.github/workflows/{name}")
+        content = path.read_text(encoding="utf-8")
+        for secret in required_secrets:
+            assert secret in content, f"Secret '{secret}' fehlt in {name}"
+
+
+def test_workflows_have_contents_write_permission():
+    """Beide Workflows muessen 'contents: write' Berechtigung haben um pushen zu koennen."""
+    for name in ["update_signals.yml", "daily_run.yml"]:
+        path = Path(f"d:/Michael/StockWatcher/stock_monitor_app/.github/workflows/{name}")
+        content = path.read_text(encoding="utf-8")
+        assert "contents: write" in content, \
+            f"{name} hat kein 'contents: write' – der Push nach GitHub Actions wird fehlschlagen"
+

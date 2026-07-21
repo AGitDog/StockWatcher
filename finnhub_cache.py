@@ -16,18 +16,27 @@ def get_finnhub_key() -> str:
     if api_key:
         return api_key
 
-    # 2. Try Streamlit secrets.toml
+    # 2. Try Streamlit secrets.toml – parse [finnhub] section correctly
     secrets_path = Path(".streamlit/secrets.toml")
     if secrets_path.exists():
         try:
             content = secrets_path.read_text(encoding="utf-8")
+            in_finnhub_section = False
             for line in content.splitlines():
-                if line.startswith("api_key") and "=" in line:
-                    return line.split("=")[1].strip().strip('"').strip("'")
+                line = line.strip()
+                if line == "[finnhub]":
+                    in_finnhub_section = True
+                    continue
+                elif line.startswith("[") and line.endswith("]"):
+                    in_finnhub_section = False
+                    continue
+                if in_finnhub_section and line.startswith("api_key") and "=" in line:
+                    return line.split("=", 1)[1].strip().strip('"').strip("'")
         except Exception:
             pass
 
     return ""
+
 
 def _load_cache() -> dict[str, Any]:
     if not CACHE_FILE.exists():
