@@ -11,3 +11,10 @@ env/
 
 # Streamlit
 .streamlit/
+
+# Local data caches and generated history
+.cache/
+cache/
+signal_history/
+ml_weights/optimized_weights.json
+*.log

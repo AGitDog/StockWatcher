@@ -19,6 +19,10 @@ from stock_agent import (
     save_signal_snapshot,
     save_watchlist_file,
 )
+from strategies import build_strategy_signals
+from backtest_engine import BacktestEngine, run_backtest_on_snapshots
+from ml_weights import load_trained_weights, train_on_snapshots
+from backtest_engine.engine import load_snapshots
 
 
 st.set_page_config(layout="wide")
@@ -238,9 +242,20 @@ def render_watchlist_signal_monitor(mapping_text: str):
             
             progress_bar.progress(1.0, text="Berechnung Peer-Kontext...")
             
-            # Final calculation with peer context
+            # Final calculation with peer context and strategy signals
             enriched_results = add_watchlist_peer_context(raw_results)
-            st.session_state.signal_monitor_items = sorted(enriched_results, key=lambda x: x.get("brodel_score", 0), reverse=True)
+            strategy_results = build_strategy_signals(enriched_results)
+            
+            # Apply ML weights if available
+            trainer = load_trained_weights()
+            for item in strategy_results:
+                item["ml_score"] = round(trainer.predict_score(item), 2)
+            
+            st.session_state.signal_monitor_items = sorted(
+                strategy_results,
+                key=lambda x: x.get("ml_score", x.get("brodel_score", 0)),
+                reverse=True,
+            )
             st.session_state.signal_monitor_watchlist_name = st.session_state.get("active_watchlist_name", DEFAULT_WATCHLIST_NAME)
             
             progress_bar.empty()
@@ -312,6 +327,31 @@ def render_watchlist_signal_monitor(mapping_text: str):
     else:
         st.info("Noch kein vorheriger Snapshot oder keine relevanten Veraenderungen seit dem letzten Snapshot.")
 
+    st.markdown("**Strategie-Signale & Handlungsempfehlungen**")
+    strategy_rows = []
+    for item in signal_items:
+        best = item.get("best_strategy")
+        if best:
+            strategy_rows.append(
+                {
+                    "Symbol": item["symbol"],
+                    "Name": item["name"],
+                    "Setup": best.get("setup", "-"),
+                    "Strategie": best.get("strategy_name", "-"),
+                    "Richtung": best.get("direction", "-"),
+                    "Konfidenz": f"{best.get('confidence', 0):.0%}",
+                    "Einstieg": best.get("entry_price"),
+                    "Stop-Loss": best.get("stop_loss"),
+                    "Take-Profit": best.get("take_profit"),
+                    "Pos.-Grösse": f"{best.get('position_size_pct', 0):.1%}",
+                    "Begründung": best.get("rationale", "")[:80] + "...",
+                }
+            )
+    if strategy_rows:
+        st.dataframe(pd.DataFrame(strategy_rows), use_container_width=True, hide_index=True)
+    else:
+        st.info("Keine klaren Strategie-Setups in der aktuellen Watchlist erkannt.")
+
     st.markdown("**Alle Signale in der Uebersicht (detailliert)**")
     table_rows = []
     for item in signal_items:
@@ -322,7 +362,8 @@ def render_watchlist_signal_monitor(mapping_text: str):
                 "Symbol": item["symbol"],
                 "Name": item["name"],
                 "Sektor": peer_context.get("sector", "Unbekannt"),
-                "Score": item.get("brodel_score", 0),
+                "Brodel": item.get("brodel_score", 0),
+                "ML-Score": item.get("ml_score", item.get("brodel_score", 0)),
                 "EPS": breakdown.get("EPS-Revisionen", {}).get("score", 0),
                 "Kursziel": breakdown.get("Kursziele & Konsens", {}).get("score", 0),
                 "P/V": breakdown.get("Preis/Volumen", {}).get("score", 0),
@@ -424,6 +465,30 @@ def render_help_tab():
     st.write("Der **Brodel-Score** (Skala: -30 bis 100) ist ein proprietäres 'Frühwarn-Thermometer' dieses Systems. "
              "Er aggregiert Signale aus 10 verschiedenen Finanzkategorien und wendet abschließend ein Makro-Overlay an. "
              "Das Ziel ist es, starke Aktien in schwachen Märkten, ausbrechende Momentum-Titel und Value-Chancen zu identifizieren.")
+
+    st.markdown("### Schnellstart: der empfohlene Ablauf")
+    st.markdown(
+        "1. Öffne **Watchlist Verwaltung** und wähle eine gespeicherte Watchlist oder lege eine neue Liste mit Symbolen, Namen oder Indexkürzeln an.\n"
+        "2. Öffne **Signal Monitor V2** und starte **Signale aktualisieren**. Die App lädt die verfügbaren Marktdaten, berechnet die Komponenten und ordnet die Watchlist nach Priorität.\n"
+        "3. Speichere nach einer Analyse einen **Snapshot**. Erst mehrere Snapshots ergeben einen aussagekräftigen Score-Verlauf, einen Backtest und Trainingsdaten für die ML-Gewichte.\n"
+        "4. Prüfe neben dem Gesamtscore immer die Einzelkomponenten, das Setup, den Stop-Loss, die Liquidität und den Sektor-Kontext.\n"
+        "5. Nutze **Backtest & ML** zunächst zur Prüfung und danach im Paper-Trading. Ein hoher Score ist ein Recherche-Signal und keine automatische Kaufentscheidung."
+    )
+
+    with st.expander("Die vier Tabs im Überblick"):
+        st.markdown(
+            "- **Signal Monitor V2:** aktuelle Frühwarnsignale, Delta-Alerts gegenüber dem letzten Snapshot, Strategie-Setups, ML-Score, Detailanalyse und Score-Verlauf.\n"
+            "- **Backtest & ML:** historische Simulation des Top-N-Portfolios, Equity-Kurve, Trade-Liste und Training der Komponenten-Gewichte.\n"
+            "- **Watchlist Verwaltung:** Watchlist-Dateien laden, bearbeiten und speichern. Manuelle Zuordnungen aus `stock_mappings.txt` helfen bei Namen, die nicht eindeutig aufgelöst werden können.\n"
+            "- **Hilfe & Methodik:** Definitionen der Signale, Datenquellen, Berechnungen, Grenzen und Bedienhinweise."
+        )
+
+    with st.expander("Scores richtig interpretieren"):
+        st.markdown(
+            "Der Brodel-Score ist ein Ranking innerhalb des aktuellen Analysezeitpunkts. Er ist **keine Wahrscheinlichkeit**, dass eine Aktie steigt, und kein Kursziel. "
+            "Vergleiche möglichst Aktien aus ähnlichen Branchen und Märkten. Ein Score sollte erst dann zu einer Handelsidee werden, wenn mindestens folgende Punkte zusammenpassen: Trend oder klarer Katalysator, ausreichende Liquidität, plausibles Chance-Risiko-Verhältnis und ein definierter Ausstieg."
+        )
+        st.warning("Ein fehlender Datenpunkt wird nicht automatisch zu einem positiven Signal. Prüfe in der Detailanalyse, ob ein Score durch echte Daten oder durch neutrale Standardwerte zustande kommt.")
     
     st.markdown("---")
     st.markdown("### Die 10 Signalkomponenten")
@@ -517,6 +582,191 @@ def render_help_tab():
     st.markdown("- **Volatilitäts-Bremse:** Liegt der Angstindex (VIX) über 25 Punkten, wird der Score pauschal um **10% reduziert (0.9x)**.")
     st.markdown("- **Rezessions-Indikator (FRED):** Wenn die US-Zinsstrukturkurve invertiert ist (10Y Rendite minus 2Y Rendite < 0), wird der Score aus Risiko-Erwägungen um weitere **5% (0.95x)** reduziert.")
 
+    st.markdown("---")
+    st.markdown("### Strategie-Setups")
+    st.write("Die Strategien versuchen, aus dem Signalprofil konkrete, getrennte Handelsideen abzuleiten. Sie ersetzen nicht die Einzelprüfung der Aktie.")
+    with st.expander("Momentum / Breakout"):
+        st.write("Sucht Aktien mit Trend über MA20 und MA50, positiver kurzfristiger Bewegung, Volumenbestätigung, positiven Revisionen oder Konsensdaten und relativer Stärke. Das Setup ist trendfolgend und kann bei späten Einstiegen besonders anfällig für Rücksetzer sein.")
+    with st.expander("Mean Reversion / Oversold Bounce"):
+        st.write("Sucht überverkaufte Aktien mit niedrigem RSI, Nähe zum unteren Bollinger Band und starkem Rückgang. News und Short Interest sollen keinen eindeutig bearishen Zustand anzeigen. Das Setup ist antizyklisch und kann in einem echten Abwärtstrend weiter fallen.")
+    with st.expander("Pre-Earnings"):
+        st.write("Sucht Aktien mit bevorstehenden Quartalszahlen, intaktem Trend, positiver Gewinnrevision und ohne extremes Überkauft-Signal. Der Earnings-Termin ist ein Ereignisrisiko: Kurslücken können Stop-Loss-Ausführungen deutlich verschlechtern.")
+    with st.expander("Short Squeeze"):
+        st.write("Sucht hohe Short-Quote zusammen mit steigender Kursstärke und ungewöhnlichem Volumen. Eine hohe Short-Quote allein ist kein Kaufsignal; sie kann auch auf fundamentale Probleme oder anhaltenden Verkaufsdruck hindeuten.")
+
+    st.markdown("### Backtesting: Was wird simuliert?")
+    st.write(
+        "Der Backtest nimmt die gespeicherten Signal-Snapshots und simuliert daraus ein Portfolio. Standardmäßig werden die Aktien mit den höchsten Brodel-Scores ausgewählt, "
+        "die Positionen werden nach dem gewählten Intervall neu zusammengestellt und mit einer Benchmark verglichen. Die Simulation verwendet verfügbare Handelstage, führt ein Signal frühestens am nächsten Handelstag aus und prüft offene Stops und Take-Profits täglich."
+    )
+    st.markdown("**Einstellungen:**")
+    st.markdown(
+        "- **Startkapital:** rein rechnerischer Portfoliowert zum Start.\n"
+        "- **Max. Positionen:** begrenzt die Anzahl gleichzeitig geöffneter Positionen.\n"
+        "- **Rebalancing:** Abstand zwischen den Portfolio-Umschichtungen in Tagen.\n"
+        "- **Benchmark:** Vergleichsindex, zum Beispiel SPY, QQQ, IWM oder DAX."
+    )
+    st.markdown("**Ausgaben:**")
+    st.markdown(
+        "- **Total Return:** Gesamtveränderung des simulierten Portfolios.\n"
+        "- **CAGR:** annualisierte Rendite über die tatsächliche Zeitspanne.\n"
+        "- **Sharpe Ratio:** Rendite im Verhältnis zur Schwankung; höhere Werte sind nicht automatisch belastbar.\n"
+        "- **Max Drawdown:** größter Rückgang vom bisherigen Höchststand.\n"
+        "- **Win Rate und Profit Factor:** Gewinnhäufigkeit und Verhältnis von Bruttogewinnen zu Bruttoverlusten.\n"
+        "- **Alpha:** Differenz zwischen Portfolio- und Benchmark-Rendite.\n"
+        "- **Equity-Kurve und Trades:** zeitlicher Verlauf und einzelne Ein-/Ausstiege."
+    )
+    st.info("Ein Backtest ist nur so gut wie seine Snapshots und Kursdaten. Er modelliert nicht automatisch jeden Spread, jede Marktgängigkeit oder jede Kurslücke. Besonders bei kleinen Aktien können echte Ausführungen deutlich schlechter sein.")
+
+    with st.expander("Risikobasierte Positionsgröße"):
+        st.write("Wenn ein Strategie-Signal einen Stop-Loss liefert, wird die Positionsgröße anhand des Stop-Abstands berechnet. Standardmäßig werden dabei ungefähr 0,75% des Startkapitals riskiert. Ein weiter Stop führt deshalb zu einer kleineren Position, ein enger Stop zu einer größeren Position.")
+        st.code("Risiko je Trade = Startkapital * 0,0075\nAktienanzahl = Risiko je Trade / abs(Einstieg - Stop-Loss)")
+        st.write("Das ist eine Risikobegrenzung, keine Garantie gegen Verluste. Bei Kurslücken kann der tatsächliche Verlust über dem geplanten Risiko liegen.")
+
+    st.markdown("### ML-Gewichtung")
+    st.write(
+        "Mit **ML-Gewichtung trainieren** werden historische Snapshots mit der späteren 30-Tage-Forward-Rendite verbunden. Ein Ridge-Regressionsmodell schätzt, welche der zehn Komponenten im vorhandenen Datenbestand stärker oder schwächer gewichtet werden sollten. Negative Gewichte werden ausgeschlossen und die Gewichte anschließend zur besseren Lesbarkeit normiert."
+    )
+    st.markdown(
+        "- Es werden mindestens fünf Snapshots benötigt. Mehrere Monate mit regelmäßig gespeicherten Snapshots sind deutlich aussagekräftiger.\n"
+        "- Die Gewichte werden in `ml_weights/optimized_weights.json` gespeichert.\n"
+        "- Der Signal Monitor lädt vorhandene Gewichte und zeigt zusätzlich zum Brodel-Score einen ML-Score.\n"
+        "- Die angezeigte Trainingskorrelation ist keine Garantie für zukünftige Rendite. Ohne getrennte Out-of-sample-Prüfung kann ein Modell überangepasst sein."
+    )
+
+    st.markdown("### Datenquellen und Caching")
+    st.markdown(
+        "- **Yahoo Finance / yfinance:** Kurse, Volumen, technische Historie, News, Earnings-Termine, Basis-Fundamentaldaten und teilweise Insider-/Short-Daten.\n"
+        "- **Finnhub:** Analysten-Kursziele, Empfehlungen und Insider-Sentiment, sofern `FINNHUB_API_KEY` eingerichtet ist. Cache-Dauer: typischerweise 24 Stunden.\n"
+        "- **Alpha Vantage:** Fundamentaldaten, sofern `ALPHAVANTAGE_API_KEY` eingerichtet ist. Cache-Dauer: typischerweise 30 Tage; bei fehlendem Key oder Limit greift die App auf Yahoo Finance zurück.\n"
+        "- **FRED:** US-Zinskurven-Spread `T10Y2Y` für den Makro-Overlay, sofern `FRED_API_KEY` eingerichtet ist.\n"
+        "- **Google Gemini:** optionale semantische News-Auswertung, wenn die Google-GenAI-Abhängigkeit und ein gültiger Key verfügbar sind; sonst wird eine lokale Keyword-Auswertung verwendet.\n"
+        "- **Wikipedia:** Indexzusammensetzungen für unterstützte Indizes."
+    )
+    st.caption("Lokale Caches sparen API-Aufrufe, können aber veraltete Daten enthalten. Prüfe das Alter der Daten, bevor du eine Entscheidung triffst.")
+
+    st.markdown("### Empfohlener Einstiegsplan")
+    st.write(
+        "Die App ist erst dann wirklich nützlich, wenn genügend Historie vorhanden ist. Bis dahin ist jede Strategie nur eine Hypothese. "
+        "Der folgende Plan ist bewusst defensiv gehalten. Er priorisiert das Sammeln von Beweisen vor dem Einsatz von Kapital."
+    )
+    with st.expander("Schritt 1: Automatische Datensammlung (ab sofort)"):
+        st.markdown(
+            "- Richte `daily_job.py` so ein, dass es täglich nach Börsenschluss läuft. Unter Windows geht das über die Aufgabenplanung, unter Linux über cron.\n"
+            "- Sorge dafür, dass die Watchlists stabil bleiben. Häufiges Hinzufügen und Entfernen von Aktien verwässert die Historie.\n"
+            "- Prüfe regelmäßig, ob Snapshots in `signal_history/` geschrieben werden und ob die Dateien gültiges JSON enthalten.\n"
+            "- Mindestziel: 3 bis 6 Monate täglicher Snapshots, bevor du ernsthafte Rückschlüsse ziehst."
+        )
+    with st.expander("Schritt 2: Paper-Trading (Monat 1 bis 3)"):
+        st.markdown(
+            "- Notiere dir für jedes Signal, das du handeln würdest: Symbol, Einstiegskurs, Stop-Loss, Take-Profit, Positionsgröße und Begründung.\n"
+            "- Führe diese Trades nur auf dem Papier oder in einem separaten Notizblatt durch, nicht mit echtem Geld.\n"
+            "- Vergleiche am Ende jeder Woche die Ergebnisse mit dem Benchmark und mit deinen ursprünglichen Erwartungen.\n"
+            "- Ziel ist nicht Gewinn, sondern zu lernen, wie oft Signale falsch liegen und wie groß typische Drawdowns sind."
+        )
+    with st.expander("Schritt 3: Backtest und ML-Validierung (Monat 3 bis 6)"):
+        st.markdown(
+            "- Nutze den Tab **Backtest & ML**, sobald mindestens 60 bis 90 Snapshots vorhanden sind.\n"
+            "- Teile die Historie in Training und Out-of-sample auf. Trainiere Gewichte nur auf dem älteren Teil und prüfe die Performance auf dem neueren Teil.\n"
+            "- Ein positives Ergebnis ist nur dann relevant, wenn es auf Daten entstanden ist, die während des Trainings noch nicht bekannt waren.\n"
+            "- Wenn der Backtest im Out-of-sample-Bereich schlechter abschneidet als der Benchmark, ist die Strategie noch nicht bereit für echtes Geld."
+        )
+    with st.expander("Schritt 4: Erster Echtgeld-Einsatz (frühestens nach positiver Out-of-sample-Phase)"):
+        st.markdown(
+            "- Starte mit einem Betrag, dessen kompletter Verlust deine Lebensplanung nicht beeinträchtigt.\n"
+            "- Halte dich strikt an die vorgeschlagene Positionsgröße und das Risiko pro Trade (maximal 0,5 bis 1 % des Kapitals).\n"
+            "- Setze niemals das gesamte Vermögen in eine einzelne Aktie oder Strategie.\n"
+            "- Führe ein Trading-Tagebuch: Warum wurde eingestiegen? Was ging anders als erwartet? Wurde der Stop eingehalten?\n"
+            "- Behalte einen Kernbestand in breit gestreuten ETFs. Stock-Picking sollte ein Satellit bleiben, nicht das Fundament."
+        )
+
+    st.markdown("### Der menschliche Faktor")
+    st.write(
+        "Die beste Strategie nützt nichts, wenn sie nicht diszipliniert umgesetzt wird. Die App kann Signale liefern, aber sie kann nicht verhindern, "
+        "dass du aus Angst verkaufst, aus Gier nachkaufst oder einen Verlusttrade emotional in einen größeren verwandelst."
+    )
+    with st.expander("Typische Verhaltensfallen"):
+        st.markdown(
+            "- **Nachkaufen in fallende Kurse:** Wenn der Stop erreicht ist, wird die Position geschlossen – nicht erhöht, um den Einstieg zu „verbilligen“.\n"
+            "- **Zu große Positionen:** Ein einzelner Trade sollte das Depot nicht gefährden können.\n"
+            "- **Bestätigungsfehler:** Nur Signale beachten, die die eigene Meinung bestätigen, und Warnsignale ignorieren.\n"
+            "- **Überoptimierung:** Ständig Parameter ändern, weil der letzte Trade verloren hat. Das zerstört jede statistische Aussagekraft.\n"
+            "- **FOMO:** In einen Trade einsteigen, weil er bereits stark gestiegen ist, statt auf das nächste klare Setup zu warten.\n"
+            "- **Kein Plan:** Ein Trade ohne definierten Ausstieg ist kein Trade, sondern eine Wette."
+        )
+    with st.expander("Regeln, die helfen"):
+        st.markdown(
+            "- Setze vor jedem Trade Stop-Loss und Take-Profit fest und halte dich daran.\n"
+            "- Riskiere pro Trade nur einen kleinen, festen Prozentsatz des Kapitals.\n"
+            "- Wenn du drei Verlusttrades hintereinander hattest, mache eine Pause und prüfe die Strategie, statt das Risiko zu erhöhen.\n"
+            "- Dokumentiere jeden Trade. Auswertung ist wichtiger als das Gefühl, richtig gelegen zu haben.\n"
+            "- Akzeptiere Verluste als Teil des Systems. Ein einzelner Verlust bedeutet nicht, dass die Strategie falsch ist.\n"
+            "- Lass dich nicht von einem einzigen großen Gewinner blenden. Langfristig zählt die Summe aller Trades."
+        )
+
+    st.markdown("### Grenzen und sicherer Arbeitsablauf")
+    st.warning(
+        "Die App ist ein Research- und Priorisierungstool. Sie gibt keine Anlageberatung, führt keine Orders aus und kann Verluste nicht verhindern. "
+        "Verwende zunächst historische Out-of-sample-Tests und Paper-Trading. Setze nur Kapital ein, dessen Verlust du finanziell tragen kannst."
+    )
+    st.markdown(
+        "Für eine belastbare Weiterentwicklung sollten Strategien getrennt nach Marktphase, Branche, Marktkapitalisierung und Liquidität ausgewertet werden. "
+        "Ein gutes Ergebnis ist nicht nur eine hohe Rendite, sondern eine nachvollziehbare Rendite bei kontrolliertem Drawdown, realistischen Kosten und genügend Trades."
+    )
+
+
+def render_backtest_tab():
+    st.subheader("Strategie-Backtest")
+    st.write(
+        "Hier kannst du die historische Performance der Brodel-Strategie testen. "
+        "Es wird ein Portfolio aus den Top-N Aktien des Signals gebildet und monatlich neu ausbalanciert."
+    )
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        initial_cash = st.number_input("Startkapital", min_value=10000, max_value=10_000_000, value=100_000, step=10000)
+    with col2:
+        max_positions = st.slider("Max. Positionen", min_value=1, max_value=30, value=10)
+    with col3:
+        rebalance_days = st.slider("Rebalancing (Tage)", min_value=7, max_value=90, value=30)
+
+    benchmark = st.selectbox("Benchmark", options=["SPY", "DAX", "QQQ", "IWM"], index=0)
+
+    if st.button("Backtest starten", use_container_width=True):
+        with st.spinner("Lade historische Daten und simuliere Portfolio..."):
+            result = run_backtest_on_snapshots(
+                initial_cash=float(initial_cash),
+                max_positions=max_positions,
+                rebalance_days=rebalance_days,
+                benchmark=benchmark,
+            )
+
+        st.code(result.summary())
+
+        if not result.equity_curve.empty:
+            st.line_chart(result.equity_curve[["total_value"]])
+
+        if result.trades:
+            trades_df = pd.DataFrame(result.trades)
+            st.markdown("**Trades**")
+            st.dataframe(trades_df, use_container_width=True, hide_index=True)
+
+    st.markdown("---")
+    st.subheader("ML-Gewichtung trainieren")
+    st.write(
+        "Trainiere die Score-Gewichtung auf Basis historischer Snapshots und Forward-Renditen. "
+        "Die optimierten Gewichte werden automatisch im Signal Monitor angewendet."
+    )
+    if st.button("ML-Gewichtung trainieren", use_container_width=True):
+        with st.spinner("Trainiere Gewichte... (kann einige Minuten dauern)"):
+            snapshots = load_snapshots()
+            trainer = train_on_snapshots(snapshots, forward_days=30)
+            st.json({
+                "weights": trainer.weights,
+                "performance": trainer.performance,
+                "trained_at": datetime.utcnow().isoformat(),
+            })
+
 
 def render_stock_agent():
     st.title("Aktien-Agent")
@@ -524,17 +774,19 @@ def render_stock_agent():
 
     mapping_text = load_mapping_text()
 
-    stock_tabs = st.tabs(["Signal Monitor V2", "Watchlist Verwaltung", "Hilfe & Methodik"])
+    stock_tabs = st.tabs(["Signal Monitor V2", "Backtest & ML", "Watchlist Verwaltung", "Hilfe & Methodik"])
     with stock_tabs[0]:
         render_watchlist_signal_monitor(mapping_text)
     with stock_tabs[1]:
+        render_backtest_tab()
+    with stock_tabs[2]:
         st.subheader("Watchlist-Quelle")
         st.write(
             "Hier kannst du gespeicherte Watchlists aus dem Projekt laden oder neue Watchlists als Datei speichern."
         )
         st.caption("Manuelle Namens-zu-Ticker-Zuordnungen werden aus stock_mappings.txt geladen.")
         render_watchlist_source_controls()
-    with stock_tabs[2]:
+    with stock_tabs[3]:
         render_help_tab()
 
     st.divider()
