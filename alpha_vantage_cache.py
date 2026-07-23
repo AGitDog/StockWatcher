@@ -1,50 +1,22 @@
-import os
 import json
 import time
 import requests
 from pathlib import Path
 from typing import Any
 
+from config_loader import get_secret
+
 CACHE_DIR = Path("cache")
 CACHE_FILE = CACHE_DIR / "alphavantage_fundamentals.json"
 CACHE_TTL = 30 * 24 * 60 * 60  # 30 days in seconds
 
 def get_av_key() -> str:
-    """Holt den Alpha Vantage API Key aus Umgebungsvariablen oder secrets.toml."""
-    # 1. Try environment variable
-    api_key = os.environ.get("ALPHAVANTAGE_API_KEY")
+    """Holt den Alpha Vantage API Key aus Streamlit secrets, Umgebungsvariablen oder .env."""
+    api_key = get_secret("alphavantage", "api_key")
     if api_key:
-        return api_key
-
-    # 2. Try Streamlit secrets.toml
-    secrets_path = Path(".streamlit/secrets.toml")
-    if secrets_path.exists():
-        try:
-            content = secrets_path.read_text(encoding="utf-8")
-            for line in content.splitlines():
-                # Format could be in [alphavantage] section
-                if line.strip().startswith("api_key") and "=" in line:
-                    # In a simple parser, if we have multiple sections this is risky.
-                    # But we'll just check if the line above had [alphavantage]
-                    pass
-            
-            # Safer parsing:
-            in_av_section = False
-            for line in content.splitlines():
-                line = line.strip()
-                if line.startswith("[alphavantage]"):
-                    in_av_section = True
-                    continue
-                elif line.startswith("[") and line.endswith("]"):
-                    in_av_section = False
-                    continue
-                
-                if in_av_section and line.startswith("api_key") and "=" in line:
-                    return line.split("=")[1].strip().strip('"').strip("'")
-        except Exception:
-            pass
-
+        return str(api_key)
     return ""
+
 
 def _load_cache() -> dict[str, Any]:
     if not CACHE_FILE.exists():

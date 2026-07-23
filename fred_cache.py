@@ -1,40 +1,22 @@
-import os
 import json
 import time
 import requests
 from pathlib import Path
 from typing import Any
 
+from config_loader import get_secret
+
 CACHE_DIR = Path("cache")
 CACHE_FILE = CACHE_DIR / "fred_macro.json"
 CACHE_TTL = 24 * 60 * 60  # 24 hours in seconds
 
 def get_fred_key() -> str:
-    """Holt den FRED API Key aus Umgebungsvariablen oder secrets.toml."""
-    api_key = os.environ.get("FRED_API_KEY")
+    """Holt den FRED API Key aus Streamlit secrets, Umgebungsvariablen oder .env."""
+    api_key = get_secret("fred", "api_key")
     if api_key:
-        return api_key
-
-    secrets_path = Path(".streamlit/secrets.toml")
-    if secrets_path.exists():
-        try:
-            content = secrets_path.read_text(encoding="utf-8")
-            in_fred_section = False
-            for line in content.splitlines():
-                line = line.strip()
-                if line.startswith("[fred]"):
-                    in_fred_section = True
-                    continue
-                elif line.startswith("[") and line.endswith("]"):
-                    in_fred_section = False
-                    continue
-                
-                if in_fred_section and line.startswith("api_key") and "=" in line:
-                    return line.split("=")[1].strip().strip('"').strip("'")
-        except Exception:
-            pass
-
+        return str(api_key)
     return ""
+
 
 def _load_cache() -> dict[str, Any]:
     if not CACHE_FILE.exists():

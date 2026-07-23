@@ -1,27 +1,24 @@
 import pytest
-import os
 import json
 import time
 from unittest.mock import patch, MagicMock
-from pathlib import Path
 
 import alpha_vantage_cache
 
-@patch("alpha_vantage_cache.os.environ.get")
-def test_get_av_key_env(mock_env_get):
-    """Test getting key from environment variable."""
-    mock_env_get.return_value = "TEST_AV_ENV"
-    assert alpha_vantage_cache.get_av_key() == "TEST_AV_ENV"
 
-@patch("alpha_vantage_cache.os.environ.get")
-@patch("alpha_vantage_cache.Path.exists")
-@patch("alpha_vantage_cache.Path.read_text")
-def test_get_av_key_secrets(mock_read, mock_exists, mock_env_get):
-    """Test getting key from secrets.toml."""
-    mock_env_get.return_value = None
-    mock_exists.return_value = True
-    mock_read.return_value = '[alphavantage]\napi_key = "TEST_AV_SECRETS"\n'
-    assert alpha_vantage_cache.get_av_key() == "TEST_AV_SECRETS"
+@patch("alpha_vantage_cache.get_secret")
+def test_get_av_key_env(mock_get_secret):
+    """Test getting key from environment variable via config_loader."""
+    mock_get_secret.return_value = "TEST_AV_ENV"
+    assert alpha_vantage_cache.get_av_key() == "TEST_AV_ENV"
+    mock_get_secret.assert_called_once_with("alphavantage", "api_key")
+
+
+@patch("alpha_vantage_cache.get_secret")
+def test_get_av_key_missing_returns_empty(mock_get_secret):
+    """Missing optional key should return an empty string."""
+    mock_get_secret.return_value = None
+    assert alpha_vantage_cache.get_av_key() == ""
 
 @patch("alpha_vantage_cache.get_av_key")
 @patch("alpha_vantage_cache._load_cache")

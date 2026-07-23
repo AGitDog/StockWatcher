@@ -1,26 +1,22 @@
 import pytest
-import os
 import time
 from unittest.mock import patch, MagicMock
-from pathlib import Path
 
 import fred_cache
 
-@patch("fred_cache.os.environ.get")
-def test_get_fred_key_env(mock_env_get):
-    """Test getting key from environment variable."""
-    mock_env_get.return_value = "TEST_FRED_ENV"
+@patch("fred_cache.get_secret")
+def test_get_fred_key(mock_get_secret):
+    """Test getting key via config_loader."""
+    mock_get_secret.return_value = "TEST_FRED_ENV"
     assert fred_cache.get_fred_key() == "TEST_FRED_ENV"
+    mock_get_secret.assert_called_once_with("fred", "api_key")
 
-@patch("fred_cache.os.environ.get")
-@patch("fred_cache.Path.exists")
-@patch("fred_cache.Path.read_text")
-def test_get_fred_key_secrets(mock_read, mock_exists, mock_env_get):
-    """Test getting key from secrets.toml."""
-    mock_env_get.return_value = None
-    mock_exists.return_value = True
-    mock_read.return_value = '[fred]\napi_key = "TEST_FRED_SECRETS"\n'
-    assert fred_cache.get_fred_key() == "TEST_FRED_SECRETS"
+
+@patch("fred_cache.get_secret")
+def test_get_fred_key_missing_returns_empty(mock_get_secret):
+    """Missing optional key should return an empty string."""
+    mock_get_secret.return_value = None
+    assert fred_cache.get_fred_key() == ""
 
 @patch("fred_cache.get_fred_key")
 @patch("fred_cache._load_cache")

@@ -1199,8 +1199,9 @@ def _analyze_news_sentiment(headlines: list[str]) -> dict[str, Any]:
 
 def _analyze_sentiment_gemini(headlines: list[str]) -> dict[str, Any]:
     """Call Gemini Flash to analyze sentiment of news headlines."""
-    import os
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", "")
+    from config_loader import get_secret
+
+    api_key = get_secret("gemini", "api_key")
     if not api_key:
         raise RuntimeError("No Gemini API key configured")
 

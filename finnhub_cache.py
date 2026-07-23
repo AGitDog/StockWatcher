@@ -1,40 +1,20 @@
-import os
 import json
 import time
 import requests
 from pathlib import Path
 from typing import Any
 
+from config_loader import get_secret
+
 CACHE_DIR = Path("cache")
 CACHE_FILE = CACHE_DIR / "finnhub_targets.json"
 CACHE_TTL = 24 * 60 * 60  # 24 hours in seconds
 
 def get_finnhub_key() -> str:
-    """Holt den Finnhub API Key aus Umgebungsvariablen oder secrets.toml."""
-    # 1. Try environment variable (useful for GitHub Actions)
-    api_key = os.environ.get("FINNHUB_API_KEY")
+    """Holt den Finnhub API Key aus Streamlit secrets, Umgebungsvariablen oder .env."""
+    api_key = get_secret("finnhub", "api_key")
     if api_key:
-        return api_key
-
-    # 2. Try Streamlit secrets.toml – parse [finnhub] section correctly
-    secrets_path = Path(".streamlit/secrets.toml")
-    if secrets_path.exists():
-        try:
-            content = secrets_path.read_text(encoding="utf-8")
-            in_finnhub_section = False
-            for line in content.splitlines():
-                line = line.strip()
-                if line == "[finnhub]":
-                    in_finnhub_section = True
-                    continue
-                elif line.startswith("[") and line.endswith("]"):
-                    in_finnhub_section = False
-                    continue
-                if in_finnhub_section and line.startswith("api_key") and "=" in line:
-                    return line.split("=", 1)[1].strip().strip('"').strip("'")
-        except Exception:
-            pass
-
+        return str(api_key)
     return ""
 
 

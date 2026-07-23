@@ -1,65 +1,24 @@
 import pytest
-import os
 import json
 import time
 from unittest.mock import patch, MagicMock
-from pathlib import Path
 
 import finnhub_cache
 
-@patch("finnhub_cache.os.environ.get")
-def test_get_finnhub_key_env(mock_env_get):
-    """Test getting key from environment variable."""
-    mock_env_get.return_value = "TEST_KEY_ENV"
+
+@patch("finnhub_cache.get_secret")
+def test_get_finnhub_key_env(mock_get_secret):
+    """Test getting key via config_loader."""
+    mock_get_secret.return_value = "TEST_KEY_ENV"
     assert finnhub_cache.get_finnhub_key() == "TEST_KEY_ENV"
-
-@patch("finnhub_cache.os.environ.get")
-@patch("finnhub_cache.Path.exists")
-@patch("finnhub_cache.Path.read_text")
-def test_get_finnhub_key_secrets(mock_read, mock_exists, mock_env_get):
-    """Test getting key from secrets.toml."""
-    mock_env_get.return_value = None
-    mock_exists.return_value = True
-    mock_read.return_value = '[finnhub]\napi_key = "TEST_KEY_SECRETS"\n'
-    assert finnhub_cache.get_finnhub_key() == "TEST_KEY_SECRETS"
-
-@patch("finnhub_cache.os.environ.get")
-@patch("finnhub_cache.Path.exists")
-@patch("finnhub_cache.Path.read_text")
-def test_get_finnhub_key_secrets(mock_read, mock_exists, mock_env_get):
-    """Test getting key from secrets.toml."""
-    mock_env_get.return_value = None
-    mock_exists.return_value = True
-    mock_read.return_value = '[finnhub]\napi_key = "TEST_KEY_SECRETS"\n'
-    assert finnhub_cache.get_finnhub_key() == "TEST_KEY_SECRETS"
+    mock_get_secret.assert_called_once_with("finnhub", "api_key")
 
 
-@patch("finnhub_cache.os.environ.get")
-@patch("finnhub_cache.Path.exists")
-@patch("finnhub_cache.Path.read_text")
-def test_get_finnhub_key_does_not_read_wrong_section(mock_read, mock_exists, mock_env_get):
-    """Stellt sicher dass get_finnhub_key() nur den [finnhub]-Abschnitt liest."""
-    mock_env_get.return_value = None
-    mock_exists.return_value = True
-    # secrets.toml has alphavantage key FIRST, then finnhub key
-    mock_read.return_value = (
-        '[alphavantage]\napi_key = "WRONG_AV_KEY"\n'
-        '[finnhub]\napi_key = "CORRECT_FH_KEY"\n'
-    )
-    result = finnhub_cache.get_finnhub_key()
-    assert result == "CORRECT_FH_KEY", f"Got wrong key: {result}"
-
-
-@patch("finnhub_cache.os.environ.get")
-@patch("finnhub_cache.Path.exists")
-@patch("finnhub_cache.Path.read_text")
-def test_get_finnhub_key_returns_empty_if_missing(mock_read, mock_exists, mock_env_get):
-    """Fehlender Key soll leeren String zurückgeben, nicht crashen."""
-    mock_env_get.return_value = None
-    mock_exists.return_value = True
-    mock_read.return_value = '[alphavantage]\napi_key = "SOME_KEY"\n'
-    result = finnhub_cache.get_finnhub_key()
-    assert result == ""
+@patch("finnhub_cache.get_secret")
+def test_get_finnhub_key_missing_returns_empty(mock_get_secret):
+    """Missing optional key should return an empty string."""
+    mock_get_secret.return_value = None
+    assert finnhub_cache.get_finnhub_key() == ""
 
 
 @patch("finnhub_cache.get_finnhub_key")
