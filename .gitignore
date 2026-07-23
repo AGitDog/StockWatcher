@@ -11,6 +11,8 @@ env/
 
 # Streamlit
 .streamlit/
+.env
+.env.*
 
 # Local data caches and generated history
 .cache/
