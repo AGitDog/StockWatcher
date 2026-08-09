@@ -237,39 +237,41 @@ def test_daily_job_delta_report(mock_delta, mock_history, mock_peer, mock_save, 
 
 # ── GitHub Actions Workflow Tests ─────────────────────────────────────────────
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 def test_workflow_update_signals_yml_exists():
     """Die GitHub Actions Workflow-Datei update_signals.yml muss existieren."""
-    path = Path("d:/Michael/StockWatcher/stock_monitor_app/.github/workflows/update_signals.yml")
+    path = BASE_DIR / ".github/workflows/update_signals.yml"
     assert path.exists(), f"Workflow-Datei nicht gefunden: {path}"
 
 
 def test_workflow_daily_run_yml_exists():
     """Die GitHub Actions Workflow-Datei daily_run.yml muss existieren."""
-    path = Path("d:/Michael/StockWatcher/stock_monitor_app/.github/workflows/daily_run.yml")
+    path = BASE_DIR / ".github/workflows/daily_run.yml"
     assert path.exists(), f"Workflow-Datei nicht gefunden: {path}"
 
 
 def test_workflow_update_signals_references_existing_script():
     """update_signals.yml muss auf ein existierendes Python-Skript verweisen."""
-    workflow_path = Path("d:/Michael/StockWatcher/stock_monitor_app/.github/workflows/update_signals.yml")
+    workflow_path = BASE_DIR / ".github/workflows/update_signals.yml"
     content = workflow_path.read_text(encoding="utf-8")
     assert "python update_signals.py" in content
-    script_path = Path("d:/Michael/StockWatcher/stock_monitor_app/update_signals.py")
+    script_path = BASE_DIR / "update_signals.py"
     assert script_path.exists(), "update_signals.py existiert nicht, aber Workflow verweist darauf"
 
 
 def test_workflow_daily_run_references_existing_script():
     """daily_run.yml muss auf ein existierendes Python-Skript verweisen."""
-    workflow_path = Path("d:/Michael/StockWatcher/stock_monitor_app/.github/workflows/daily_run.yml")
+    workflow_path = BASE_DIR / ".github/workflows/daily_run.yml"
     content = workflow_path.read_text(encoding="utf-8")
     assert "python daily_job.py" in content
-    script_path = Path("d:/Michael/StockWatcher/stock_monitor_app/daily_job.py")
+    script_path = BASE_DIR / "daily_job.py"
     assert script_path.exists(), "daily_job.py existiert nicht, aber Workflow verweist darauf"
 
 
 def test_workflow_update_signals_has_valid_cron():
     """update_signals.yml muss einen gueltigen Cron-Ausdruck haben."""
-    workflow_path = Path("d:/Michael/StockWatcher/stock_monitor_app/.github/workflows/update_signals.yml")
+    workflow_path = BASE_DIR / ".github/workflows/update_signals.yml"
     content = workflow_path.read_text(encoding="utf-8")
     assert "cron:" in content, "Kein Cron-Schedule in update_signals.yml gefunden"
     assert "schedule:" in content, "Kein schedule-Trigger in update_signals.yml"
@@ -277,7 +279,7 @@ def test_workflow_update_signals_has_valid_cron():
 
 def test_workflow_daily_run_has_valid_cron():
     """daily_run.yml muss einen gueltigen Cron-Ausdruck haben."""
-    workflow_path = Path("d:/Michael/StockWatcher/stock_monitor_app/.github/workflows/daily_run.yml")
+    workflow_path = BASE_DIR / ".github/workflows/daily_run.yml"
     content = workflow_path.read_text(encoding="utf-8")
     assert "cron:" in content, "Kein Cron-Schedule in daily_run.yml gefunden"
     assert "schedule:" in content, "Kein schedule-Trigger in daily_run.yml"
@@ -286,7 +288,7 @@ def test_workflow_daily_run_has_valid_cron():
 def test_workflows_install_requirements():
     """Beide Workflows muessen die requirements.txt installieren."""
     for name in ["update_signals.yml", "daily_run.yml"]:
-        path = Path(f"d:/Michael/StockWatcher/stock_monitor_app/.github/workflows/{name}")
+        path = BASE_DIR / f".github/workflows/{name}"
         content = path.read_text(encoding="utf-8")
         assert "requirements.txt" in content, f"{name} installiert keine requirements.txt"
 
@@ -294,9 +296,9 @@ def test_workflows_install_requirements():
 def test_workflows_commit_signal_history():
     """Beide Workflows muessen den signal_history/ Ordner committen."""
     for name in ["update_signals.yml", "daily_run.yml"]:
-        path = Path(f"d:/Michael/StockWatcher/stock_monitor_app/.github/workflows/{name}")
+        path = BASE_DIR / f".github/workflows/{name}"
         content = path.read_text(encoding="utf-8")
-        assert "git add signal_history/" in content, f"{name} committet signal_history/ nicht"
+        assert ("git add signal_history/" in content or "git add -f signal_history/" in content), f"{name} committet signal_history/ nicht"
 
 
 # ── Snapshot-Integritaet ──────────────────────────────────────────────────────
@@ -331,7 +333,7 @@ def test_save_signal_snapshot_produces_valid_json(tmp_path):
 
 def test_requirements_txt_is_valid():
     """requirements.txt muss gültig sein – jede Zeile darf nur EINE Abhängigkeit enthalten."""
-    req_path = Path("d:/Michael/StockWatcher/stock_monitor_app/requirements.txt")
+    req_path = BASE_DIR / "requirements.txt"
     content = req_path.read_text(encoding="utf-8")
     lines = [l.strip() for l in content.splitlines() if l.strip() and not l.strip().startswith("#")]
     
@@ -350,7 +352,7 @@ def test_requirements_txt_is_valid():
 
 def test_requirements_packages_not_merged():
     """Stellt sicher, dass 'google-genai' und 'requests' nicht auf einer Zeile stecken."""
-    req_path = Path("d:/Michael/StockWatcher/stock_monitor_app/requirements.txt")
+    req_path = BASE_DIR / "requirements.txt"
     content = req_path.read_text(encoding="utf-8")
     assert "google-genai" in content, "google-genai nicht in requirements.txt"
     assert "requests" in content, "requests nicht in requirements.txt"
@@ -371,7 +373,7 @@ def test_workflows_inject_api_secrets():
         "GOOGLE_API_KEY",
     ]
     for name in ["update_signals.yml", "daily_run.yml"]:
-        path = Path(f"d:/Michael/StockWatcher/stock_monitor_app/.github/workflows/{name}")
+        path = BASE_DIR / f".github/workflows/{name}"
         content = path.read_text(encoding="utf-8")
         for secret in required_secrets:
             assert secret in content, f"Secret '{secret}' fehlt in {name}"
@@ -380,7 +382,7 @@ def test_workflows_inject_api_secrets():
 def test_workflows_have_contents_write_permission():
     """Beide Workflows muessen 'contents: write' Berechtigung haben um pushen zu koennen."""
     for name in ["update_signals.yml", "daily_run.yml"]:
-        path = Path(f"d:/Michael/StockWatcher/stock_monitor_app/.github/workflows/{name}")
+        path = BASE_DIR / f".github/workflows/{name}"
         content = path.read_text(encoding="utf-8")
         assert "contents: write" in content, \
             f"{name} hat kein 'contents: write' – der Push nach GitHub Actions wird fehlschlagen"
