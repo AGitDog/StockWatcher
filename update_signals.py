@@ -16,7 +16,7 @@ def run_update():
     watchlist_path = os.path.join(DEFAULT_WATCHLIST_DIR, watchlist_name)
     
     if not os.path.exists(watchlist_path):
-        print(f"Watchlist file not found: {watchlist_path}")
+        print(f"Watchlist file not found: {watchlist_path}", flush=True)
         sys.exit(1)
         
     with open(watchlist_path, "r", encoding="utf-8") as f:
@@ -31,29 +31,33 @@ def run_update():
     symbol_mappings = parse_symbol_mappings(mapping_text)
     
     if not entries:
-        print("No valid entries found in watchlist.")
+        print("No valid entries found in watchlist.", flush=True)
         sys.exit(0)
         
-    print(f"Starting update for {len(entries)} entries...")
+    print(f"Starting update for {len(entries)} entries...", flush=True)
     raw_results = []
     
     for i, entry in enumerate(entries):
-        print(f"[{i+1}/{len(entries)}] Fetching signals for {entry}...")
+        print(f"[{i+1}/{len(entries)}] Fetching signals for {entry}...", flush=True)
         try:
             item = build_symbol_signal_monitor(entry, symbol_mappings)
             raw_results.append(item)
         except Exception as e:
-            print(f"Error fetching signals for {entry}: {e}")
+            print(f"Error fetching signals for {entry}: {e}", flush=True)
+
+    if not raw_results:
+        print("No results calculated.", flush=True)
+        sys.exit(0)
             
-    print("Applying peer context...")
+    print("Applying peer context...", flush=True)
     enriched_results = add_watchlist_peer_context(raw_results)
     sorted_results = sorted(enriched_results, key=lambda x: x.get("brodel_score", 0), reverse=True)
     
-    print("Saving snapshot...")
+    print("Saving snapshot...", flush=True)
     snapshot_path = save_signal_snapshot(watchlist_name, sorted_results)
     
-    print(f"Successfully saved snapshot to {snapshot_path}")
-    print("Update complete.")
+    print(f"Successfully saved snapshot to {snapshot_path}", flush=True)
+    print("Update complete.", flush=True)
 
 if __name__ == "__main__":
     run_update()

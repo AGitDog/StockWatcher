@@ -16,10 +16,10 @@ WATCHLIST_PATH = os.path.join("watchlists", DEFAULT_WATCHLIST_NAME)
 MAPPINGS_PATH = "stock_mappings.txt"
 
 def main():
-    print(f"Starte täglichen Job für {DEFAULT_WATCHLIST_NAME}...")
+    print(f"Starte täglichen Job für {DEFAULT_WATCHLIST_NAME}...", flush=True)
 
     if not os.path.exists(WATCHLIST_PATH):
-        print(f"FEHLER: Watchlist {WATCHLIST_PATH} nicht gefunden.")
+        print(f"FEHLER: Watchlist {WATCHLIST_PATH} nicht gefunden.", flush=True)
         sys.exit(1)
         
     with open(WATCHLIST_PATH, "r", encoding="utf-8") as f:
@@ -34,17 +34,24 @@ def main():
     symbol_mappings = parse_symbol_mappings(mapping_text)
 
     if not entries:
-        print("Watchlist ist leer oder enthält keine gültigen Einträge.")
+        print("Watchlist ist leer oder enthält keine gültigen Einträge.", flush=True)
         sys.exit(0)
 
-    print(f"{len(entries)} Einträge gefunden. Berechne Signale...")
+    print(f"{len(entries)} Einträge gefunden. Berechne Signale...", flush=True)
     raw_results = []
     for i, entry in enumerate(entries):
-        print(f"[{i+1}/{len(entries)}] Lade Daten für {entry}...")
-        item = build_symbol_signal_monitor(entry, symbol_mappings)
-        raw_results.append(item)
+        print(f"[{i+1}/{len(entries)}] Lade Daten für {entry}...", flush=True)
+        try:
+            item = build_symbol_signal_monitor(entry, symbol_mappings)
+            raw_results.append(item)
+        except Exception as e:
+            print(f"Fehler beim Laden der Signale für {entry}: {e}", flush=True)
 
-    print("Berechne Sektor- und Peer-Kontext...")
+    if not raw_results:
+        print("Keine Ergebnisse berechnet.", flush=True)
+        sys.exit(0)
+
+    print("Berechne Sektor- und Peer-Kontext...", flush=True)
     enriched_results = add_watchlist_peer_context(raw_results)
     
     # Sort results
@@ -52,7 +59,7 @@ def main():
 
     # Save snapshot
     snapshot_path = save_signal_snapshot(DEFAULT_WATCHLIST_NAME, sorted_results)
-    print(f"Snapshot erfolgreich gespeichert unter: {snapshot_path}")
+    print(f"Snapshot erfolgreich gespeichert unter: {snapshot_path}", flush=True)
 
     # Check for alerts based on previous history
     history = load_signal_snapshot_history(DEFAULT_WATCHLIST_NAME)
@@ -61,13 +68,13 @@ def main():
         previous_snapshot = history[-2]
         delta_items = build_signal_delta_report(sorted_results, previous_snapshot)
         
-        print("\n--- DELTA ALERTS ---")
+        print("\n--- DELTA ALERTS ---", flush=True)
         for item in delta_items:
             # Report items that have changed significantly
             if item["score_delta"] >= 10 or item["change_type"] == "Neu":
-                print(f"ALERT: {item['symbol']} | {item['change_type']} | Score: {item['previous_score']} -> {item['current_score']} (Delta {item['score_delta']})")
+                print(f"ALERT: {item['symbol']} | {item['change_type']} | Score: {item['previous_score']} -> {item['current_score']} (Delta {item['score_delta']})", flush=True)
 
-    print("Job abgeschlossen.")
+    print("Job abgeschlossen.", flush=True)
 
 if __name__ == "__main__":
     main()

@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -45,6 +47,7 @@ jobs:
           git add -f signal_history/
           if ! git diff --staged --quiet; then
             git commit -m "Update daily signal snapshots"
+            git pull --rebase origin main
             git push origin HEAD:main
           else
             echo "No changes to commit"

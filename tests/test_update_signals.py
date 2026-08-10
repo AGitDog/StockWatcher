@@ -387,3 +387,42 @@ def test_workflows_have_contents_write_permission():
         assert "contents: write" in content, \
             f"{name} hat kein 'contents: write' – der Push nach GitHub Actions wird fehlschlagen"
 
+
+def test_workflows_pull_before_push():
+    """Beide Workflows muessen 'git pull --rebase' vor dem Push ausfuehren, um Push-Rejections zu vermeiden."""
+    for name in ["update_signals.yml", "daily_run.yml"]:
+        path = BASE_DIR / f".github/workflows/{name}"
+        content = path.read_text(encoding="utf-8")
+        assert "git pull --rebase" in content, \
+            f"{name} enthaelt kein 'git pull --rebase' vor dem Push"
+
+
+@patch("daily_job.os.path.exists")
+@patch("builtins.open", new_callable=mock_open, read_data="AAPL\nINVALID")
+@patch("daily_job.build_symbol_signal_monitor")
+@patch("daily_job.save_signal_snapshot")
+@patch("daily_job.add_watchlist_peer_context")
+@patch("daily_job.load_signal_snapshot_history")
+def test_daily_job_survives_single_symbol_crash(mock_history, mock_peer, mock_save, mock_build, mock_file, mock_exists):
+    """daily_job darf NICHT abstuerzen, wenn ein einzelnes Symbol fehlschlaegt."""
+    mock_exists.return_value = True
+
+    def build_side_effect(symbol, mappings):
+        if symbol == "INVALID":
+            raise ValueError("Network Error")
+        return {"symbol": symbol, "brodel_score": 75}
+
+    mock_build.side_effect = build_side_effect
+    mock_peer.side_effect = lambda x: x
+    mock_save.return_value = Path("signal_history/snapshot.json")
+    mock_history.return_value = []
+
+    from daily_job import main
+    main()
+
+    mock_save.assert_called_once()
+    saved_data = mock_save.call_args[0][1]
+    assert len(saved_data) == 1
+    assert saved_data[0]["symbol"] == "AAPL"
+
+

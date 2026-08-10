@@ -46,6 +46,7 @@ jobs:
         git add -f signal_history/
         if ! git diff --staged --quiet; then
           git commit -m "Auto-update signal snapshots"
+          git pull --rebase origin main
           git push origin HEAD:main
         else
           echo "No changes to commit"
