@@ -299,7 +299,11 @@ def test_workflows_commit_signal_history():
     for name in ["update_signals.yml", "daily_run.yml"]:
         path = BASE_DIR / f".github/workflows/{name}"
         content = path.read_text(encoding="utf-8")
-        assert ("git add signal_history/" in content or "git add -f signal_history/" in content), f"{name} committet signal_history/ nicht"
+        assert (
+            "git add signal_history/" in content
+            or "git add -f signal_history/" in content
+            or "stock_monitor_app/signal_history/" in content
+        ), f"{name} committet signal_history/ nicht"
 
 
 # ── Snapshot-Integritaet ──────────────────────────────────────────────────────
