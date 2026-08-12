@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import csv
 import json
+import time
+import threading
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from functools import lru_cache
 from io import StringIO
 from datetime import datetime
@@ -12,6 +15,7 @@ from typing import Any
 import pandas as pd
 import requests
 import yfinance as yf
+import fred_cache
 
 try:
     from google import genai
@@ -523,14 +527,27 @@ def _summarize_technical_indicators(history: pd.DataFrame | None) -> dict[str, A
     return {"name": "Technische Indikatoren", "score": score, "summary": summary}
 
 
-def _apply_macro_overlay(score: int) -> int:
+# ── Macro Overlay Cache ──────────────────────────────────────────────────────
+# SPY, VIX, and FRED data are loaded ONCE per run and reused for all symbols.
+_macro_cache_lock = threading.Lock()
+_macro_multiplier_cache: dict[str, Any] = {}
+_MACRO_CACHE_TTL = 3600  # 1 hour
+
+
+def _get_macro_multiplier() -> float:
+    """Compute the macro multiplier once and cache for all symbols."""
+    global _macro_multiplier_cache
+    now = time.time()
+    with _macro_cache_lock:
+        if _macro_multiplier_cache and (now - _macro_multiplier_cache.get("timestamp", 0)) < _MACRO_CACHE_TTL:
+            return _macro_multiplier_cache.get("multiplier", 1.0)
+
     try:
-        import fred_cache
         spy = _safe_dataframe(lambda: yf.Ticker("SPY").history(period="1y"))
         vix = _safe_dataframe(lambda: yf.Ticker("^VIX").history(period="1mo"))
-        
+
         multiplier = 1.0
-        
+
         if spy is not None and not spy.empty and len(spy) >= 200:
             spy_close = float(spy["Close"].iloc[-1])
             spy_ma200 = float(spy["Close"].tail(200).mean())
@@ -538,7 +555,7 @@ def _apply_macro_overlay(score: int) -> int:
                 multiplier *= 1.1
             else:
                 multiplier *= 0.8
-                
+
         if vix is not None and not vix.empty:
             vix_close = float(vix["Close"].iloc[-1])
             if vix_close > 25:
@@ -547,12 +564,18 @@ def _apply_macro_overlay(score: int) -> int:
         # Yield Curve Overlay
         yield_spread = fred_cache.get_yield_curve_spread()
         if yield_spread is not None and yield_spread < 0:
-            # Yield curve is inverted (recession signal) -> reduce score
             multiplier *= 0.95
-                
-        return int(round(score * multiplier))
+
+        with _macro_cache_lock:
+            _macro_multiplier_cache = {"multiplier": multiplier, "timestamp": now}
+        return multiplier
     except Exception:
-        return score
+        return 1.0
+
+
+def _apply_macro_overlay(score: int) -> int:
+    multiplier = _get_macro_multiplier()
+    return int(round(score * multiplier))
 
 
 def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, str] | None = None) -> dict[str, Any]:
@@ -1552,6 +1575,25 @@ def _get_benchmark_symbol(stock_symbol: str) -> str:
     return "SPY"  # Default: S&P 500 for US and unknown
 
 
+# ── Benchmark History Cache ──────────────────────────────────────────────────
+# Only ~5 distinct benchmarks exist; cache them to avoid ~795 redundant calls.
+_benchmark_cache_lock = threading.Lock()
+_benchmark_cache: dict[str, pd.DataFrame | None] = {}
+
+
+def _get_cached_benchmark_history(benchmark_symbol: str) -> pd.DataFrame | None:
+    """Load benchmark history once per symbol and cache for all subsequent calls."""
+    with _benchmark_cache_lock:
+        if benchmark_symbol in _benchmark_cache:
+            return _benchmark_cache[benchmark_symbol]
+    result = _safe_dataframe(
+        lambda sym=benchmark_symbol: yf.Ticker(sym).history(period="1mo", auto_adjust=False)
+    )
+    with _benchmark_cache_lock:
+        _benchmark_cache[benchmark_symbol] = result
+    return result
+
+
 def _summarize_relative_strength(history: pd.DataFrame | None, symbol: str = "") -> dict[str, Any]:
     """Compare stock performance vs. regional benchmark over last month."""
     if history is None or history.empty or len(history) < 20:
@@ -1564,7 +1606,7 @@ def _summarize_relative_strength(history: pd.DataFrame | None, symbol: str = "")
     stock_return_1m = ((float(close_series.iloc[-1]) / float(close_series.iloc[-20])) - 1) * 100
 
     benchmark_symbol = _get_benchmark_symbol(symbol)
-    bench_history = _safe_dataframe(lambda: yf.Ticker(benchmark_symbol).history(period="1mo", auto_adjust=False))
+    bench_history = _get_cached_benchmark_history(benchmark_symbol)
     if bench_history is not None and not bench_history.empty and len(bench_history) >= 10:
         bench_close = pd.to_numeric(bench_history.get("Close"), errors="coerce")
         if bench_close is not None and not bench_close.isna().all():

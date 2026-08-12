@@ -1,5 +1,7 @@
 import os
 import sys
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from stock_agent import (
     parse_watchlist_text,
@@ -10,6 +12,9 @@ from stock_agent import (
     DEFAULT_MAPPING_FILE,
     DEFAULT_WATCHLIST_DIR
 )
+
+MAX_WORKERS = 4
+PER_SYMBOL_TIMEOUT = 90  # seconds
 
 def run_update():
     watchlist_name = "meine_watchlist.txt"
@@ -34,16 +39,30 @@ def run_update():
         print("No valid entries found in watchlist.", flush=True)
         sys.exit(0)
         
-    print(f"Starting update for {len(entries)} entries...", flush=True)
+    print(f"Starting update for {len(entries)} entries with {MAX_WORKERS} threads...", flush=True)
+    job_start = time.time()
     raw_results = []
-    
-    for i, entry in enumerate(entries):
-        print(f"[{i+1}/{len(entries)}] Fetching signals for {entry}...", flush=True)
-        try:
-            item = build_symbol_signal_monitor(entry, symbol_mappings)
-            raw_results.append(item)
-        except Exception as e:
-            print(f"Error fetching signals for {entry}: {e}", flush=True)
+    completed = 0
+
+    def _fetch_symbol(entry):
+        return build_symbol_signal_monitor(entry, symbol_mappings)
+
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = {
+            executor.submit(_fetch_symbol, entry): entry
+            for entry in entries
+        }
+        for future in as_completed(futures):
+            entry = futures[future]
+            completed += 1
+            try:
+                item = future.result(timeout=PER_SYMBOL_TIMEOUT)
+                raw_results.append(item)
+                print(f"[{completed}/{len(entries)}] OK: {entry}", flush=True)
+            except Exception as e:
+                print(f"[{completed}/{len(entries)}] Error for {entry}: {e}", flush=True)
+
+    print(f"Signal calculation done in {time.time() - job_start:.1f}s ({len(raw_results)}/{len(entries)} successful).", flush=True)
 
     if not raw_results:
         print("No results calculated.", flush=True)

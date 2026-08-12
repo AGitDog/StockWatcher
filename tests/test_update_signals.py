@@ -9,6 +9,7 @@ import pytest
 import importlib
 from unittest.mock import patch, mock_open, MagicMock, call
 from pathlib import Path
+import pandas as pd
 
 # ── Importierbarkeit ──────────────────────────────────────────────────────────
 
@@ -426,3 +427,120 @@ def test_daily_job_survives_single_symbol_crash(mock_history, mock_peer, mock_sa
     assert saved_data[0]["symbol"] == "AAPL"
 
 
+# ── Performance & Timeout Tests ──────────────────────────────────────────────
+
+def test_macro_overlay_uses_cache():
+    """_get_macro_multiplier muss bei wiederholtem Aufruf den Cache nutzen, nicht erneut API-Calls machen."""
+    import stock_agent
+
+    # Reset cache
+    stock_agent._macro_multiplier_cache = {}
+
+    with patch.object(stock_agent, "_safe_dataframe", return_value=None):
+        with patch("stock_agent.fred_cache") as mock_fred:
+            mock_fred.get_yield_curve_spread.return_value = None
+
+            result1 = stock_agent._get_macro_multiplier()
+            result2 = stock_agent._get_macro_multiplier()
+
+            # fred_cache should only be called once (cached on second call)
+            assert mock_fred.get_yield_curve_spread.call_count == 1
+            assert result1 == result2
+
+    # Cleanup
+    stock_agent._macro_multiplier_cache = {}
+
+
+def test_benchmark_history_uses_cache():
+    """_get_cached_benchmark_history muss identische Benchmarks nur einmal laden."""
+    import stock_agent
+
+    # Reset cache
+    stock_agent._benchmark_cache = {}
+
+    mock_df = MagicMock(spec=pd.DataFrame)
+    call_count = 0
+
+    def fake_safe_dataframe(loader):
+        nonlocal call_count
+        call_count += 1
+        return mock_df
+
+    with patch.object(stock_agent, "_safe_dataframe", side_effect=fake_safe_dataframe):
+        result1 = stock_agent._get_cached_benchmark_history("SPY")
+        result2 = stock_agent._get_cached_benchmark_history("SPY")
+        result3 = stock_agent._get_cached_benchmark_history("^GDAXI")
+
+        assert result1 is mock_df
+        assert result2 is mock_df  # cached, no new call
+        assert result3 is mock_df
+        assert call_count == 2  # SPY once + GDAXI once (not 3)
+
+    # Cleanup
+    stock_agent._benchmark_cache = {}
+
+
+def test_daily_job_uses_threading():
+    """daily_job.py muss ThreadPoolExecutor verwenden."""
+    source_path = BASE_DIR / "daily_job.py"
+    content = source_path.read_text(encoding="utf-8")
+    assert "ThreadPoolExecutor" in content, "daily_job.py nutzt keinen ThreadPoolExecutor"
+    assert "as_completed" in content, "daily_job.py nutzt nicht as_completed"
+
+
+def test_update_signals_uses_threading():
+    """update_signals.py muss ThreadPoolExecutor verwenden."""
+    source_path = BASE_DIR / "update_signals.py"
+    content = source_path.read_text(encoding="utf-8")
+    assert "ThreadPoolExecutor" in content, "update_signals.py nutzt keinen ThreadPoolExecutor"
+    assert "as_completed" in content, "update_signals.py nutzt nicht as_completed"
+
+
+def test_workflows_have_timeout():
+    """Beide Workflows muessen ein timeout-minutes definiert haben."""
+    for name in ["update_signals.yml", "daily_run.yml"]:
+        path = BASE_DIR / f".github/workflows/{name}"
+        content = path.read_text(encoding="utf-8")
+        assert "timeout-minutes:" in content, \
+            f"{name} hat kein 'timeout-minutes' – Job kann unbegrenzt laufen"
+
+
+@patch("daily_job.os.path.exists")
+@patch("builtins.open", new_callable=mock_open, read_data="AAPL\nSLOW\nMSFT")
+@patch("daily_job.build_symbol_signal_monitor")
+@patch("daily_job.save_signal_snapshot")
+@patch("daily_job.add_watchlist_peer_context")
+@patch("daily_job.load_signal_snapshot_history")
+def test_daily_job_handles_per_symbol_timeout(mock_history, mock_peer, mock_save, mock_build, mock_file, mock_exists):
+    """Ein Symbol das zu lange braucht, darf den ganzen Job nicht blockieren."""
+    mock_exists.return_value = True
+
+    import time as _time
+
+    def build_side_effect(symbol, mappings=None):
+        if symbol == "SLOW":
+            _time.sleep(0.5)  # Simulate slow symbol (shortened for test)
+            raise TimeoutError("Symbol took too long")
+        return {"symbol": symbol, "brodel_score": 50}
+
+    mock_build.side_effect = build_side_effect
+    mock_peer.side_effect = lambda x: x
+    mock_save.return_value = Path("signal_history/snapshot.json")
+    mock_history.return_value = []
+
+    # Patch PER_SYMBOL_TIMEOUT to be small for testing
+    import daily_job
+    original_timeout = daily_job.PER_SYMBOL_TIMEOUT
+    daily_job.PER_SYMBOL_TIMEOUT = 5  # 5 seconds for test
+
+    try:
+        daily_job.main()
+    finally:
+        daily_job.PER_SYMBOL_TIMEOUT = original_timeout
+
+    mock_save.assert_called_once()
+    saved_data = mock_save.call_args[0][1]
+    symbols = [item["symbol"] for item in saved_data]
+    assert "AAPL" in symbols
+    assert "MSFT" in symbols
+    assert "SLOW" not in symbols

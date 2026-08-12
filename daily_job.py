@@ -1,5 +1,7 @@
 import os
 import sys
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from stock_agent import (
     parse_watchlist_text,
@@ -14,9 +16,12 @@ from stock_agent import (
 DEFAULT_WATCHLIST_NAME = "meine_watchlist.txt"
 WATCHLIST_PATH = os.path.join("watchlists", DEFAULT_WATCHLIST_NAME)
 MAPPINGS_PATH = "stock_mappings.txt"
+MAX_WORKERS = 4
+PER_SYMBOL_TIMEOUT = 90  # seconds
 
 def main():
     print(f"Starte täglichen Job für {DEFAULT_WATCHLIST_NAME}...", flush=True)
+    job_start = time.time()
 
     if not os.path.exists(WATCHLIST_PATH):
         print(f"FEHLER: Watchlist {WATCHLIST_PATH} nicht gefunden.", flush=True)
@@ -37,15 +42,29 @@ def main():
         print("Watchlist ist leer oder enthält keine gültigen Einträge.", flush=True)
         sys.exit(0)
 
-    print(f"{len(entries)} Einträge gefunden. Berechne Signale...", flush=True)
+    print(f"{len(entries)} Einträge gefunden. Berechne Signale mit {MAX_WORKERS} Threads...", flush=True)
     raw_results = []
-    for i, entry in enumerate(entries):
-        print(f"[{i+1}/{len(entries)}] Lade Daten für {entry}...", flush=True)
-        try:
-            item = build_symbol_signal_monitor(entry, symbol_mappings)
-            raw_results.append(item)
-        except Exception as e:
-            print(f"Fehler beim Laden der Signale für {entry}: {e}", flush=True)
+    completed = 0
+
+    def _fetch_symbol(entry):
+        return build_symbol_signal_monitor(entry, symbol_mappings)
+
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = {
+            executor.submit(_fetch_symbol, entry): entry
+            for entry in entries
+        }
+        for future in as_completed(futures):
+            entry = futures[future]
+            completed += 1
+            try:
+                item = future.result(timeout=PER_SYMBOL_TIMEOUT)
+                raw_results.append(item)
+                print(f"[{completed}/{len(entries)}] OK: {entry}", flush=True)
+            except Exception as e:
+                print(f"[{completed}/{len(entries)}] Fehler bei {entry}: {e}", flush=True)
+
+    print(f"Signalberechnung abgeschlossen in {time.time() - job_start:.1f}s ({len(raw_results)}/{len(entries)} erfolgreich).", flush=True)
 
     if not raw_results:
         print("Keine Ergebnisse berechnet.", flush=True)

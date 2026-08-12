@@ -518,6 +518,9 @@ def test_benchmark_indian_stock():
 @patch("stock_agent.yf")
 def test_relative_strength_uses_regional_benchmark(mock_yf):
     """Relative strength for a German stock should compare against DAX, not SPY."""
+    import stock_agent
+    stock_agent._benchmark_cache = {}  # Reset cache
+
     dates = pd.date_range("2024-01-01", periods=25)
     close_values = [100] * 5 + [100] * 19 + [120]
     history = pd.DataFrame({"Close": close_values}, index=dates)
@@ -533,6 +536,8 @@ def test_relative_strength_uses_regional_benchmark(mock_yf):
     # Verify DAX was used, not SPY
     mock_yf.Ticker.assert_called_with("^GDAXI")
     assert "^GDAXI" in result["summary"]
+
+    stock_agent._benchmark_cache = {}  # Cleanup
 
 
 
@@ -565,6 +570,9 @@ def test_technical_indicators_bullish():
 
 @patch("stock_agent.yf.Ticker")
 def test_apply_macro_overlay_bull_market(mock_ticker_class):
+    import stock_agent
+    stock_agent._macro_multiplier_cache = {}  # Reset cache
+
     mock_spy = MagicMock()
     mock_vix = MagicMock()
     
@@ -587,12 +595,19 @@ def test_apply_macro_overlay_bull_market(mock_ticker_class):
         
     mock_ticker_class.side_effect = side_effect
     
-    # Base score 10 * 1.1 = 11
-    score = _apply_macro_overlay(10)
-    assert score == 11
+    with patch("stock_agent.fred_cache") as mock_fred:
+        mock_fred.get_yield_curve_spread.return_value = None
+        # Base score 10 * 1.1 = 11
+        score = _apply_macro_overlay(10)
+        assert score == 11
+
+    stock_agent._macro_multiplier_cache = {}  # Cleanup
 
 @patch("stock_agent.yf.Ticker")
 def test_apply_macro_overlay_bear_market_high_vix(mock_ticker_class):
+    import stock_agent
+    stock_agent._macro_multiplier_cache = {}  # Reset cache
+
     mock_spy = MagicMock()
     mock_vix = MagicMock()
     
@@ -614,9 +629,13 @@ def test_apply_macro_overlay_bear_market_high_vix(mock_ticker_class):
         
     mock_ticker_class.side_effect = side_effect
     
-    # Base score 10 * 0.8 (SPY) * 0.9 (VIX) = 7.2 -> 7
-    score = _apply_macro_overlay(10)
-    assert score == 7
+    with patch("stock_agent.fred_cache") as mock_fred:
+        mock_fred.get_yield_curve_spread.return_value = None
+        # Base score 10 * 0.8 (SPY) * 0.9 (VIX) = 7.2 -> 7
+        score = _apply_macro_overlay(10)
+        assert score == 7
+
+    stock_agent._macro_multiplier_cache = {}  # Cleanup
 
 
 # --- Fundamentals ---
