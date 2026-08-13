@@ -28,9 +28,8 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
-        cache: 'pip' # caching pip dependencies
-        cache-dependency-path: stock_monitor_app/requirements.txt
+        python-version: '3.11'
+        cache: 'pip'
 
     - name: Install dependencies
       run: |
