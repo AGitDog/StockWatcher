@@ -45,7 +45,8 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f signal_history/meine_watchlist.json signal_history/*.json
+          git add -A signal_history/
+          git status
           if ! git diff --staged --quiet; then
             git commit -m "Update daily signal snapshots"
             for i in 1 2 3; do

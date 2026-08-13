@@ -302,6 +302,7 @@ def test_workflows_commit_signal_history():
         assert (
             "git add signal_history/" in content
             or "git add -f signal_history/" in content
+            or "git add -A signal_history/" in content
             or "stock_monitor_app/signal_history/" in content
         ), f"{name} committet signal_history/ nicht"
 
