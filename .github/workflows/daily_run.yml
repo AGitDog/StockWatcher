@@ -51,7 +51,7 @@ jobs:
             git commit -m "Update daily signal snapshots"
             pushed=0
             for i in 1 2 3; do
-              if git pull --rebase origin main && git push origin HEAD:main; then
+              if git pull --rebase origin main && git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:main; then
                 pushed=1
                 break
               fi
