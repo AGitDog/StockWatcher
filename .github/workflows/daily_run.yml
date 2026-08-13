@@ -50,19 +50,8 @@ jobs:
           git status
           if ! git diff --staged --quiet; then
             git commit -m "Update daily signal snapshots"
-            pushed=0
-            for i in 1 2 3; do
-              if git pull --rebase origin main && git push origin HEAD:main; then
-                pushed=1
-                break
-              fi
-              echo "Push attempt $i failed, retrying in 5s..."
-              sleep 5
-            done
-            if [ $pushed -eq 0 ]; then
-              echo "ERROR: Failed to push changes after 3 attempts!"
-              exit 1
-            fi
+            git pull --rebase origin main
+            git push origin HEAD:main
           else
             echo "No changes to commit"
           fi
