@@ -265,10 +265,14 @@ def ensure_signal_history_dir(directory: str = DEFAULT_SIGNAL_HISTORY_DIR) -> Pa
     return path
 
 
+MAX_SIGNAL_HISTORY_SNAPSHOTS = 15
+
+
 def save_signal_snapshot(
     watchlist_name: str,
     signal_items: list[dict[str, Any]],
     directory: str = DEFAULT_SIGNAL_HISTORY_DIR,
+    max_history: int = MAX_SIGNAL_HISTORY_SNAPSHOTS,
 ) -> Path:
     history_dir = ensure_signal_history_dir(directory)
     snapshot_path = history_dir / f"{_sanitize_watchlist_name(watchlist_name).removesuffix('.txt')}.json"
@@ -278,6 +282,8 @@ def save_signal_snapshot(
         "items": signal_items,
     }
     existing.append(snapshot)
+    if max_history > 0 and len(existing) > max_history:
+        existing = existing[-max_history:]
     snapshot_path.write_text(json.dumps(existing, ensure_ascii=True, indent=2), encoding="utf-8")
     return snapshot_path
 
