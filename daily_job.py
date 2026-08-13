@@ -67,8 +67,8 @@ def main():
     print(f"Signalberechnung abgeschlossen in {time.time() - job_start:.1f}s ({len(raw_results)}/{len(entries)} erfolgreich).", flush=True)
 
     if not raw_results:
-        print("Keine Ergebnisse berechnet.", flush=True)
-        sys.exit(0)
+        print("FEHLER: Keine Ergebnisse berechnet (Datenabruf fehlgeschlagen).", flush=True)
+        sys.exit(1)
 
     print("Berechne Sektor- und Peer-Kontext...", flush=True)
     enriched_results = add_watchlist_peer_context(raw_results)

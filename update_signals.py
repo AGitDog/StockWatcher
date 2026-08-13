@@ -65,8 +65,8 @@ def run_update():
     print(f"Signal calculation done in {time.time() - job_start:.1f}s ({len(raw_results)}/{len(entries)} successful).", flush=True)
 
     if not raw_results:
-        print("No results calculated.", flush=True)
-        sys.exit(0)
+        print("ERROR: No results calculated (data fetch failed).", flush=True)
+        sys.exit(1)
             
     print("Applying peer context...", flush=True)
     enriched_results = add_watchlist_peer_context(raw_results)

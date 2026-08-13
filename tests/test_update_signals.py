@@ -548,3 +548,38 @@ def test_daily_job_handles_per_symbol_timeout(mock_history, mock_peer, mock_save
     assert "AAPL" in symbols
     assert "MSFT" in symbols
     assert "SLOW" not in symbols
+
+
+@patch("daily_job.os.path.exists")
+@patch("daily_job.sys.exit")
+@patch("builtins.open", new_callable=mock_open, read_data="AAPL")
+@patch("daily_job.build_symbol_signal_monitor")
+def test_daily_job_exits_1_on_all_symbols_failed(mock_build, mock_file, mock_exit, mock_exists):
+    """daily_job muss mit exit(1) abbrechen, wenn alle Symbole fehlschlagen."""
+    mock_exists.return_value = True
+    mock_build.side_effect = ValueError("API rate limit")
+    mock_exit.side_effect = SystemExit
+
+    from daily_job import main
+    with pytest.raises(SystemExit):
+        main()
+
+    mock_exit.assert_called_once_with(1)
+
+
+@patch("update_signals.os.path.exists")
+@patch("update_signals.sys.exit")
+@patch("builtins.open", new_callable=mock_open, read_data="AAPL")
+@patch("update_signals.build_symbol_signal_monitor")
+def test_update_signals_exits_1_on_all_symbols_failed(mock_build, mock_file, mock_exit, mock_exists):
+    """update_signals muss mit exit(1) abbrechen, wenn alle Symbole fehlschlagen."""
+    mock_exists.return_value = True
+    mock_build.side_effect = ValueError("API rate limit")
+    mock_exit.side_effect = SystemExit
+
+    from update_signals import run_update
+    with pytest.raises(SystemExit):
+        run_update()
+
+    mock_exit.assert_called_once_with(1)
+
