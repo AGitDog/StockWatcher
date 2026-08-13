@@ -43,14 +43,15 @@ jobs:
     - name: Commit and Push changes
       run: |
         git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
         git add -A signal_history/
         git status
         if ! git diff --staged --quiet; then
           git commit -m "Auto-update signal snapshots"
           pushed=0
           for i in 1 2 3; do
-            if git pull --rebase origin main && git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:main; then
+            if git pull --rebase origin main && git push origin HEAD:main; then
               pushed=1
               break
             fi
