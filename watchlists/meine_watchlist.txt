@@ -3,7 +3,7 @@ NVDA
 HON
 HONA
 AAD.VI
-433.MU
+APX.AX
 PTX.F
 
 # Alle unterstuetzten Indizes
@@ -19,4 +19,3 @@ SMI
 NIFTY 50
 TSX 60
 TECDAX
-NIKKEI 225

@@ -22,6 +22,8 @@ from stock_agent import (
     _dedupe_preserve_order,
     _summarize_technical_indicators,
     _apply_macro_overlay,
+    INDEX_CONSTITUENT_NAMES,
+    resolve_name_fallback,
 )
 
 
@@ -365,6 +367,49 @@ def test_load_index_constituents_nikkei_float(mock_get, mock_read_html):
     
     result = load_index_constituents("Nikkei 225")
     assert result == ["9983.T", "8035.T"]
+
+
+@patch("stock_agent.pd.read_html")
+@patch("stock_agent.requests.get")
+def test_load_index_constituents_populates_names(mock_get, mock_read_html):
+    """Test that load_index_constituents stores constituent names in INDEX_CONSTITUENT_NAMES."""
+    mock_response = MagicMock()
+    mock_response.text = "dummy"
+    mock_get.return_value = mock_response
+
+    mock_df = pd.DataFrame({
+        "Code": [9983.0, 8035.0],
+        "Name": ["Fast Retailing", "Tokyo Electron"]
+    })
+    mock_read_html.return_value = [None]*8 + [mock_df]
+
+    load_index_constituents.cache_clear()
+    result = load_index_constituents("Nikkei 225")
+    assert result == ["9983.T", "8035.T"]
+    assert INDEX_CONSTITUENT_NAMES.get("9983.T") == "Fast Retailing"
+    assert INDEX_CONSTITUENT_NAMES.get("8035.T") == "Tokyo Electron"
+
+
+def test_resolve_name_fallback_cache_and_custom():
+    """Test resolve_name_fallback returns cached name or preserved custom name."""
+    INDEX_CONSTITUENT_NAMES["9984.T"] = "SoftBank Group"
+    # When cached, returns cached name
+    assert resolve_name_fallback("9984.T", "9984.T") == "SoftBank Group"
+    # When already a different name, returns that name
+    assert resolve_name_fallback("AAPL", "Apple Inc.") == "Apple Inc."
+
+
+@patch("stock_agent.yf.Search")
+def test_resolve_name_fallback_via_search(mock_search_class):
+    """Test fallback resolution via yf.Search for numeric tickers."""
+    INDEX_CONSTITUENT_NAMES.pop("7203.T", None)
+    mock_search = MagicMock()
+    mock_search.quotes = [{"symbol": "7203.T", "longname": "Toyota Motor Corp"}]
+    mock_search_class.return_value = mock_search
+
+    resolved = resolve_name_fallback("7203.T", "7203.T")
+    assert resolved == "Toyota Motor Corp"
+    assert INDEX_CONSTITUENT_NAMES.get("7203.T") == "Toyota Motor Corp"
 
 
 @patch("stock_agent.yf.Ticker")

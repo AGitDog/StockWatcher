@@ -31,36 +31,43 @@ DEFAULT_WATCHLIST_DIR = "watchlists"
 DEFAULT_ALERT_LOOKAHEAD_DAYS = 30
 DEFAULT_SIGNAL_NEWS_WINDOW_DAYS = 7
 DEFAULT_SIGNAL_HISTORY_DIR = "signal_history"
+INDEX_CONSTITUENT_NAMES: dict[str, str] = {}
+
 INDEX_DEFINITIONS = {
     "DAX": {
         "aliases": {"DAX", "INDEX:DAX", "^GDAXI"},
         "url": "https://en.wikipedia.org/wiki/DAX",
         "table_index": 4,
         "ticker_column": "Ticker",
+        "name_column": "Company",
     },
     "S&P 500": {
         "aliases": {"S&P500", "S&P 500", "SP500", "INDEX:S&P500", "INDEX:S&P 500", "^GSPC"},
         "url": "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
         "table_index": 0,
         "ticker_column": "Symbol",
+        "name_column": "Security",
     },
     "Dow Jones": {
         "aliases": {"DOW", "DOW JONES", "DOW JONES INDUSTRIAL AVERAGE", "DJIA", "INDEX:DOW", "^DJI"},
-        "url": "https://en.wikipedia.org/wiki/Dow_Jones_Industrial_Average",
-        "table_index": 1,
+        "url": "https://en.wikipedia.org/wiki/List_of_Dow_Jones_Industrial_Average_companies",
+        "table_index": 0,
         "ticker_column": "Symbol",
+        "name_column": "Company",
     },
     "Nasdaq-100": {
         "aliases": {"NASDAQ", "NASDAQ-100", "NASDAQ 100", "NASDAQ100", "NDX", "^NDX", "INDEX:NASDAQ100", "INDEX:NASDAQ-100"},
         "url": "https://en.wikipedia.org/wiki/List_of_NASDAQ-100_companies",
         "table_index": 0,
         "ticker_column": "Ticker",
+        "name_column": "Company",
     },
     "MDAX": {
         "aliases": {"MDAX", "INDEX:MDAX", "^MDAXI"},
         "url": "https://en.wikipedia.org/wiki/MDAX",
         "table_index": 2,
         "ticker_column": "Symbol",
+        "name_column": "Name",
         "suffix": ".DE",
     },
     "CAC 40": {
@@ -68,6 +75,7 @@ INDEX_DEFINITIONS = {
         "url": "https://en.wikipedia.org/wiki/CAC_40",
         "table_index": 4,
         "ticker_column": "Ticker",
+        "name_column": "Company",
     },
     "EURO STOXX 50": {
         "aliases": {"EURO STOXX 50", "EURO STOXX", "STOXX 50", "STOXX50E", "INDEX:STOXX50E", "^STOXX50E"},
@@ -80,6 +88,7 @@ INDEX_DEFINITIONS = {
         "url": "https://en.wikipedia.org/wiki/FTSE_100_Index",
         "table_index": 6,
         "ticker_column": "Ticker",
+        "name_column": "Company",
         "suffix": ".L",
     },
     "SMI": {
@@ -87,6 +96,7 @@ INDEX_DEFINITIONS = {
         "url": "https://en.wikipedia.org/wiki/Swiss_Market_Index",
         "table_index": 2,
         "ticker_column": "Ticker",
+        "name_column": "Company",
         "suffix": ".SW",
     },
     "Nifty 50": {
@@ -94,6 +104,7 @@ INDEX_DEFINITIONS = {
         "url": "https://en.wikipedia.org/wiki/NIFTY_50",
         "table_index": 1,
         "ticker_column": "Symbol",
+        "name_column": "Company name",
         "suffix": ".NS",
     },
     "S&P/TSX 60": {
@@ -101,6 +112,7 @@ INDEX_DEFINITIONS = {
         "url": "https://en.wikipedia.org/wiki/S%26P/TSX_60",
         "table_index": 1,
         "ticker_column": "Symbol",
+        "name_column": "Company",
         "suffix": ".TO",
     },
     "TecDAX": {
@@ -108,6 +120,7 @@ INDEX_DEFINITIONS = {
         "url": "https://de.wikipedia.org/wiki/TecDAX",
         "table_index": 5,
         "ticker_column": "Symbol[9]",
+        "name_column": "Name",
         "suffix": ".DE",
     },
     "Nikkei 225": {
@@ -115,6 +128,7 @@ INDEX_DEFINITIONS = {
         "url": "https://de.wikipedia.org/wiki/Nikkei_225",
         "table_index": 8,
         "ticker_column": "Code",
+        "name_column": "Name",
         "suffix": ".T",
     },
 }
@@ -389,6 +403,24 @@ def get_supported_indices() -> list[str]:
     return sorted(INDEX_DEFINITIONS.keys())
 
 
+def resolve_name_fallback(symbol: str, current_name: str | None = None) -> str:
+    """Resolve a readable company name for numeric or missing ticker names."""
+    if current_name and current_name != symbol:
+        return current_name
+    if symbol in INDEX_CONSTITUENT_NAMES:
+        return INDEX_CONSTITUENT_NAMES[symbol]
+    clean_ticker = symbol.split(".")[0]
+    if clean_ticker.isdigit():
+        search = _safe_get(lambda: yf.Search(symbol, max_results=1), None)
+        quotes = getattr(search, "quotes", []) if search is not None else []
+        if quotes and isinstance(quotes[0], dict):
+            fallback = quotes[0].get("longname") or quotes[0].get("shortname")
+            if fallback:
+                INDEX_CONSTITUENT_NAMES[symbol] = fallback
+                return fallback
+    return current_name or symbol
+
+
 @lru_cache(maxsize=16)
 def load_index_constituents(index_name: str) -> list[str]:
     config = INDEX_DEFINITIONS.get(index_name)
@@ -396,24 +428,45 @@ def load_index_constituents(index_name: str) -> list[str]:
         return []
 
     try:
-        response = requests.get(config["url"], headers={"User-Agent": "Mozilla/5.0"}, timeout=30)
+        response = requests.get(
+            config["url"],
+            headers={"User-Agent": "StockWatcher/2.0 (contact@stockwatcher.local)"},
+            timeout=30,
+        )
         response.raise_for_status()
-        tables = pd.read_html(StringIO(response.text))
+        try:
+            tables = pd.read_html(StringIO(response.text), flavor="lxml")
+        except Exception:
+            tables = pd.read_html(StringIO(response.text))
         constituents = tables[config["table_index"]]
         if config["ticker_column"] not in constituents.columns:
             return []
 
         symbols = []
         suffix = config.get("suffix", "")
-        for raw_symbol in constituents[config["ticker_column"]].dropna().astype(str).tolist():
-            symbol = raw_symbol.strip().replace("\n", " ")
-            if not symbol:
+        name_col = config.get("name_column")
+        has_name_col = bool(name_col and name_col in constituents.columns)
+
+        for _, row in constituents.iterrows():
+            raw_val = row.get(config["ticker_column"])
+            if pd.isna(raw_val):
                 continue
-            if symbol.endswith(".0"):
-                symbol = symbol[:-2]
-            if suffix and not symbol.endswith(suffix):
-                symbol += suffix
+            raw_symbol = str(raw_val).strip().replace("\n", " ")
+            if not raw_symbol or raw_symbol.lower() in ("nan", "none"):
+                continue
+            if raw_symbol.endswith(".0"):
+                raw_symbol = raw_symbol[:-2]
+            if suffix and not raw_symbol.endswith(suffix):
+                symbol = raw_symbol + suffix
+            else:
+                symbol = raw_symbol
             symbols.append(symbol)
+
+            if has_name_col:
+                raw_name = str(row.get(name_col) or "").strip().replace("\n", " ")
+                if raw_name and raw_name.lower() not in ("nan", "none"):
+                    INDEX_CONSTITUENT_NAMES[symbol] = raw_name
+
         return symbols
     except Exception:
         return []
@@ -444,7 +497,9 @@ def build_symbol_summary(symbol_or_name: str, symbol_mappings: dict[str, str] | 
     quote_type = str(info.get("quoteType") or "").lower()
     is_etf = quote_type == "etf"
 
-    long_name = info.get("longName") or info.get("shortName") or symbol
+    long_name = info.get("longName") or info.get("shortName") or INDEX_CONSTITUENT_NAMES.get(symbol) or symbol
+    if long_name == symbol:
+        long_name = resolve_name_fallback(symbol, long_name)
 
     return {
         "symbol": symbol,
@@ -603,7 +658,9 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
     ticker = yf.Ticker(symbol)
     info = _safe_get(lambda: ticker.get_info(), {})
     quote_type = str(info.get("quoteType") or "").lower()
-    name = info.get("longName") or info.get("shortName") or symbol
+    name = info.get("longName") or info.get("shortName") or INDEX_CONSTITUENT_NAMES.get(symbol) or symbol
+    if name == symbol:
+        name = resolve_name_fallback(symbol, name)
     history = _safe_dataframe(lambda: ticker.history(period="6mo", auto_adjust=False))
 
     eps_revision_signal = _summarize_eps_revisions(ticker)
