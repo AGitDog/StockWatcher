@@ -24,6 +24,8 @@ from stock_agent import (
     _apply_macro_overlay,
     INDEX_CONSTITUENT_NAMES,
     resolve_name_fallback,
+    generate_german_company_summary,
+    fetch_company_extended_fundamentals,
 )
 
 
@@ -425,6 +427,76 @@ def test_build_symbol_signal_monitor_no_nameerror_on_quote_type(mock_ticker_clas
     assert isinstance(res, dict)
     assert res["symbol"] == "AAPL"
     assert "brodel_score" in res
+
+
+def test_generate_german_company_summary_fallback():
+    """Test German company summary fallback when Gemini is unavailable."""
+    info = {
+        "longName": "Allianz SE",
+        "sector": "Financial Services",
+        "industry": "Insurance - Diversified",
+        "city": "München",
+        "country": "Germany",
+        "fullTimeEmployees": 150000,
+        "longBusinessSummary": "Allianz SE provides various insurance and asset management products worldwide.",
+    }
+    summary = generate_german_company_summary("ALV.DE", info)
+    assert "Allianz SE" in summary
+    assert "Finanzdienstleistungen" in summary
+    assert "München, Germany" in summary
+    assert "150,000" in summary
+
+
+@patch("stock_agent.yf.Ticker")
+def test_fetch_company_extended_fundamentals(mock_ticker_class):
+    """Test fetch_company_extended_fundamentals computes PE, PE trend, dividends, and streak."""
+    mock_instance = MagicMock()
+    mock_ticker_class.return_value = mock_instance
+
+    mock_instance.get_info.return_value = {
+        "longName": "Apple Inc.",
+        "sector": "Technology",
+        "industry": "Consumer Electronics",
+        "country": "United States",
+        "city": "Cupertino",
+        "trailingPE": 30.5,
+        "forwardPE": 28.0,
+        "pegRatio": 2.1,
+        "dividendYield": 0.005,
+        "dividendRate": 1.00,
+        "currency": "USD",
+        "longBusinessSummary": "Apple designs, manufactures, and markets smartphones, tablets, and computers.",
+    }
+
+    # Mock income statement
+    eps_series = pd.Series([6.0, 5.0], index=[pd.Timestamp("2024-09-30"), pd.Timestamp("2023-09-30")])
+    mock_income = pd.DataFrame([eps_series], index=["Diluted EPS"])
+    mock_instance.income_stmt = mock_income
+
+    # Mock history for PE trend & dividend yields
+    hist_idx = pd.date_range("2020-01-01", "2024-12-31", freq="Q")
+    mock_hist = pd.DataFrame({"Close": [100.0] * len(hist_idx)}, index=hist_idx)
+    mock_instance.history.return_value = mock_hist
+
+    # Mock dividends over 4 years with consecutive increases
+    div_idx = pd.date_range("2021-01-01", "2024-12-31", freq="Q")
+    div_vals = [0.20, 0.20, 0.20, 0.20,  # 2021: 0.80
+                0.22, 0.22, 0.22, 0.22,  # 2022: 0.88
+                0.24, 0.24, 0.24, 0.24,  # 2023: 0.96
+                0.25, 0.25, 0.25, 0.25]  # 2024: 1.00
+    mock_instance.dividends = pd.Series(div_vals, index=div_idx)
+
+    fetch_company_extended_fundamentals.cache_clear()
+    res = fetch_company_extended_fundamentals("AAPL")
+
+    assert res["symbol"] == "AAPL"
+    assert res["sector_de"] == "Technologie"
+    assert res["trailing_pe"] == 30.5
+    assert res["forward_pe"] == 28.0
+    assert len(res["pe_trend"]) == 2
+    assert res["dividend_yield_pct"] == 0.5
+    assert res["dividend_streak_years"] >= 2
+    assert len(res["dividend_history"]) >= 3
 
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -7,7 +7,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from functools import lru_cache
 from io import StringIO
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import re
 from typing import Any
@@ -1870,3 +1870,198 @@ def _dedupe_preserve_order(items: list[str]) -> list[str]:
         seen.add(item)
         result.append(item)
     return result
+
+
+SECTOR_TRANSLATIONS: dict[str, str] = {
+    "Technology": "Technologie",
+    "Healthcare": "Gesundheitswesen & Pharma",
+    "Financial Services": "Finanzdienstleistungen",
+    "Consumer Cyclical": "Zyklischer Konsum",
+    "Consumer Defensive": "Konsumgüter & Basiskonsum",
+    "Industrials": "Industrie & Produktion",
+    "Energy": "Energie & Rohstoffe",
+    "Utilities": "Versorger & Infrastruktur",
+    "Real Estate": "Immobilien",
+    "Basic Materials": "Grundstoffe & Chemie",
+    "Communication Services": "Kommunikation & Medien",
+}
+
+
+def generate_german_company_summary(symbol: str, info: dict[str, Any]) -> str:
+    """Generate or retrieve a concise German company summary."""
+    name = info.get("longName") or info.get("shortName") or symbol
+    sector = info.get("sector", "")
+    sector_de = SECTOR_TRANSLATIONS.get(sector, sector)
+    industry = info.get("industry", "")
+    raw_summary = info.get("longBusinessSummary") or ""
+
+    if _GEMINI_AVAILABLE and raw_summary:
+        try:
+            from config_loader import get_secret
+            api_key = get_secret("gemini", "api_key")
+            if api_key:
+                client = genai.Client(api_key=api_key)
+                prompt = (
+                    f"Fasse die folgende Unternehmensbeschreibung von {name} ({symbol}) "
+                    f"in 2 bis 3 prägnanten, professionellen deutschen Sätzen zusammen. "
+                    f"Erkläre kurz das Kerngeschäft, Hauptprodukte/Dienstleistungen und die Marktstellung. "
+                    f"Antworte ausschließlich mit dem deutschen Fließtext:\n\n{raw_summary[:1500]}"
+                )
+                response = client.models.generate_content(
+                    model="gemini-2.0-flash",
+                    contents=prompt,
+                )
+                if response and response.text:
+                    return response.text.strip()
+        except Exception:
+            pass
+
+    details: list[str] = []
+    if sector_de and industry:
+        details.append(f"{name} ist ein Unternehmen im Bereich {industry} ({sector_de})")
+    elif sector_de:
+        details.append(f"{name} ist im Sektor {sector_de} tätig")
+    else:
+        details.append(f"{name} ist ein börsennotiertes Unternehmen")
+
+    city = info.get("city")
+    country = info.get("country")
+    if city and country:
+        details[0] += f" mit Hauptsitz in {city}, {country}."
+    elif country:
+        details[0] += f" mit Hauptsitz in {country}."
+    else:
+        details[0] += "."
+
+    employees = info.get("fullTimeEmployees")
+    if employees:
+        details.append(f"Das Unternehmen beschäftigt ca. {employees:,} Mitarbeiter.")
+
+    if raw_summary:
+        snippet = raw_summary.strip().replace("\n", " ")
+        if len(snippet) > 300:
+            snippet = snippet[:300].rsplit(" ", 1)[0] + "..."
+        details.append(f"Geschäftsbeschreibung (Auszug): {snippet}")
+
+    return " ".join(details)
+
+
+@lru_cache(maxsize=128)
+def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
+    """Fetch extended fundamentals: German company profile, P/E metrics & trend, and dividend history/streak."""
+    ticker = yf.Ticker(symbol)
+    info = _safe_get(lambda: ticker.get_info(), {}) or {}
+
+    summary_de = generate_german_company_summary(symbol, info)
+    sector = info.get("sector") or "Unbekannt"
+    sector_de = SECTOR_TRANSLATIONS.get(sector, sector)
+    industry = info.get("industry") or "Unbekannt"
+
+    trailing_pe = _safe_float(info.get("trailingPE"))
+    forward_pe = _safe_float(info.get("forwardPE"))
+    peg_ratio = _safe_float(info.get("pegRatio"))
+
+    pe_trend: list[dict[str, Any]] = []
+    income_stmt = _safe_dataframe(lambda: ticker.income_stmt)
+    if income_stmt is not None and not income_stmt.empty and "Diluted EPS" in income_stmt.index:
+        eps_series = income_stmt.loc["Diluted EPS"].dropna()
+        hist = _safe_dataframe(lambda: ticker.history(period="5y"))
+        if hist is not None and not hist.empty:
+            hist_clean = hist.copy()
+            if hist_clean.index.tz is not None:
+                hist_clean.index = hist_clean.index.tz_localize(None)
+            for dt_col, eps_val in eps_series.items():
+                try:
+                    dt = pd.to_datetime(dt_col)
+                    if dt.tzinfo is not None:
+                        dt = dt.tz_localize(None)
+                    eps_float = float(eps_val)
+                    nearby = hist_clean[hist_clean.index <= dt]
+                    close_val = float(nearby["Close"].iloc[-1]) if not nearby.empty else None
+                    pe_val = round(close_val / eps_float, 1) if (close_val and eps_float > 0) else None
+                    pe_trend.append({
+                        "Jahr": int(dt.year),
+                        "EPS": round(eps_float, 2),
+                        "Kurs": round(close_val, 2) if close_val else None,
+                        "KGV": pe_val,
+                    })
+                except Exception:
+                    continue
+        pe_trend.sort(key=lambda x: x["Jahr"])
+
+    divs = _safe_get(lambda: ticker.dividends, None)
+    current_year = datetime.now(timezone.utc).year
+    div_records: list[dict[str, Any]] = []
+    streak_years = 0
+
+    if divs is not None and not divs.empty:
+        try:
+            div_series = divs.iloc[:, 0] if isinstance(divs, pd.DataFrame) else divs
+            annual_divs = div_series.groupby(div_series.index.year).sum()
+            hist_max = _safe_dataframe(lambda: ticker.history(period="max"))
+            if hist_max is not None and not hist_max.empty:
+                hist_max_clean = hist_max.copy()
+                if hist_max_clean.index.tz is not None:
+                    hist_max_clean.index = hist_max_clean.index.tz_localize(None)
+                all_years = [int(y) for y in annual_divs.index if int(y) <= current_year]
+                for y in all_years[-15:]:
+                    val = float(annual_divs.loc[y])
+                    y_slice = hist_max_clean[hist_max_clean.index.year == y]
+                    close_val = float(y_slice["Close"].iloc[-1]) if not y_slice.empty else None
+                    y_pct = round((val / close_val) * 100, 2) if (close_val and close_val > 0) else None
+                    
+                    prev_idx = all_years.index(y) - 1
+                    prev_val = float(annual_divs.loc[all_years[prev_idx]]) if prev_idx >= 0 else None
+                    chg_pct = round(((val - prev_val) / prev_val) * 100, 1) if (prev_val and prev_val > 0) else None
+                    
+                    div_records.append({
+                        "Jahr": int(y),
+                        "Dividende": round(val, 2),
+                        "Rendite (%)": y_pct,
+                        "Wachstum (%)": chg_pct,
+                    })
+
+                completed_years = [y for y in all_years if y < current_year]
+                for j in range(len(completed_years) - 1, 0, -1):
+                    if annual_divs.loc[completed_years[j]] > annual_divs.loc[completed_years[j - 1]]:
+                        streak_years += 1
+                    else:
+                        break
+            div_records.sort(key=lambda x: x["Jahr"])
+        except Exception:
+            pass
+
+    raw_yield = _safe_float(info.get("dividendYield"))
+    if raw_yield is not None:
+        div_yield_pct = round(raw_yield * 100, 2) if raw_yield < 1.0 else round(raw_yield, 2)
+    else:
+        div_yield_pct = None
+
+    div_rate = _safe_float(info.get("dividendRate")) or _safe_float(info.get("trailingAnnualDividendRate"))
+    if div_rate is None and div_records:
+        div_rate = div_records[-1]["Dividende"]
+
+    currency = str(info.get("currency") or "EUR")
+
+    return {
+        "symbol": symbol,
+        "name": info.get("longName") or info.get("shortName") or symbol,
+        "summary_de": summary_de,
+        "sector_de": sector_de,
+        "industry_de": industry,
+        "country": info.get("country", "-"),
+        "city": info.get("city", "-"),
+        "website": info.get("website", ""),
+        "employees": info.get("fullTimeEmployees"),
+        "market_cap": _safe_float(info.get("marketCap")),
+        "currency": currency,
+        "trailing_pe": trailing_pe,
+        "forward_pe": forward_pe,
+        "peg_ratio": peg_ratio,
+        "pe_trend": pe_trend,
+        "dividend_yield_pct": div_yield_pct,
+        "dividend_rate": div_rate,
+        "payout_ratio": _safe_float(info.get("payoutRatio")),
+        "dividend_streak_years": streak_years,
+        "dividend_history": div_records,
+    }

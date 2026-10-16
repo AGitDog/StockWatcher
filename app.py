@@ -8,6 +8,7 @@ from stock_agent import (
     build_signal_delta_report,
     build_symbol_signal_monitor,
     build_symbol_summary,
+    fetch_company_extended_fundamentals,
     parse_watchlist_text,
     parse_symbol_mappings,
     add_watchlist_peer_context,
@@ -39,6 +40,11 @@ def get_symbol_summary(entry: str, symbol_mappings: dict):
 @st.cache_data(show_spinner=False, ttl=3600, persist="disk")
 def get_symbol_signal_monitor(entry: str, symbol_mappings: dict):
     return build_symbol_signal_monitor(entry, symbol_mappings)
+
+
+@st.cache_data(show_spinner=False, ttl=3600, persist="disk")
+def get_extended_fundamentals(symbol: str):
+    return fetch_company_extended_fundamentals(symbol)
 
 
 def load_mapping_text() -> str:
@@ -397,6 +403,97 @@ def render_watchlist_signal_monitor(mapping_text: str):
             if item["resolved"]:
                 st.caption(f"Eingabe: {item['input_name']} | {item['resolution_note']}")
 
+            # Extended Fundamentals & Profile
+            with st.spinner("Lade Unternehmenszahlen & Profil..."):
+                ext = get_extended_fundamentals(item["symbol"])
+
+            st.markdown("#### 🏢 Unternehmensprofil")
+            st.info(ext.get("summary_de", "Keine Zusammenfassung verfuegbar."))
+
+            p_cols = st.columns(4)
+            p_cols[0].metric("Sektor", ext.get("sector_de", "-"))
+            p_cols[1].metric("Branche", ext.get("industry_de", "-"))
+            p_cols[2].metric("Hauptsitz", f"{ext.get('city', '-')}, {ext.get('country', '-')}")
+            emp = ext.get("employees")
+            p_cols[3].metric("Mitarbeiter", f"{emp:,}" if emp else "-")
+
+            st.markdown("#### 📊 Unternehmenszahlen & KGV-Analyse")
+            k_cols = st.columns(3)
+            curr_pe = ext.get("trailing_pe")
+            fwd_pe = ext.get("forward_pe")
+            peg = ext.get("peg_ratio")
+            k_cols[0].metric(
+                "Aktuelles KGV (Trailing)",
+                f"{curr_pe:.1f}" if curr_pe else "n/a",
+                help="Kurs-Gewinn-Verhaeltnis bezogen auf die letzten 12 Monate",
+            )
+            k_cols[1].metric(
+                "KGV (Forward)",
+                f"{fwd_pe:.1f}" if fwd_pe else "n/a",
+                help="Erwartetes KGV auf Basis von Analystenschaetzungen",
+            )
+            k_cols[2].metric(
+                "PEG-Verhaeltnis",
+                f"{peg:.2f}" if peg else "n/a",
+                help="Price/Earnings to Growth Ratio",
+            )
+
+            pe_trend = ext.get("pe_trend", [])
+            if pe_trend:
+                st.caption("KGV-Trend der letzten Geschaeftsjahre (gepruefte Jahres-EPS und historische Jahresendkurse):")
+                pe_df = pd.DataFrame(pe_trend)
+                pe_c1, pe_c2 = st.columns([2, 1])
+                with pe_c1:
+                    chart_pe = pe_df.dropna(subset=["KGV"]).set_index("Jahr")[["KGV"]]
+                    if not chart_pe.empty:
+                        st.line_chart(chart_pe)
+                with pe_c2:
+                    st.dataframe(pe_df, use_container_width=True, hide_index=True)
+            else:
+                st.info("Keine historischen KGV-Jahresabschluesse fuer diesen Titel verfuegbar.")
+
+            st.markdown("#### 💰 Dividenden-Analyse & Historie")
+            d_cols = st.columns(3)
+            d_yield = ext.get("dividend_yield_pct")
+            d_rate = ext.get("dividend_rate")
+            d_streak = ext.get("dividend_streak_years", 0)
+            curr = ext.get("currency", "EUR")
+
+            d_cols[0].metric(
+                "Dividendenrendite",
+                f"{d_yield:.2f} %" if d_yield is not None else "0.00 %",
+            )
+            d_cols[1].metric(
+                "Dividende (Zahlung)",
+                f"{d_rate:.2f} {curr}" if d_rate is not None else "0.00",
+            )
+            if d_streak > 0:
+                d_cols[2].metric(
+                    "Dividenden-Steigerung",
+                    f"{d_streak} Jahre in Folge 🏆",
+                    help="Anzahl aufeinanderfolgender Jahre mit gesteigerter Jahresdividende.",
+                )
+            else:
+                d_cols[2].metric(
+                    "Dividenden-Steigerung",
+                    "0 Jahre",
+                    help="Keine mehrjaehrige Steigerungsserie vorhanden.",
+                )
+
+            div_hist = ext.get("dividend_history", [])
+            if div_hist:
+                st.caption("Dividenden-Verlauf der letzten 15 Jahre (Rendite & Ausschuettung):")
+                div_df = pd.DataFrame(div_hist)
+                div_c1, div_c2 = st.columns([2, 1])
+                with div_c1:
+                    div_chart = div_df.set_index("Jahr")[["Dividende"]]
+                    st.bar_chart(div_chart)
+                with div_c2:
+                    st.dataframe(div_df, use_container_width=True, hide_index=True)
+            else:
+                st.info("Keine Dividenden-Historie fuer diesen Titel vorhanden.")
+
+            st.markdown("---")
             col1, col2 = st.columns(2)
             with col1:
                 st.markdown("**Signal-Zusammenfassung**")
