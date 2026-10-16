@@ -1,4 +1,6 @@
+from datetime import datetime, timezone
 import os
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
@@ -21,7 +23,12 @@ from stock_agent import (
     save_watchlist_file,
 )
 from strategies import build_strategy_signals
-from backtest_engine import BacktestEngine, run_backtest_on_snapshots
+from backtest_engine import (
+    BacktestEngine,
+    ScoreRangeBacktestResult,
+    run_backtest_on_snapshots,
+    run_score_range_backtest,
+)
 from ml_weights import load_trained_weights, train_on_snapshots
 from backtest_engine.engine import load_snapshots
 
@@ -813,56 +820,171 @@ def render_help_tab():
 
 
 def render_backtest_tab():
-    st.subheader("Strategie-Backtest")
+    st.subheader("Event-Backtest: Punktebereich-Eintritt")
     st.write(
-        "Hier kannst du die historische Performance der Brodel-Strategie testen. "
-        "Es wird ein Portfolio aus den Top-N Aktien des Signals gebildet und monatlich neu ausbalanciert."
+        "Kauft alle Aktien genau an dem Tag, an dem sie in einen definierten Punktebereich eintreten, "
+        "verteilt das Kapital gleichmäßig auf alle getätigten Käufe und ermittelt den heutigen Gesamtwert des Depots."
     )
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        initial_cash = st.number_input("Startkapital", min_value=10000, max_value=10_000_000, value=100_000, step=10000)
-    with col2:
-        max_positions = st.slider("Max. Positionen", min_value=1, max_value=30, value=10)
-    with col3:
-        rebalance_days = st.slider("Rebalancing (Tage)", min_value=7, max_value=90, value=30)
+    history_dir = Path("signal_history")
+    available_files: list[str] = []
+    if history_dir.exists():
+        available_files = sorted([f.name for f in history_dir.glob("*.json")])
 
-    benchmark = st.selectbox("Benchmark", options=["SPY", "DAX", "QQQ", "IWM"], index=0)
+    col_src, col_mode = st.columns([1, 1])
+    with col_src:
+        source_options = ["Alle Snapshots zusammen"] + available_files
+        chosen_source = st.selectbox("Snapshot-Datenbasis", options=source_options, index=0)
+    with col_mode:
+        entry_mode_label = st.selectbox(
+            "Eintritts-Bedingung",
+            options=[
+                "Aufsteiger & Neueintritte (Standard: Aktie klettert in den Punktebereich)",
+                "Nur Aufsteiger von unten (Vorheriger Score lag strikt unter Min-Punkte)",
+                "Alle im Punktebereich (Jede Aktie mit Score im Bereich)",
+            ],
+            index=0,
+            help="Definiert, wann ein Kauf ausgelöst wird, sobald eine Aktie den Punktebereich erreicht.",
+        )
+        if "Nur Aufsteiger" in entry_mode_label:
+            entry_mode = "climbed_from_below"
+        elif "Alle im Punktebereich" in entry_mode_label:
+            entry_mode = "all_in_range"
+        else:
+            entry_mode = "fresh_entry"
 
-    if st.button("Backtest starten", use_container_width=True):
-        with st.spinner("Lade historische Daten und simuliere Portfolio..."):
-            result = run_backtest_on_snapshots(
-                initial_cash=float(initial_cash),
-                max_positions=max_positions,
-                rebalance_days=rebalance_days,
-                benchmark=benchmark,
+    col_score, col_period, col_cap = st.columns([2, 1, 1])
+    with col_score:
+        score_range = st.slider(
+            "Punktebereich (Brodel-Score)",
+            min_value=0,
+            max_value=100,
+            value=(70, 80),
+            step=1,
+            help="Aktien, deren Score beim Eintritt in dieses Intervall fällt, werden gekauft.",
+        )
+        min_score, max_score = score_range
+    with col_period:
+        lookback_days = st.number_input(
+            "Zeitraum (letzte X Tage)",
+            min_value=0,
+            max_value=1000,
+            value=100,
+            step=10,
+            help="0 = gesamter gespeicherter Snapshot-Verlauf.",
+        )
+    with col_cap:
+        initial_capital = st.number_input(
+            "Startkapital (€)",
+            min_value=500,
+            max_value=10_000_000,
+            value=10_000,
+            step=1000,
+            help="Wird gleichmäßig auf alle qualifizierten Käufe aufgeteilt.",
+        )
+
+    if st.button("🚀 Backtest starten", use_container_width=True, type="primary"):
+        with st.spinner("Analysiere Snapshots, identifiziere Eintrittszeitpunkte und lade aktuelle Kurse..."):
+            snapshots = []
+            if chosen_source != "Alle Snapshots zusammen":
+                target_file = history_dir / chosen_source
+                if target_file.exists():
+                    import json
+                    try:
+                        with open(target_file, "r", encoding="utf-8") as f:
+                            raw_data = json.load(f)
+                        mtime = target_file.stat().st_mtime
+                        for s in raw_data:
+                            if isinstance(s, dict) and "items" in s:
+                                ts_raw = s.get("timestamp")
+                                p_ts = pd.to_datetime(ts_raw, errors="coerce", utc=True)
+                                dt = datetime.fromtimestamp(mtime) if pd.isna(p_ts) else p_ts.to_pydatetime().replace(tzinfo=None)
+                                snapshots.append((dt, s["items"]))
+                    except Exception as e:
+                        st.error(f"Fehler beim Laden von {chosen_source}: {e}")
+            else:
+                snapshots = load_snapshots(history_dir)
+
+            result = run_score_range_backtest(
+                snapshots=snapshots,
+                min_score=float(min_score),
+                max_score=float(max_score),
+                lookback_days=int(lookback_days),
+                initial_capital=float(initial_capital),
+                entry_mode=entry_mode,
+                one_trade_per_symbol=True,
             )
 
-        st.code(result.summary())
+        if result.num_positions == 0:
+            st.warning(
+                f"Im gewählten Zeitraum (letzte {lookback_days} Tage) und Punktebereich ({min_score} - {max_score}) "
+                "sind keine Aktien neu in den Bereich eingetreten. Tipp: Vergrößere den Zeitraum oder passe den Punktebereich an."
+            )
+        else:
+            st.success(f"Backtest abgeschlossen: {result.num_positions} Aktien qualifiziert und simuliert gekauft!")
 
-        if not result.equity_curve.empty:
-            st.line_chart(result.equity_curve[["total_value"]])
+            # KPI Metrics
+            m1, m2, m3, m4, m5 = st.columns(5)
+            m1.metric("Startkapital", f"{result.initial_capital:,.2f} €")
+            m2.metric("Depotwert heute", f"{result.total_current_value:,.2f} €")
+            delta_str = f"{result.total_profit_loss:+,.2f} € ({result.total_return_pct:+.2f}%)"
+            m3.metric("Gesamtrendite", f"{result.total_return_pct:+.2f}%", delta=delta_str)
+            m4.metric("Gekaufte Aktien", f"{result.num_positions}")
+            m5.metric("Trefferquote (Win-Rate)", f"{result.win_rate:.1f}%")
 
-        if result.trades:
-            trades_df = pd.DataFrame(result.trades)
-            st.markdown("**Trades**")
-            st.dataframe(trades_df, use_container_width=True, hide_index=True)
+            trades_df = result.to_dataframe()
+            if not trades_df.empty:
+                st.markdown("### Detaillierte Liste der getätigten Käufe & heutiger Wert")
+                st.dataframe(trades_df, use_container_width=True, hide_index=True)
 
-    st.markdown("---")
-    st.subheader("ML-Gewichtung trainieren")
-    st.write(
-        "Trainiere die Score-Gewichtung auf Basis historischer Snapshots und Forward-Renditen. "
-        "Die optimierten Gewichte werden automatisch im Signal Monitor angewendet."
-    )
-    if st.button("ML-Gewichtung trainieren", use_container_width=True):
-        with st.spinner("Trainiere Gewichte... (kann einige Minuten dauern)"):
-            snapshots = load_snapshots()
-            trainer = train_on_snapshots(snapshots, forward_days=30)
-            st.json({
-                "weights": trainer.weights,
-                "performance": trainer.performance,
-                "trained_at": datetime.utcnow().isoformat(),
-            })
+                csv_data = trades_df.to_csv(index=False, sep=";").encode("utf-8")
+                st.download_button(
+                    label="📥 Ergebnis-Tabelle als CSV herunterladen",
+                    data=csv_data,
+                    file_name=f"backtest_score_{min_score}_{max_score}.csv",
+                    mime="text/csv",
+                )
+
+    with st.expander("Erweiterte Tools (Klassischer Rebalancing-Backtest & ML-Training)"):
+        st.write("Historischer Portfolio-Rebalancing-Backtest basierend auf festen monatlichen Intervallen.")
+        r_col1, r_col2, r_col3 = st.columns(3)
+        with r_col1:
+            old_cash = st.number_input("Startkapital (Rebalance)", min_value=10000, max_value=10_000_000, value=100_000, step=10000)
+        with r_col2:
+            old_max_pos = st.slider("Max. Positionen", min_value=1, max_value=30, value=10)
+        with r_col3:
+            old_rebal_days = st.slider("Rebalancing (Tage)", min_value=7, max_value=90, value=30)
+        old_benchmark = st.selectbox("Benchmark", options=["SPY", "DAX", "QQQ", "IWM"], index=0)
+
+        if st.button("Klassischen Rebalancing-Backtest starten", use_container_width=True):
+            with st.spinner("Lade historische Daten und simuliere Portfolio..."):
+                old_result = run_backtest_on_snapshots(
+                    initial_cash=float(old_cash),
+                    max_positions=old_max_pos,
+                    rebalance_days=old_rebal_days,
+                    benchmark=old_benchmark,
+                )
+            st.code(old_result.summary())
+            if not old_result.equity_curve.empty:
+                st.line_chart(old_result.equity_curve[["total_value"]])
+            if old_result.trades:
+                st.dataframe(pd.DataFrame(old_result.trades), use_container_width=True, hide_index=True)
+
+        st.markdown("---")
+        st.subheader("ML-Gewichtung trainieren")
+        st.write(
+            "Trainiere die Score-Gewichtung auf Basis historischer Snapshots und Forward-Renditen. "
+            "Die optimierten Gewichte werden automatisch im Signal Monitor angewendet."
+        )
+        if st.button("ML-Gewichtung trainieren", use_container_width=True):
+            with st.spinner("Trainiere Gewichte... (kann einige Minuten dauern)"):
+                snapshots = load_snapshots()
+                trainer = train_on_snapshots(snapshots, forward_days=30)
+                st.json({
+                    "weights": trainer.weights,
+                    "performance": trainer.performance,
+                    "trained_at": datetime.now(timezone.utc).isoformat(),
+                })
 
 
 def render_stock_agent():
@@ -885,13 +1007,6 @@ def render_stock_agent():
         render_watchlist_source_controls()
     with stock_tabs[3]:
         render_help_tab()
-
-    st.divider()
-    st.subheader("Hinweise")
-    st.write(
-        "Standardmaessig wird beim Start die Datei meine_watchlist.txt geladen, sofern sie im Ordner watchlists/ vorhanden ist. "
-        "Snapshots fuer den Signal Monitor werden im Ordner signal_history/ gespeichert."
-    )
 
 
 def main():

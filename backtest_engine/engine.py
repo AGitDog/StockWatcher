@@ -453,3 +453,318 @@ def run_backtest_on_snapshots(
         risk_per_trade_pct=risk_per_trade_pct,
     )
     return engine.run(snapshots, strategy_name="brodel_top_n")
+
+
+@dataclass
+class ScoreRangePosition:
+    """Represents a stock position bought when entering a score range."""
+
+    symbol: str
+    name: str
+    buy_date: datetime
+    buy_score: float
+    prev_score: float | None
+    buy_price: float
+    allocated_capital: float
+    shares: float
+    current_price: float
+    current_value: float
+    profit_loss: float
+    return_pct: float
+    status: str = "Aktiv"
+
+
+@dataclass
+class ScoreRangeBacktestResult:
+    """Container for score-range entry backtest results."""
+
+    initial_capital: float
+    total_current_value: float
+    total_profit_loss: float
+    total_return_pct: float
+    num_positions: int
+    win_rate: float
+    positions: list[ScoreRangePosition] = field(default_factory=list)
+    min_score: float = 70.0
+    max_score: float = 80.0
+    lookback_days: int = 100
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    unallocated_cash: float = 0.0
+
+    def to_dataframe(self) -> pd.DataFrame:
+        """Export detailed trade and holding list as a pandas DataFrame."""
+        if not self.positions:
+            return pd.DataFrame()
+        rows = []
+        for p in self.positions:
+            rows.append(
+                {
+                    "Symbol": p.symbol,
+                    "Name": p.name,
+                    "Kaufdatum": p.buy_date.strftime("%Y-%m-%d") if p.buy_date else "-",
+                    "Kauf-Score": round(p.buy_score, 1),
+                    "Vorheriger Score": round(p.prev_score, 1) if p.prev_score is not None else "Neu",
+                    "Kaufkurs (€/$)": round(p.buy_price, 2),
+                    "Investiert (€)": round(p.allocated_capital, 2),
+                    "Stückzahl": round(p.shares, 4),
+                    "Aktueller Kurs (€/$)": round(p.current_price, 2),
+                    "Aktueller Wert (€)": round(p.current_value, 2),
+                    "Gewinn/Verlust (€)": round(p.profit_loss, 2),
+                    "Rendite (%)": round(p.return_pct, 2),
+                    "Status": p.status,
+                }
+            )
+        return pd.DataFrame(rows)
+
+
+def run_score_range_backtest(
+    snapshots: list[tuple[datetime, list[dict[str, Any]]]] | None = None,
+    history_dir: Path = HISTORY_DIR,
+    min_score: float = 70.0,
+    max_score: float = 80.0,
+    lookback_days: int = 100,
+    initial_capital: float = 10_000.0,
+    entry_mode: str = "fresh_entry",
+    one_trade_per_symbol: bool = True,
+    price_data: dict[str, pd.DataFrame] | None = None,
+    current_date: datetime | None = None,
+) -> ScoreRangeBacktestResult:
+    """Run an event-driven backtest buying all stocks entering a specific score range.
+
+    Parameters:
+    - snapshots: Optional preloaded snapshots. If None, loaded from history_dir.
+    - min_score, max_score: Boundaries for score entry (e.g. 70 to 80).
+    - lookback_days: Days to look back from current_date (0 = all snapshots).
+    - initial_capital: Total capital split evenly across all qualifying stocks.
+    - entry_mode:
+        * 'fresh_entry': stock was previously outside range or first seen in range.
+        * 'climbed_from_below': stock was previously strictly below min_score.
+        * 'all_in_range': all stocks appearing in score range during the window.
+    - one_trade_per_symbol: Buy each stock once on its earliest entry in the period.
+    - price_data: Optional pre-fetched price data dictionary for mocking or testing.
+    """
+    import re
+
+    if snapshots is None:
+        snapshots = load_snapshots(history_dir)
+
+    snapshots = sorted(snapshots, key=lambda s: s[0])
+
+    if not snapshots:
+        return ScoreRangeBacktestResult(
+            initial_capital=initial_capital,
+            total_current_value=initial_capital,
+            total_profit_loss=0.0,
+            total_return_pct=0.0,
+            num_positions=0,
+            win_rate=0.0,
+            positions=[],
+            min_score=min_score,
+            max_score=max_score,
+            lookback_days=lookback_days,
+            unallocated_cash=initial_capital,
+        )
+
+    ref_date = current_date or datetime.now()
+    if ref_date.tzinfo is not None:
+        ref_date = ref_date.replace(tzinfo=None)
+
+    cutoff_dt = datetime.min if lookback_days <= 0 else (ref_date - timedelta(days=lookback_days))
+
+    # Phase 1: Detect all qualifying entry events
+    previous_scores: dict[str, float] = {}
+    candidates: list[dict[str, Any]] = []
+    bought_symbols: set[str] = set()
+
+    for dt, items in snapshots:
+        snapshot_in_window = dt >= cutoff_dt
+        for item in items:
+            sym = item.get("symbol")
+            if not sym:
+                continue
+            score = float(item.get("brodel_score", 0))
+            prev = previous_scores.get(sym)
+            name = item.get("name") or sym
+
+            if snapshot_in_window and (min_score <= score <= max_score):
+                qualifies = False
+                if entry_mode == "fresh_entry":
+                    if prev is None or not (min_score <= prev <= max_score):
+                        qualifies = True
+                elif entry_mode == "climbed_from_below":
+                    if prev is not None and prev < min_score:
+                        qualifies = True
+                elif entry_mode == "all_in_range":
+                    qualifies = True
+
+                if qualifies:
+                    if not one_trade_per_symbol or sym not in bought_symbols:
+                        bought_symbols.add(sym)
+                        candidates.append(
+                            {
+                                "symbol": sym,
+                                "name": name,
+                                "entry_date": dt,
+                                "entry_score": score,
+                                "prev_score": prev,
+                                "signal_items": item.get("signal_items", []),
+                            }
+                        )
+
+            previous_scores[sym] = score
+
+    if not candidates:
+        return ScoreRangeBacktestResult(
+            initial_capital=initial_capital,
+            total_current_value=initial_capital,
+            total_profit_loss=0.0,
+            total_return_pct=0.0,
+            num_positions=0,
+            win_rate=0.0,
+            positions=[],
+            min_score=min_score,
+            max_score=max_score,
+            lookback_days=lookback_days,
+            start_date=snapshots[0][0],
+            end_date=snapshots[-1][0],
+            unallocated_cash=initial_capital,
+        )
+
+    # Phase 2: Equal allocation across all identified stocks
+    num_candidates = len(candidates)
+    capital_per_stock = initial_capital / num_candidates
+
+    # Phase 3: Price fetching
+    prices: dict[str, pd.DataFrame] = {}
+    if price_data is not None:
+        prices = price_data
+    else:
+        unique_syms = list({c["symbol"] for c in candidates})
+        min_date = min(c["entry_date"] for c in candidates) - timedelta(days=5)
+        try:
+            download_df = yf.download(
+                unique_syms,
+                start=min_date.strftime("%Y-%m-%d"),
+                group_by="ticker",
+                threads=True,
+                progress=False,
+            )
+            if hasattr(download_df.columns, "levels") and len(unique_syms) > 1:
+                for sym in unique_syms:
+                    if sym in download_df.columns.levels[0]:
+                        prices[sym] = download_df[sym]
+            elif not download_df.empty and len(unique_syms) == 1:
+                prices[unique_syms[0]] = download_df
+        except Exception as e:
+            logger.warning(f"Batch download failed: {e}")
+
+        # Fallback for tickers missing in batch
+        for sym in unique_syms:
+            if sym not in prices or prices[sym].empty:
+                try:
+                    ticker = yf.Ticker(sym)
+                    hist = ticker.history(start=min_date.strftime("%Y-%m-%d"), auto_adjust=True)
+                    if not hist.empty and "Close" in hist.columns:
+                        prices[sym] = hist
+                except Exception as e:
+                    logger.debug(f"Einzel-Abruf fehlgeschlagen für {sym}: {e}")
+
+    # Phase 4: Valuation of each position
+    positions: list[ScoreRangePosition] = []
+    unallocated_cash = 0.0
+
+    for cand in candidates:
+        sym = cand["symbol"]
+        entry_date = cand["entry_date"]
+        hist = prices.get(sym, pd.DataFrame())
+
+        buy_price = _price_on_or_after(hist, entry_date) if not hist.empty else None
+
+        # Fallback to signal_items price mention if history is missing or gap
+        if buy_price is None:
+            for s_line in cand["signal_items"]:
+                m = re.search(r"Kurs\s+([0-9.]+)", str(s_line))
+                if m:
+                    try:
+                        buy_price = float(m.group(1))
+                        break
+                    except ValueError:
+                        pass
+
+        current_price = None
+        if not hist.empty and "Close" in hist.columns and not hist["Close"].dropna().empty:
+            current_price = float(hist["Close"].dropna().iloc[-1])
+
+        if buy_price and buy_price > 0 and current_price and current_price > 0:
+            shares = capital_per_stock / buy_price
+            current_value = shares * current_price
+            pnl = current_value - capital_per_stock
+            ret_pct = ((current_price - buy_price) / buy_price) * 100.0
+            status = "Aktiv"
+        elif buy_price and buy_price > 0 and (current_price is None or current_price <= 0):
+            # Bought, but current price missing
+            shares = capital_per_stock / buy_price
+            current_price = buy_price
+            current_value = capital_per_stock
+            pnl = 0.0
+            ret_pct = 0.0
+            status = "Aktueller Kurs fehlt (Einstandskurs)"
+        else:
+            # Completely missing price
+            shares = 0.0
+            buy_price = 0.0
+            current_price = 0.0
+            current_value = capital_per_stock
+            pnl = 0.0
+            ret_pct = 0.0
+            unallocated_cash += capital_per_stock
+            status = "Kurs nicht verfügbar (Barbestand)"
+
+        positions.append(
+            ScoreRangePosition(
+                symbol=sym,
+                name=cand["name"],
+                buy_date=entry_date,
+                buy_score=cand["entry_score"],
+                prev_score=cand["prev_score"],
+                buy_price=buy_price,
+                allocated_capital=capital_per_stock,
+                shares=shares,
+                current_price=current_price,
+                current_value=current_value,
+                profit_loss=pnl,
+                return_pct=ret_pct,
+                status=status,
+            )
+        )
+
+    # Sort positions by buy_date
+    positions.sort(key=lambda p: p.buy_date)
+
+    total_current_value = sum(p.current_value for p in positions)
+    total_profit_loss = total_current_value - initial_capital
+    total_return_pct = (total_profit_loss / initial_capital) * 100.0 if initial_capital > 0 else 0.0
+
+    valid_positions = [p for p in positions if p.status == "Aktiv"]
+    profitable = [p for p in valid_positions if p.profit_loss > 0]
+    win_rate = (len(profitable) / len(valid_positions) * 100.0) if valid_positions else 0.0
+
+    start_date = candidates[0]["entry_date"] if candidates else None
+    end_date = snapshots[-1][0] if snapshots else None
+
+    return ScoreRangeBacktestResult(
+        initial_capital=initial_capital,
+        total_current_value=total_current_value,
+        total_profit_loss=total_profit_loss,
+        total_return_pct=total_return_pct,
+        num_positions=len(positions),
+        win_rate=win_rate,
+        positions=positions,
+        min_score=min_score,
+        max_score=max_score,
+        lookback_days=lookback_days,
+        start_date=start_date,
+        end_date=end_date,
+        unallocated_cash=unallocated_cash,
+    )

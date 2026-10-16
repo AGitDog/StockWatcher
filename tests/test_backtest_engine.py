@@ -8,7 +8,14 @@ from unittest.mock import patch, MagicMock
 import pandas as pd
 import pytest
 
-from backtest_engine import BacktestEngine, Portfolio, Trade
+from backtest_engine import (
+    BacktestEngine,
+    Portfolio,
+    ScoreRangeBacktestResult,
+    ScoreRangePosition,
+    Trade,
+    run_score_range_backtest,
+)
 from backtest_engine.engine import (
     _calculate_metrics,
     _price_on_or_after,
@@ -170,3 +177,173 @@ def test_backtest_engine_runs(mock_benchmark, mock_fetch_prices, mock_history_di
     assert result is not None
     assert result.num_trades >= 0
     assert result.initial_cash == 100_000
+
+
+def test_score_range_backtest_entry_and_equal_allocation():
+    """Verify that stocks entering the score range are bought on the entry date with equal capital."""
+    dt1 = datetime(2024, 1, 10)
+    dt2 = datetime(2024, 1, 15)
+
+    snapshots = [
+        (
+            dt1,
+            [
+                {"symbol": "AAPL", "name": "Apple Inc.", "brodel_score": 65},
+                {"symbol": "MSFT", "name": "Microsoft Corp.", "brodel_score": 75},  # Enters Day 1
+            ],
+        ),
+        (
+            dt2,
+            [
+                {"symbol": "AAPL", "name": "Apple Inc.", "brodel_score": 72},  # Climbs into range on Day 2
+                {"symbol": "MSFT", "name": "Microsoft Corp.", "brodel_score": 78},  # Already in range, not rebought
+                {"symbol": "NVDA", "name": "Nvidia Corp.", "brodel_score": 88},  # Above range
+            ],
+        ),
+    ]
+
+    dates = pd.date_range("2024-01-08", "2024-02-01", freq="D")
+    price_data = {
+        "MSFT": pd.DataFrame({"Close": [200.0] * 10 + [220.0] * 15}, index=dates),  # Bought at 200, now 220 (+10%)
+        "AAPL": pd.DataFrame({"Close": [100.0] * 15 + [120.0] * 10}, index=dates),  # Bought at 100, now 120 (+20%)
+    }
+
+    result = run_score_range_backtest(
+        snapshots=snapshots,
+        min_score=70,
+        max_score=80,
+        lookback_days=100,
+        initial_capital=10_000.0,
+        entry_mode="fresh_entry",
+        price_data=price_data,
+        current_date=datetime(2024, 2, 1),
+    )
+
+    assert result.num_positions == 2
+    assert result.initial_capital == 10_000.0
+
+    # Capital is split equally: 5,000 each
+    msft_pos = next(p for p in result.positions if p.symbol == "MSFT")
+    aapl_pos = next(p for p in result.positions if p.symbol == "AAPL")
+
+    assert msft_pos.allocated_capital == 5_000.0
+    assert msft_pos.buy_score == 75
+    assert msft_pos.buy_date == dt1
+    assert msft_pos.buy_price == 200.0
+    assert msft_pos.current_price == 220.0
+    assert msft_pos.current_value == pytest.approx(5_500.0)
+    assert msft_pos.return_pct == pytest.approx(10.0)
+
+    assert aapl_pos.allocated_capital == 5_000.0
+    assert aapl_pos.buy_score == 72
+    assert aapl_pos.prev_score == 65
+    assert aapl_pos.buy_date == dt2
+    assert aapl_pos.buy_price == 100.0
+    assert aapl_pos.current_price == 120.0
+    assert aapl_pos.current_value == pytest.approx(6_000.0)
+    assert aapl_pos.return_pct == pytest.approx(20.0)
+
+    assert result.total_current_value == pytest.approx(11_500.0)
+    assert result.total_profit_loss == pytest.approx(1_500.0)
+    assert result.total_return_pct == pytest.approx(15.0)
+    assert result.win_rate == pytest.approx(100.0)
+
+    df = result.to_dataframe()
+    assert len(df) == 2
+    assert "Symbol" in df.columns
+    assert "Kaufdatum" in df.columns
+    assert "Kauf-Score" in df.columns
+    assert "Kaufkurs (€/$)" in df.columns
+    assert "Aktueller Wert (€)" in df.columns
+
+
+def test_score_range_backtest_climbed_from_below_mode():
+    """Verify climbed_from_below strictly requires prev_score < min_score."""
+    dt1 = datetime(2024, 1, 1)
+    dt2 = datetime(2024, 1, 5)
+
+    snapshots = [
+        (
+            dt1,
+            [
+                {"symbol": "A", "brodel_score": 75},  # In range on Day 1 (no prev)
+                {"symbol": "B", "brodel_score": 60},  # Below range
+            ],
+        ),
+        (
+            dt2,
+            [
+                {"symbol": "A", "brodel_score": 75},  # Still in range
+                {"symbol": "B", "brodel_score": 72},  # Climbed from 60 to 72
+            ],
+        ),
+    ]
+
+    dates = pd.date_range("2024-01-01", "2024-01-10")
+    price_data = {
+        "A": pd.DataFrame({"Close": [10.0] * 10}, index=dates),
+        "B": pd.DataFrame({"Close": [20.0] * 10}, index=dates),
+    }
+
+    result = run_score_range_backtest(
+        snapshots=snapshots,
+        min_score=70,
+        max_score=80,
+        entry_mode="climbed_from_below",
+        price_data=price_data,
+        current_date=datetime(2024, 1, 10),
+    )
+
+    # Only B climbed from below 70!
+    assert result.num_positions == 1
+    assert result.positions[0].symbol == "B"
+    assert result.positions[0].prev_score == 60
+
+
+def test_score_range_backtest_no_qualifying_returns_clean_result():
+    """Verify that if no stocks meet criteria, 0 positions and cash intact are returned."""
+    snapshots = [
+        (
+            datetime(2024, 1, 1),
+            [{"symbol": "LOW", "brodel_score": 30}],
+        )
+    ]
+    result = run_score_range_backtest(
+        snapshots=snapshots,
+        min_score=70,
+        max_score=80,
+        initial_capital=5_000.0,
+    )
+    assert result.num_positions == 0
+    assert result.total_current_value == 5_000.0
+    assert result.total_return_pct == 0.0
+    assert result.to_dataframe().empty
+
+
+def test_score_range_backtest_signal_items_price_fallback():
+    """Verify fallback to signal_items Kurs text if market history is not in price_data."""
+    snapshots = [
+        (
+            datetime(2024, 1, 1),
+            [
+                {
+                    "symbol": "FALLBACK",
+                    "brodel_score": 75,
+                    "signal_items": ["Kurs 50.00, 5T 2.6%, Volumen 0.8x"],
+                }
+            ],
+        )
+    ]
+    result = run_score_range_backtest(
+        snapshots=snapshots,
+        min_score=70,
+        max_score=80,
+        initial_capital=1_000.0,
+        price_data={},  # Empty price data
+        current_date=datetime(2024, 1, 5),
+    )
+    assert result.num_positions == 1
+    pos = result.positions[0]
+    assert pos.buy_price == 50.0
+    assert pos.shares == pytest.approx(20.0)
+

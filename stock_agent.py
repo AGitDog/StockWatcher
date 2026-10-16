@@ -1303,7 +1303,7 @@ def _analyze_sentiment_gemini(headlines: list[str]) -> dict[str, Any]:
     )
 
     response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-flash-latest",
         contents=prompt,
     )
 
@@ -1908,7 +1908,7 @@ def generate_german_company_summary(symbol: str, info: dict[str, Any]) -> str:
                     f"Antworte ausschließlich mit dem deutschen Fließtext:\n\n{raw_summary[:1500]}"
                 )
                 response = client.models.generate_content(
-                    model="gemini-2.0-flash",
+                    model="gemini-flash-latest",
                     contents=prompt,
                 )
                 if response and response.text:

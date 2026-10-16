@@ -56,6 +56,8 @@ def test_all_strategy_and_engine_imports_exist():
     assert hasattr(strategies, "build_strategy_signals"), "strategies must define build_strategy_signals"
     assert hasattr(backtest_engine, "BacktestEngine"), "backtest_engine must define BacktestEngine"
     assert hasattr(backtest_engine, "run_backtest_on_snapshots"), "backtest_engine must define run_backtest_on_snapshots"
+    assert hasattr(backtest_engine, "run_score_range_backtest"), "backtest_engine must define run_score_range_backtest"
+    assert hasattr(backtest_engine, "ScoreRangeBacktestResult"), "backtest_engine must define ScoreRangeBacktestResult"
     assert hasattr(ml_weights, "load_trained_weights"), "ml_weights must define load_trained_weights"
     assert hasattr(ml_weights, "train_on_snapshots"), "ml_weights must define train_on_snapshots"
     assert hasattr(engine, "load_snapshots"), "backtest_engine.engine must define load_snapshots"

@@ -440,7 +440,8 @@ def test_generate_german_company_summary_fallback():
         "fullTimeEmployees": 150000,
         "longBusinessSummary": "Allianz SE provides various insurance and asset management products worldwide.",
     }
-    summary = generate_german_company_summary("ALV.DE", info)
+    with patch("stock_agent._GEMINI_AVAILABLE", False):
+        summary = generate_german_company_summary("ALV.DE", info)
     assert "Allianz SE" in summary
     assert "Finanzdienstleistungen" in summary
     assert "München, Germany" in summary
