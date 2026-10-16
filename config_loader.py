@@ -51,6 +51,26 @@ def get_secret(*keys: str, default: Any = None) -> Any:
     except Exception:
         pass
 
+    # 1b. Direct fallback to .streamlit/secrets.toml if running outside Streamlit context
+    try:
+        import tomllib
+
+        secrets_file = Path(".streamlit/secrets.toml")
+        if secrets_file.exists():
+            with open(secrets_file, "rb") as f:
+                toml_data = tomllib.load(f)
+            val = toml_data
+            for key in keys:
+                if isinstance(val, dict) and key in val:
+                    val = val[key]
+                else:
+                    val = None
+                    break
+            if val is not None:
+                return val
+    except Exception:
+        pass
+
     # 2. Environment variables (flat and nested variants)
     env_candidates = [
         "_".join(keys).upper(),
@@ -82,6 +102,22 @@ def get_secret(*keys: str, default: Any = None) -> Any:
                 value = os.environ.get(candidate)
                 if value:
                     return value
+    except Exception:
+        pass
+
+    # 3b. Simple fallback parser for .env without requiring python-dotenv
+    try:
+        env_file = Path(".env")
+        if env_file.exists():
+            for line in env_file.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                k = k.strip()
+                v = v.strip().strip("'\"")
+                if k in env_candidates and v:
+                    return v
     except Exception:
         pass
 
