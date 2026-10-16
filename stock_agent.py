@@ -20,7 +20,7 @@ import fred_cache
 try:
     from google import genai
     _GEMINI_AVAILABLE = True
-except ImportError:
+except Exception:
     _GEMINI_AVAILABLE = False
 
 
