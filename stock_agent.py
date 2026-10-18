@@ -673,6 +673,7 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
     relative_strength_signal = _summarize_relative_strength(history, symbol)
     fundamental_signal = _summarize_fundamentals(ticker, info)
     technical_signal = _summarize_technical_indicators(history)
+    quality_signal = _summarize_quality_score(ticker, info)
 
     signal_components = [
         eps_revision_signal,
@@ -685,6 +686,7 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
         relative_strength_signal,
         fundamental_signal,
         technical_signal,
+        quality_signal,
     ]
 
     raw_score = sum(component["score"] for component in signal_components)
@@ -1610,6 +1612,207 @@ def _summarize_fundamentals(ticker: yf.Ticker, info: dict[str, Any]) -> dict[str
     return {"name": "Fundamentale Bewertung", "score": score, "summary": summary}
 
 
+def _compute_cagr(start_val: float, end_val: float, years: int) -> float | None:
+    """Compute Compound Annual Growth Rate. Returns percentage or None."""
+    if start_val <= 0 or end_val <= 0 or years <= 0:
+        return None
+    return (((end_val / start_val) ** (1.0 / years)) - 1.0) * 100
+
+
+def _extract_annual_financial_data(ticker: yf.Ticker) -> dict[str, Any]:
+    """Extract annual financial statement data from yfinance for deep fundamentals.
+
+    Returns a dict with income_stmt, balance_sheet, cashflow DataFrames and
+    derived time-series data (revenue history, EPS history, margin trends, etc.).
+    """
+    income = _safe_dataframe(lambda: ticker.income_stmt)
+    balance = _safe_dataframe(lambda: ticker.balance_sheet)
+    cashflow = _safe_dataframe(lambda: ticker.cashflow)
+
+    result: dict[str, Any] = {
+        "income_stmt": income,
+        "balance_sheet": balance,
+        "cashflow": cashflow,
+    }
+
+    # Revenue & EPS history
+    revenue_history: list[dict[str, Any]] = []
+    eps_history: list[dict[str, Any]] = []
+    margin_trend: list[dict[str, Any]] = []
+
+    if income is not None and not income.empty:
+        columns_sorted = sorted(income.columns, key=lambda c: pd.to_datetime(c, errors="coerce") or pd.Timestamp.min)
+        for col in columns_sorted:
+            try:
+                year = int(pd.to_datetime(col).year)
+            except Exception:
+                continue
+
+            revenue = _safe_float(income.at["Total Revenue", col]) if "Total Revenue" in income.index else None
+            net_income = _safe_float(income.at["Net Income", col]) if "Net Income" in income.index else None
+            diluted_eps = _safe_float(income.at["Diluted EPS", col]) if "Diluted EPS" in income.index else None
+            gross_profit = _safe_float(income.at["Gross Profit", col]) if "Gross Profit" in income.index else None
+            ebit = _safe_float(income.at["EBIT", col]) if "EBIT" in income.index else None
+            interest_expense = _safe_float(income.at["Interest Expense", col]) if "Interest Expense" in income.index else None
+
+            if revenue is not None:
+                revenue_history.append({"Jahr": year, "Umsatz": revenue})
+
+            if diluted_eps is not None:
+                eps_history.append({"Jahr": year, "EPS": round(diluted_eps, 2)})
+
+            gross_margin = round(gross_profit / revenue, 4) if (gross_profit is not None and revenue and revenue > 0) else None
+            op_margin = round(ebit / revenue, 4) if (ebit is not None and revenue and revenue > 0) else None
+            net_margin = round(net_income / revenue, 4) if (net_income is not None and revenue and revenue > 0) else None
+
+            margin_trend.append({
+                "Jahr": year,
+                "Brutto": gross_margin,
+                "Operativ": op_margin,
+                "Netto": net_margin,
+            })
+
+    result["revenue_history"] = revenue_history
+    result["eps_history"] = eps_history
+    result["margin_trend"] = margin_trend
+
+    # Cashflow history
+    cashflow_history: list[dict[str, Any]] = []
+    if cashflow is not None and not cashflow.empty:
+        cf_columns_sorted = sorted(cashflow.columns, key=lambda c: pd.to_datetime(c, errors="coerce") or pd.Timestamp.min)
+        for col in cf_columns_sorted:
+            try:
+                year = int(pd.to_datetime(col).year)
+            except Exception:
+                continue
+
+            ocf = _safe_float(cashflow.at["Operating Cash Flow", col]) if "Operating Cash Flow" in cashflow.index else None
+            capex = _safe_float(cashflow.at["Capital Expenditure", col]) if "Capital Expenditure" in cashflow.index else None
+            fcf_val = (ocf + capex) if (ocf is not None and capex is not None) else None  # capex is negative
+            buybacks = _safe_float(cashflow.at["Repurchase Of Capital Stock", col]) if "Repurchase Of Capital Stock" in cashflow.index else None
+
+            cashflow_history.append({
+                "Jahr": year,
+                "OCF": ocf,
+                "FCF": round(fcf_val, 2) if fcf_val is not None else None,
+                "CapEx": capex,
+                "Buybacks": buybacks,
+            })
+
+    result["cashflow_history"] = cashflow_history
+
+    # Shares outstanding trend
+    shares_trend: list[dict[str, Any]] = []
+    if balance is not None and not balance.empty:
+        bs_columns_sorted = sorted(balance.columns, key=lambda c: pd.to_datetime(c, errors="coerce") or pd.Timestamp.min)
+        for col in bs_columns_sorted:
+            try:
+                year = int(pd.to_datetime(col).year)
+            except Exception:
+                continue
+            shares = _safe_float(balance.at["Ordinary Shares Number", col]) if "Ordinary Shares Number" in balance.index else None
+            if shares is None:
+                shares = _safe_float(balance.at["Share Issued", col]) if "Share Issued" in balance.index else None
+            total_equity = _safe_float(balance.at["Stockholders Equity", col]) if "Stockholders Equity" in balance.index else None
+            total_assets = _safe_float(balance.at["Total Assets", col]) if "Total Assets" in balance.index else None
+            total_debt_val = _safe_float(balance.at["Total Debt", col]) if "Total Debt" in balance.index else None
+            cash_val = _safe_float(balance.at["Cash And Cash Equivalents", col]) if "Cash And Cash Equivalents" in balance.index else None
+
+            shares_trend.append({
+                "Jahr": year,
+                "Aktien": shares,
+                "Eigenkapital": total_equity,
+                "Gesamtvermoegen": total_assets,
+                "Verschuldung": total_debt_val,
+                "Cash": cash_val,
+            })
+
+    result["shares_trend"] = shares_trend
+
+    return result
+
+
+def _summarize_quality_score(ticker: yf.Ticker, info: dict[str, Any]) -> dict[str, Any]:
+    """Score based on long-term company quality: ROE, growth, margins, leverage, FCF quality, buybacks."""
+    score = 0
+    components: list[str] = []
+
+    financial_data = _extract_annual_financial_data(ticker)
+
+    # --- ROE ---
+    roe = _safe_float(info.get("returnOnEquity"))
+    if roe is not None:
+        roe_pct = roe * 100 if roe < 1.0 else roe
+        if roe_pct > 15:
+            score += 2
+            components.append(f"ROE {roe_pct:.1f}%")
+        elif roe_pct < 5:
+            score -= 2
+            components.append(f"ROE {roe_pct:.1f}% (schwach)")
+
+    # --- Revenue CAGR ---
+    rev_hist = financial_data.get("revenue_history", [])
+    if len(rev_hist) >= 2:
+        rev_cagr = _compute_cagr(rev_hist[0]["Umsatz"], rev_hist[-1]["Umsatz"], len(rev_hist) - 1)
+        if rev_cagr is not None:
+            if rev_cagr > 10:
+                score += 2
+                components.append(f"Umsatz-CAGR {rev_cagr:.1f}%")
+            elif rev_cagr < 0:
+                score -= 1
+                components.append(f"Umsatz-CAGR {rev_cagr:.1f}% (schrumpfend)")
+
+    # --- Gross Margin ---
+    gross_margin = _safe_float(info.get("grossMargins"))
+    if gross_margin is not None:
+        gm_pct = gross_margin * 100 if gross_margin < 1.0 else gross_margin
+        if gm_pct > 50:
+            score += 2
+            components.append(f"Bruttomarge {gm_pct:.0f}%")
+        elif gm_pct < 20:
+            score -= 2
+            components.append(f"Bruttomarge {gm_pct:.0f}% (dünn)")
+
+    # --- Net Debt / EBITDA ---
+    total_debt = _safe_float(info.get("totalDebt"))
+    total_cash = _safe_float(info.get("totalCash"))
+    ebitda = _safe_float(info.get("ebitda"))
+    if total_debt is not None and total_cash is not None and ebitda is not None and ebitda > 0:
+        net_debt = total_debt - total_cash
+        nd_ebitda = net_debt / ebitda
+        if nd_ebitda < 2:
+            score += 2
+            components.append(f"NetDebt/EBITDA {nd_ebitda:.1f}")
+        elif nd_ebitda > 5:
+            score -= 2
+            components.append(f"NetDebt/EBITDA {nd_ebitda:.1f} (hoch)")
+
+    # --- FCF / Net Income quality ---
+    fcf = _safe_float(info.get("freeCashflow"))
+    net_income = _safe_float(info.get("netIncomeToCommon"))
+    if fcf is not None and net_income is not None and net_income > 0:
+        fcf_ratio = fcf / net_income
+        if fcf_ratio > 0.8:
+            score += 1
+            components.append(f"FCF/Gewinn {fcf_ratio:.2f}")
+
+    # --- Shares Outstanding declining (buybacks) ---
+    shares_trend = financial_data.get("shares_trend", [])
+    if len(shares_trend) >= 2:
+        first_shares = shares_trend[0].get("Aktien")
+        last_shares = shares_trend[-1].get("Aktien")
+        if first_shares and last_shares and first_shares > 0:
+            share_change = ((last_shares - first_shares) / first_shares) * 100
+            if share_change < -2:
+                score += 1
+                components.append(f"Aktienrueckkauf ({share_change:.1f}%)")
+
+    score = max(-4, min(10, score))
+    summary = "Qualitaet: " + ", ".join(components) if components else "Qualitaetsdaten nicht ausreichend."
+
+    return {"name": "Unternehmensqualitaet", "score": score, "summary": summary}
+
+
 # Regional benchmark mapping for relative strength comparison
 REGIONAL_BENCHMARKS: dict[str, str] = {
     ".DE": "^GDAXI",    # DAX (Germany)
@@ -1948,7 +2151,11 @@ def generate_german_company_summary(symbol: str, info: dict[str, Any]) -> str:
 
 @lru_cache(maxsize=128)
 def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
-    """Fetch extended fundamentals: German company profile, P/E metrics & trend, and dividend history/streak."""
+    """Fetch extended fundamentals: company profile, P/E trend, dividend history, and deep fundamentals.
+
+    Deep fundamentals include growth profile, profitability & quality, balance sheet strength,
+    cashflow profile, shareholder returns, and valuation context.
+    """
     ticker = yf.Ticker(symbol)
     info = _safe_get(lambda: ticker.get_info(), {}) or {}
 
@@ -2043,7 +2250,136 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
 
     currency = str(info.get("currency") or "EUR")
 
+    # ── Deep Fundamentals ────────────────────────────────────────────────────
+    financial_data = _extract_annual_financial_data(ticker)
+    rev_hist = financial_data.get("revenue_history", [])
+    eps_hist = financial_data.get("eps_history", [])
+    margin_trend = financial_data.get("margin_trend", [])
+    cf_hist = financial_data.get("cashflow_history", [])
+    shares_trend = financial_data.get("shares_trend", [])
+
+    # Growth CAGRs
+    revenue_cagr = _compute_cagr(rev_hist[0]["Umsatz"], rev_hist[-1]["Umsatz"], len(rev_hist) - 1) if len(rev_hist) >= 2 else None
+    eps_cagr = None
+    if len(eps_hist) >= 2 and eps_hist[0]["EPS"] > 0 and eps_hist[-1]["EPS"] > 0:
+        eps_cagr = _compute_cagr(eps_hist[0]["EPS"], eps_hist[-1]["EPS"], len(eps_hist) - 1)
+
+    fcf_values = [e for e in cf_hist if e.get("FCF") is not None and e["FCF"] > 0]
+    fcf_cagr = _compute_cagr(fcf_values[0]["FCF"], fcf_values[-1]["FCF"], len(fcf_values) - 1) if len(fcf_values) >= 2 else None
+
+    # Profitability metrics from info
+    gross_margin = _safe_float(info.get("grossMargins"))
+    operating_margin = _safe_float(info.get("operatingMargins"))
+    net_margin = _safe_float(info.get("profitMargins"))
+    roe = _safe_float(info.get("returnOnEquity"))
+    roa = _safe_float(info.get("returnOnAssets"))
+
+    # ROIC calculation
+    roic = None
+    if shares_trend and income_stmt is not None and not income_stmt.empty:
+        latest_bs = shares_trend[-1] if shares_trend else {}
+        equity = latest_bs.get("Eigenkapital")
+        debt = latest_bs.get("Verschuldung")
+        cash = latest_bs.get("Cash")
+        try:
+            latest_col = sorted(income_stmt.columns, key=lambda c: pd.to_datetime(c, errors="coerce") or pd.Timestamp.min)[-1]
+            ebit_val = _safe_float(income_stmt.at["EBIT", latest_col]) if "EBIT" in income_stmt.index else None
+            if ebit_val is not None and equity is not None and debt is not None:
+                invested_capital = equity + debt - (cash or 0)
+                if invested_capital > 0:
+                    nopat = ebit_val * 0.75  # Approximate 25% tax rate
+                    roic = round(nopat / invested_capital, 4)
+        except Exception:
+            pass
+
+    # Balance sheet strength
+    total_debt_val = _safe_float(info.get("totalDebt"))
+    total_cash_val = _safe_float(info.get("totalCash"))
+    ebitda_val = _safe_float(info.get("ebitda"))
+    net_debt = (total_debt_val - total_cash_val) if (total_debt_val is not None and total_cash_val is not None) else None
+    net_debt_to_ebitda = round(net_debt / ebitda_val, 2) if (net_debt is not None and ebitda_val and ebitda_val > 0) else None
+    current_ratio = _safe_float(info.get("currentRatio"))
+    quick_ratio = _safe_float(info.get("quickRatio"))
+
+    # Interest coverage from income statement
+    interest_coverage = None
+    if income_stmt is not None and not income_stmt.empty:
+        try:
+            latest_col = sorted(income_stmt.columns, key=lambda c: pd.to_datetime(c, errors="coerce") or pd.Timestamp.min)[-1]
+            ebit_latest = _safe_float(income_stmt.at["EBIT", latest_col]) if "EBIT" in income_stmt.index else None
+            interest_latest = _safe_float(income_stmt.at["Interest Expense", latest_col]) if "Interest Expense" in income_stmt.index else None
+            if ebit_latest is not None and interest_latest is not None and interest_latest != 0:
+                interest_coverage = round(abs(ebit_latest / interest_latest), 1)
+        except Exception:
+            pass
+
+    # Debt trend from balance sheet history
+    debt_trend: list[dict[str, Any]] = []
+    for bs_entry in shares_trend:
+        bs_equity = bs_entry.get("Eigenkapital")
+        bs_debt = bs_entry.get("Verschuldung")
+        bs_cash = bs_entry.get("Cash")
+        de_ratio = round((bs_debt / bs_equity) * 100, 1) if (bs_debt is not None and bs_equity and bs_equity > 0) else None
+        bs_nd = (bs_debt - bs_cash) if (bs_debt is not None and bs_cash is not None) else None
+        debt_trend.append({
+            "Jahr": bs_entry["Jahr"],
+            "D/E": de_ratio,
+            "NetDebt": bs_nd,
+        })
+
+    # Cashflow profile
+    operating_cashflow = _safe_float(info.get("operatingCashflow"))
+    free_cashflow = _safe_float(info.get("freeCashflow"))
+    mcap = _safe_float(info.get("marketCap"))
+
+    rev_latest = rev_hist[-1]["Umsatz"] if rev_hist else None
+    fcf_margin = round(free_cashflow / rev_latest, 4) if (free_cashflow is not None and rev_latest and rev_latest > 0) else None
+    net_income_val = _safe_float(info.get("netIncomeToCommon"))
+    fcf_to_net_income = round(free_cashflow / net_income_val, 2) if (free_cashflow is not None and net_income_val and net_income_val > 0) else None
+
+    capex_latest = None
+    if cf_hist:
+        capex_latest = cf_hist[-1].get("CapEx")
+    capex_ratio = round(abs(capex_latest) / rev_latest, 4) if (capex_latest is not None and rev_latest and rev_latest > 0) else None
+
+    # Shareholder returns
+    buyback_yield = None
+    total_payout_ratio = None
+    if cf_hist:
+        latest_buybacks = cf_hist[-1].get("Buybacks")
+        if latest_buybacks is not None and mcap and mcap > 0:
+            buyback_yield = round((abs(latest_buybacks) / mcap) * 100, 2)
+        if free_cashflow and free_cashflow > 0:
+            div_paid = _safe_float(info.get("dividendRate"))
+            shares_out = _safe_float(info.get("sharesOutstanding"))
+            total_div = (div_paid * shares_out) if (div_paid and shares_out) else 0
+            total_buyback = abs(latest_buybacks) if latest_buybacks else 0
+            total_payout_ratio = round((total_div + total_buyback) / free_cashflow, 2)
+
+    # Dividend CAGR
+    dividend_cagr = None
+    if div_records and len(div_records) >= 2:
+        first_div = div_records[0]["Dividende"]
+        last_div = div_records[-1]["Dividende"]
+        if first_div > 0 and last_div > 0:
+            dividend_cagr = _compute_cagr(first_div, last_div, len(div_records) - 1)
+
+    # Valuation context
+    ev_to_ebitda = _safe_float(info.get("enterpriseToEbitda"))
+    ev_to_revenue = _safe_float(info.get("enterpriseToRevenue"))
+    price_to_book = _safe_float(info.get("priceToBook"))
+    earnings_yield = round((1.0 / trailing_pe) * 100, 2) if (trailing_pe and trailing_pe > 0) else None
+
+    # Historical P/E corridor from pe_trend
+    pe_corridor: dict[str, float | None] = {"min": None, "max": None, "median": None, "current": trailing_pe}
+    pe_vals = [entry["KGV"] for entry in pe_trend if entry.get("KGV") is not None and entry["KGV"] > 0]
+    if pe_vals:
+        pe_corridor["min"] = round(min(pe_vals), 1)
+        pe_corridor["max"] = round(max(pe_vals), 1)
+        pe_corridor["median"] = round(sorted(pe_vals)[len(pe_vals) // 2], 1)
+
     return {
+        # ── Existing fields ──
         "symbol": symbol,
         "name": info.get("longName") or info.get("shortName") or symbol,
         "summary_de": summary_de,
@@ -2053,7 +2389,7 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
         "city": info.get("city", "-"),
         "website": info.get("website", ""),
         "employees": info.get("fullTimeEmployees"),
-        "market_cap": _safe_float(info.get("marketCap")),
+        "market_cap": mcap,
         "currency": currency,
         "trailing_pe": trailing_pe,
         "forward_pe": forward_pe,
@@ -2064,4 +2400,48 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
         "payout_ratio": _safe_float(info.get("payoutRatio")),
         "dividend_streak_years": streak_years,
         "dividend_history": div_records,
+        # ── Growth Profile ──
+        "revenue_history": rev_hist,
+        "eps_history": eps_hist,
+        "revenue_cagr_5y": round(revenue_cagr, 1) if revenue_cagr is not None else None,
+        "eps_cagr_5y": round(eps_cagr, 1) if eps_cagr is not None else None,
+        "fcf_cagr_5y": round(fcf_cagr, 1) if fcf_cagr is not None else None,
+        # ── Profitability & Quality ──
+        "gross_margin": gross_margin,
+        "operating_margin": operating_margin,
+        "net_margin": net_margin,
+        "margin_trend": margin_trend,
+        "roe": roe,
+        "roa": roa,
+        "roic": roic,
+        # ── Balance Sheet Strength ──
+        "net_debt": net_debt,
+        "net_debt_to_ebitda": net_debt_to_ebitda,
+        "current_ratio": current_ratio,
+        "quick_ratio": quick_ratio,
+        "interest_coverage": interest_coverage,
+        "debt_trend": debt_trend,
+        # ── Cashflow Profile ──
+        "operating_cashflow": operating_cashflow,
+        "free_cashflow": free_cashflow,
+        "fcf_margin": fcf_margin,
+        "fcf_to_net_income": fcf_to_net_income,
+        "capex_ratio": capex_ratio,
+        "cashflow_history": cf_hist,
+        # ── Shareholder Returns ──
+        "buyback_yield": buyback_yield,
+        "shares_outstanding_trend": shares_trend,
+        "total_payout_ratio": total_payout_ratio,
+        "dividend_cagr_5y": round(dividend_cagr, 1) if dividend_cagr is not None else None,
+        # ── Valuation Context ──
+        "ev_to_ebitda": ev_to_ebitda,
+        "ev_to_revenue": ev_to_revenue,
+        "price_to_book": price_to_book,
+        "earnings_yield": earnings_yield,
+        "pe_corridor": pe_corridor,
     }
+
+
+# Alias for deep fundamentals conceptually introduced in the expansion
+fetch_company_deep_fundamentals = fetch_company_extended_fundamentals
+
