@@ -111,7 +111,7 @@ Aus diesen Bausteinen wird ein `Brodel-Score` berechnet, damit interessante Akti
 
 Zusaetzlich unterstuetzt V2 jetzt:
 
-1. Automatische, idempotente Tages-Snapshot-Speicherung im Ordner `signal_history/` (bis zu 365 Tage Historie)
+1. Automatische, idempotente Tages-Snapshot-Speicherung im Ordner `signal_history/` (bis zu 3665 Tage / ca. 10 Jahre Historie)
 2. Peer- und Sektor-Vergleiche innerhalb der geladenen Watchlist
 3. Score-Verlauf pro Symbol auf Basis der gespeicherten Snapshots
 4. Automatische Strategie-Erkennung (Pullback, Breakout, Value, Momentum)

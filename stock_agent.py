@@ -386,7 +386,7 @@ def ensure_signal_history_dir(directory: str = DEFAULT_SIGNAL_HISTORY_DIR) -> Pa
     return path
 
 
-MAX_SIGNAL_HISTORY_SNAPSHOTS = 365
+MAX_SIGNAL_HISTORY_SNAPSHOTS = 3665
 
 
 def save_signal_snapshot(
