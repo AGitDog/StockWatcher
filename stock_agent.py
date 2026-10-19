@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 from typing import Any
 
+from bs4 import BeautifulSoup
 import pandas as pd
 import requests
 import yfinance as yf
@@ -31,7 +32,17 @@ DEFAULT_WATCHLIST_DIR = "watchlists"
 DEFAULT_ALERT_LOOKAHEAD_DAYS = 30
 DEFAULT_SIGNAL_NEWS_WINDOW_DAYS = 7
 DEFAULT_SIGNAL_HISTORY_DIR = "signal_history"
-INDEX_CONSTITUENT_NAMES: dict[str, str] = {}
+
+# Pre-populated mappings for international / numeric index constituents (e.g. Nikkei 225)
+NIKKEI_225_NAMES: dict[str, str] = {}
+_nikkei_json_path = Path(__file__).parent / "nikkei_225_names.json"
+if _nikkei_json_path.exists():
+    try:
+        NIKKEI_225_NAMES = json.loads(_nikkei_json_path.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+
+INDEX_CONSTITUENT_NAMES: dict[str, str] = dict(NIKKEI_225_NAMES)
 
 INDEX_DEFINITIONS = {
     "DAX": {
@@ -130,6 +141,102 @@ INDEX_DEFINITIONS = {
         "ticker_column": "Code",
         "name_column": "Name",
         "suffix": ".T",
+        "fallback_symbols": list(NIKKEI_225_NAMES.keys()),
+        "fallback_names": dict(NIKKEI_225_NAMES),
+    },
+    "PHLX Semiconductor Sector": {
+        "aliases": {
+            "PHLX SEMICONDUCTOR SECTOR",
+            "PHLX SEMICONDUCTOR",
+            "PHLX",
+            "SOX",
+            "^SOX",
+            "SOXX",
+            "INDEX:SOX",
+            "INDEX:PHLX",
+            "PHILADELPHIA SEMICONDUCTOR",
+            "PHILADELPHIA SEMICONDUCTOR INDEX",
+        },
+        "url": "https://en.wikipedia.org/wiki/PHLX_Semiconductor_Sector",
+        "parser": "list",
+        "fallback_symbols": [
+            "NVDA", "AMD", "INTC", "ASML", "TSM", "AVGO", "QCOM", "AMAT", "LRCX", "TXN",
+            "MU", "ADI", "MPWR", "KLAC", "NXPI", "MRVL", "MCHP", "ON", "QRVO", "SWKS",
+            "TER", "ENTG", "GFS", "LSCC", "ACLS", "ALGM", "AMKR", "COHR", "RMBS", "WOLF"
+        ],
+        "fallback_names": {
+            "NVDA": "NVIDIA Corporation",
+            "AMD": "Advanced Micro Devices, Inc.",
+            "INTC": "Intel Corporation",
+            "ASML": "ASML Holding N.V.",
+            "TSM": "Taiwan Semiconductor Manufacturing Company Limited",
+            "AVGO": "Broadcom Inc.",
+            "QCOM": "QUALCOMM Incorporated",
+            "AMAT": "Applied Materials, Inc.",
+            "LRCX": "Lam Research Corporation",
+            "TXN": "Texas Instruments Incorporated",
+            "MU": "Micron Technology, Inc.",
+            "ADI": "Analog Devices, Inc.",
+            "MPWR": "Monolithic Power Systems, Inc.",
+            "KLAC": "KLA Corporation",
+            "NXPI": "NXP Semiconductors N.V.",
+            "MRVL": "Marvell Technology, Inc.",
+            "MCHP": "Microchip Technology Incorporated",
+            "ON": "ON Semiconductor Corporation",
+            "QRVO": "Qorvo, Inc.",
+            "SWKS": "Skyworks Solutions, Inc.",
+            "TER": "Teradyne, Inc.",
+            "ENTG": "Entegris, Inc.",
+            "GFS": "GLOBALFOUNDRIES Inc.",
+            "LSCC": "Lattice Semiconductor Corporation",
+            "ACLS": "Axcelis Technologies, Inc.",
+            "ALGM": "Allegro Microsystems, Inc.",
+            "AMKR": "Amkor Technology, Inc.",
+            "COHR": "Coherent Corp.",
+            "RMBS": "Rambus, Inc.",
+            "WOLF": "Wolfspeed, Inc.",
+        },
+    },
+    "NASDAQ Biotechnology Index": {
+        "aliases": {
+            "NASDAQ BIOTECHNOLOGY INDEX",
+            "NASDAQ BIOTECHNOLOGY",
+            "NBI",
+            "^NBI",
+            "IBB",
+            "IBBQ",
+            "INDEX:NBI",
+            "INDEX:NASDAQ BIOTECHNOLOGY",
+        },
+        "url": "https://indexes.nasdaqomx.com/Index/WeightingData",
+        "parser": "nasdaq_api",
+        "post_data": {"id": "NBI", "timeOfDay": "SOD"},
+        "fallback_symbols": [
+            "GILD", "AMGN", "VRTX", "REGN", "MRNA", "BIIB", "ILMN", "ARGX", "NTRA", "RVMD",
+            "ALNY", "INCY", "BMRN", "BGNE", "LEGN", "CRSP", "EXAS", "HALO", "NBIX", "SRPT"
+        ],
+        "fallback_names": {
+            "GILD": "Gilead Sciences Inc",
+            "AMGN": "Amgen Inc",
+            "VRTX": "Vertex Pharmaceuticals Inc",
+            "REGN": "Regeneron Pharmaceuticals Inc",
+            "MRNA": "Moderna Inc",
+            "BIIB": "Biogen Inc",
+            "ILMN": "Illumina Inc",
+            "ARGX": "argenx SE",
+            "NTRA": "Natera Inc",
+            "RVMD": "Revolution Medicines Inc",
+            "ALNY": "Alnylam Pharmaceuticals Inc",
+            "INCY": "Incyte Corp",
+            "BMRN": "BioMarin Pharmaceutical Inc",
+            "BGNE": "BeiGene Ltd",
+            "LEGN": "Legend Biotech Corp",
+            "CRSP": "CRISPR Therapeutics AG",
+            "EXAS": "Exact Sciences Corp",
+            "HALO": "Halozyme Therapeutics Inc",
+            "NBIX": "Neurocrine Biosciences Inc",
+            "SRPT": "Sarepta Therapeutics Inc",
+        },
     },
 }
 
@@ -411,6 +518,9 @@ def resolve_name_fallback(symbol: str, current_name: str | None = None) -> str:
         return INDEX_CONSTITUENT_NAMES[symbol]
     clean_ticker = symbol.split(".")[0]
     if clean_ticker.isdigit():
+        t_key = f"{clean_ticker}.T"
+        if t_key in INDEX_CONSTITUENT_NAMES:
+            return INDEX_CONSTITUENT_NAMES[t_key]
         search = _safe_get(lambda: yf.Search(symbol, max_results=1), None)
         quotes = getattr(search, "quotes", []) if search is not None else []
         if quotes and isinstance(quotes[0], dict):
@@ -418,6 +528,12 @@ def resolve_name_fallback(symbol: str, current_name: str | None = None) -> str:
             if fallback:
                 INDEX_CONSTITUENT_NAMES[symbol] = fallback
                 return fallback
+        if symbol in NIKKEI_225_NAMES:
+            return NIKKEI_225_NAMES[symbol]
+        if t_key in NIKKEI_225_NAMES:
+            return NIKKEI_225_NAMES[t_key]
+    if symbol in NIKKEI_225_NAMES:
+        return NIKKEI_225_NAMES[symbol]
     return current_name or symbol
 
 
@@ -426,6 +542,69 @@ def load_index_constituents(index_name: str) -> list[str]:
     config = INDEX_DEFINITIONS.get(index_name)
     if not config:
         return []
+
+    parser_type = config.get("parser", "table")
+    if parser_type == "nasdaq_api":
+        try:
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            post_data = dict(config.get("post_data", {}))
+            if "tradeDate" not in post_data:
+                post_data["tradeDate"] = today_str
+            response = requests.post(
+                config["url"],
+                data=post_data,
+                headers={"User-Agent": "StockWatcher/2.0 (contact@stockwatcher.local)"},
+                timeout=15,
+            )
+            response.raise_for_status()
+            payload = response.json()
+            raw_items = payload.get("aaData", []) if isinstance(payload, dict) else []
+            symbols = []
+            for item in raw_items:
+                sym = str(item.get("Symbol") or "").strip().upper()
+                name = str(item.get("Name") or "").strip()
+                if sym and sym not in symbols:
+                    symbols.append(sym)
+                    if name:
+                        INDEX_CONSTITUENT_NAMES[sym] = name
+            if symbols:
+                return symbols
+        except Exception:
+            pass
+
+        fallback = list(config.get("fallback_symbols", []))
+        for sym, name in config.get("fallback_names", {}).items():
+            INDEX_CONSTITUENT_NAMES[sym] = name
+        return fallback
+
+    if parser_type == "list":
+        try:
+            response = requests.get(
+                config["url"],
+                headers={"User-Agent": "StockWatcher/2.0 (contact@stockwatcher.local)"},
+                timeout=15,
+            )
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, "html.parser")
+            symbols = []
+            for li in soup.find_all("li"):
+                text = li.text.strip()
+                match = re.search(r"^(.*?),\s*([A-Z]{1,5})$", text)
+                if match:
+                    name = match.group(1).strip()
+                    sym = match.group(2).strip().upper()
+                    if sym not in symbols:
+                        symbols.append(sym)
+                        INDEX_CONSTITUENT_NAMES[sym] = name
+            if symbols:
+                return symbols
+        except Exception:
+            pass
+
+        fallback = list(config.get("fallback_symbols", []))
+        for sym, name in config.get("fallback_names", {}).items():
+            INDEX_CONSTITUENT_NAMES[sym] = name
+        return fallback
 
     try:
         response = requests.get(
@@ -440,7 +619,10 @@ def load_index_constituents(index_name: str) -> list[str]:
             tables = pd.read_html(StringIO(response.text))
         constituents = tables[config["table_index"]]
         if config["ticker_column"] not in constituents.columns:
-            return []
+            fallback = list(config.get("fallback_symbols", []))
+            for sym, name in config.get("fallback_names", {}).items():
+                INDEX_CONSTITUENT_NAMES[sym] = name
+            return fallback
 
         symbols = []
         suffix = config.get("suffix", "")
@@ -469,7 +651,10 @@ def load_index_constituents(index_name: str) -> list[str]:
 
         return symbols
     except Exception:
-        return []
+        fallback = list(config.get("fallback_symbols", []))
+        for sym, name in config.get("fallback_names", {}).items():
+            INDEX_CONSTITUENT_NAMES[sym] = name
+        return fallback
 
 
 def build_symbol_summary(symbol_or_name: str, symbol_mappings: dict[str, str] | None = None) -> dict[str, Any]:
@@ -750,7 +935,7 @@ def _looks_like_index_candidate(value: str) -> bool:
     if normalized.startswith("^"):
         return True
 
-    keywords = ("INDEX", "DAX", "DOW", "NASDAQ", "S&P", "FTSE", "MDAX", "TECDAX", "CAC", "NIKKEI")
+    keywords = ("INDEX", "DAX", "DOW", "NASDAQ", "S&P", "FTSE", "MDAX", "TECDAX", "CAC", "NIKKEI", "SOX", "PHLX", "NBI", "BIOTECH", "SEMICONDUCTOR")
     return any(keyword in normalized for keyword in keywords)
 
 
@@ -2043,6 +2228,57 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
 
     currency = str(info.get("currency") or "EUR")
 
+    # Gross Profit & Gross Margin history
+    gross_margin_history: list[dict[str, Any]] = []
+    if income_stmt is not None and not income_stmt.empty:
+        rev_key = "Total Revenue" if "Total Revenue" in income_stmt.index else ("Operating Revenue" if "Operating Revenue" in income_stmt.index else None)
+        gp_key = "Gross Profit" if "Gross Profit" in income_stmt.index else None
+
+        col_dates = []
+        for c in income_stmt.columns:
+            try:
+                col_dates.append((pd.to_datetime(c), c))
+            except Exception:
+                continue
+        col_dates.sort(key=lambda x: x[0])
+
+        for dt, c in col_dates:
+            year = int(dt.year)
+            rev_val = _safe_float(income_stmt.at[rev_key, c]) if rev_key else None
+            gp_val = _safe_float(income_stmt.at[gp_key, c]) if gp_key else None
+            margin_pct = round((gp_val / rev_val) * 100, 2) if (gp_val is not None and rev_val and rev_val > 0) else None
+            if gp_val is not None or rev_val is not None:
+                gross_margin_history.append({
+                    "Jahr": year,
+                    "Umsatz": rev_val,
+                    "Bruttogewinn": gp_val,
+                    "Bruttomarge": margin_pct,
+                })
+
+    raw_gm = _safe_float(info.get("grossMargins"))
+    gross_margin_ttm = round(raw_gm * 100, 2) if raw_gm is not None else None
+
+    # Future valuation & analyst consensus
+    target_mean = _safe_float(info.get("targetMeanPrice"))
+    target_median = _safe_float(info.get("targetMedianPrice"))
+    target_high = _safe_float(info.get("targetHighPrice"))
+    target_low = _safe_float(info.get("targetLowPrice"))
+    current_price = _safe_float(info.get("currentPrice")) or _safe_float(info.get("regularMarketPrice"))
+    if not current_price and pe_trend and pe_trend[-1].get("Kurs"):
+        current_price = pe_trend[-1]["Kurs"]
+
+    upside_pct = None
+    if target_mean and current_price and current_price > 0:
+        upside_pct = round(((target_mean - current_price) / current_price) * 100, 1)
+
+    market_cap = _safe_float(info.get("marketCap"))
+    implied_market_cap = None
+    if market_cap and target_mean and current_price and current_price > 0:
+        implied_market_cap = round(market_cap * (target_mean / current_price))
+
+    forward_eps = _safe_float(info.get("forwardEps"))
+    analyst_count = info.get("numberOfAnalystOpinions")
+
     return {
         "symbol": symbol,
         "name": info.get("longName") or info.get("shortName") or symbol,
@@ -2053,7 +2289,7 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
         "city": info.get("city", "-"),
         "website": info.get("website", ""),
         "employees": info.get("fullTimeEmployees"),
-        "market_cap": _safe_float(info.get("marketCap")),
+        "market_cap": market_cap,
         "currency": currency,
         "trailing_pe": trailing_pe,
         "forward_pe": forward_pe,
@@ -2064,4 +2300,15 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
         "payout_ratio": _safe_float(info.get("payoutRatio")),
         "dividend_streak_years": streak_years,
         "dividend_history": div_records,
+        "gross_margin_ttm": gross_margin_ttm,
+        "gross_margin_history": gross_margin_history,
+        "current_price": current_price,
+        "target_mean_price": target_mean,
+        "target_median_price": target_median,
+        "target_high_price": target_high,
+        "target_low_price": target_low,
+        "upside_pct": upside_pct,
+        "implied_market_cap": implied_market_cap,
+        "forward_eps": forward_eps,
+        "analyst_count": analyst_count,
     }

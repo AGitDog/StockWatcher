@@ -414,155 +414,247 @@ def render_watchlist_signal_monitor(mapping_text: str):
             with st.spinner("Lade Unternehmenszahlen & Profil..."):
                 ext = get_extended_fundamentals(item["symbol"])
 
-            st.markdown("#### 🏢 Unternehmensprofil")
-            st.info(ext.get("summary_de", "Keine Zusammenfassung verfuegbar."))
+            detail_tab_signals, detail_tab_fundamentals = st.tabs(["🔥 Brodel-Index Kalkulation", "🏢 Unternehmenswerte"])
 
-            p_cols = st.columns(4)
-            p_cols[0].metric("Sektor", ext.get("sector_de", "-"))
-            p_cols[1].metric("Branche", ext.get("industry_de", "-"))
-            p_cols[2].metric("Hauptsitz", f"{ext.get('city', '-')}, {ext.get('country', '-')}")
-            emp = ext.get("employees")
-            p_cols[3].metric("Mitarbeiter", f"{emp:,}" if emp else "-")
+            with detail_tab_signals:
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown("**Signal-Zusammenfassung**")
+                    if item.get("signal_items"):
+                        for detail in item.get("signal_items", []):
+                            st.markdown(f"- {detail}")
+                    else:
+                        st.markdown("- Keine aussagekraeftigen Fruehsignale erkannt.")
 
-            st.markdown("#### 📊 Unternehmenszahlen & KGV-Analyse")
-            k_cols = st.columns(3)
-            curr_pe = ext.get("trailing_pe")
-            fwd_pe = ext.get("forward_pe")
-            peg = ext.get("peg_ratio")
-            k_cols[0].metric(
-                "Aktuelles KGV (Trailing)",
-                f"{curr_pe:.1f}" if curr_pe else "n/a",
-                help="Kurs-Gewinn-Verhaeltnis bezogen auf die letzten 12 Monate",
-            )
-            k_cols[1].metric(
-                "KGV (Forward)",
-                f"{fwd_pe:.1f}" if fwd_pe else "n/a",
-                help="Erwartetes KGV auf Basis von Analystenschaetzungen",
-            )
-            k_cols[2].metric(
-                "PEG-Verhaeltnis",
-                f"{peg:.2f}" if peg else "n/a",
-                help="Price/Earnings to Growth Ratio",
-            )
+                    st.markdown("**Signal-Breakdown**")
+                    max_scores = {
+                        "EPS-Revisionen": 15, "Kursziele & Konsens": 15, "Preis/Volumen": 10,
+                        "News-Sentiment": 15, "Event-Druck": 5, "Insider-Aktivitaet": 10,
+                        "Short Interest": 5, "Relative Staerke": 5, "Fundamentale Bewertung": 10,
+                        "Technische Indikatoren": 10,
+                    }
+                    breakdown_rows = []
+                    for component in item.get("signal_breakdown", {}).values():
+                        breakdown_rows.append({
+                            "Komponente": component["name"],
+                            "Punkte": component["score"],
+                            "Maximal": max_scores.get(component["name"], 0),
+                            "Detail": component["summary"],
+                        })
+                    st.dataframe(pd.DataFrame(breakdown_rows), use_container_width=True, hide_index=True)
 
-            pe_trend = ext.get("pe_trend", [])
-            if pe_trend:
-                st.caption("KGV-Trend der letzten Geschaeftsjahre (gepruefte Jahres-EPS und historische Jahresendkurse):")
-                pe_df = pd.DataFrame(pe_trend)
-                pe_c1, pe_c2 = st.columns([2, 1])
-                with pe_c1:
-                    chart_pe = pe_df.dropna(subset=["KGV"]).set_index("Jahr")[["KGV"]]
-                    if not chart_pe.empty:
-                        st.line_chart(chart_pe)
-                with pe_c2:
-                    st.dataframe(pe_df, use_container_width=True, hide_index=True)
-            else:
-                st.info("Keine historischen KGV-Jahresabschluesse fuer diesen Titel verfuegbar.")
-
-            st.markdown("#### 💰 Dividenden-Analyse & Historie")
-            d_cols = st.columns(3)
-            d_yield = ext.get("dividend_yield_pct")
-            d_rate = ext.get("dividend_rate")
-            d_streak = ext.get("dividend_streak_years", 0)
-            curr = ext.get("currency", "EUR")
-
-            d_cols[0].metric(
-                "Dividendenrendite",
-                f"{d_yield:.2f} %" if d_yield is not None else "0.00 %",
-            )
-            d_cols[1].metric(
-                "Dividende (Zahlung)",
-                f"{d_rate:.2f} {curr}" if d_rate is not None else "0.00",
-            )
-            if d_streak > 0:
-                d_cols[2].metric(
-                    "Dividenden-Steigerung",
-                    f"{d_streak} Jahre in Folge 🏆",
-                    help="Anzahl aufeinanderfolgender Jahre mit gesteigerter Jahresdividende.",
-                )
-            else:
-                d_cols[2].metric(
-                    "Dividenden-Steigerung",
-                    "0 Jahre",
-                    help="Keine mehrjaehrige Steigerungsserie vorhanden.",
-                )
-
-            div_hist = ext.get("dividend_history", [])
-            if div_hist:
-                st.caption("Dividenden-Verlauf der letzten 15 Jahre (Rendite & Ausschuettung):")
-                div_df = pd.DataFrame(div_hist)
-                div_c1, div_c2 = st.columns([2, 1])
-                with div_c1:
-                    div_chart = div_df.set_index("Jahr")[["Dividende"]]
-                    st.bar_chart(div_chart)
-                with div_c2:
-                    st.dataframe(div_df, use_container_width=True, hide_index=True)
-            else:
-                st.info("Keine Dividenden-Historie fuer diesen Titel vorhanden.")
-
-            st.markdown("---")
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("**Signal-Zusammenfassung**")
-                if item.get("signal_items"):
-                    for detail in item.get("signal_items", []):
-                        st.markdown(f"- {detail}")
-                else:
-                    st.markdown("- Keine aussagekraeftigen Fruehsignale erkannt.")
-
-                st.markdown("**Signal-Breakdown**")
-                max_scores = {
-                    "EPS-Revisionen": 15, "Kursziele & Konsens": 15, "Preis/Volumen": 10,
-                    "News-Sentiment": 15, "Event-Druck": 5, "Insider-Aktivitaet": 10,
-                    "Short Interest": 5, "Relative Staerke": 5, "Fundamentale Bewertung": 10,
-                    "Technische Indikatoren": 10,
-                }
-                breakdown_rows = []
-                for component in item.get("signal_breakdown", {}).values():
-                    breakdown_rows.append({
-                        "Komponente": component["name"],
-                        "Punkte": component["score"],
-                        "Maximal": max_scores.get(component["name"], 0),
-                        "Detail": component["summary"],
-                    })
-                st.dataframe(pd.DataFrame(breakdown_rows), use_container_width=True, hide_index=True)
-
-            with col2:
-                peer_context = item.get("peer_context", {})
-                st.markdown("**Peer- und Sektor-Kontext**")
-                st.markdown(
-                    f"- Sektor: {peer_context.get('sector', 'Unbekannt')} | Branche: {peer_context.get('industry', 'Unbekannt')}"
-                )
-                st.markdown(
-                    f"- Sektor-Durchschnitt: {peer_context.get('sector_average', 0)} | Abstand: {peer_context.get('score_vs_sector', 0)} | Rang: {peer_context.get('sector_rank', 1)}/{peer_context.get('sector_count', 1)}"
-                )
-                top_peer = peer_context.get("top_peer")
-                if top_peer:
+                with col2:
+                    peer_context = item.get("peer_context", {})
+                    st.markdown("**Peer- und Sektor-Kontext**")
                     st.markdown(
-                        f"- Staerkster Peer in der Watchlist: {top_peer['symbol']} - {top_peer['name']} | Score {top_peer['score']}"
+                        f"- Sektor: {peer_context.get('sector', 'Unbekannt')} | Branche: {peer_context.get('industry', 'Unbekannt')}"
+                    )
+                    st.markdown(
+                        f"- Sektor-Durchschnitt: {peer_context.get('sector_average', 0)} | Abstand: {peer_context.get('score_vs_sector', 0)} | Rang: {peer_context.get('sector_rank', 1)}/{peer_context.get('sector_count', 1)}"
+                    )
+                    top_peer = peer_context.get("top_peer")
+                    if top_peer:
+                        st.markdown(
+                            f"- Staerkster Peer in der Watchlist: {top_peer['symbol']} - {top_peer['name']} | Score {top_peer['score']}"
+                        )
+                    else:
+                        st.markdown("- Kein weiterer Peer im gleichen Sektor innerhalb der Watchlist.")
+
+                st.markdown("---")
+                st.markdown("**Score-Verlauf (letzte 100 Tage)**")
+                if not score_history.empty:
+                    symbol_history = score_history[score_history["symbol"] == selected_symbol].copy()
+                    if not symbol_history.empty:
+                        symbol_history["timestamp"] = pd.to_datetime(symbol_history["timestamp"])
+                        last_100_days = pd.Timestamp.utcnow().normalize() - pd.Timedelta(days=100)
+                        symbol_history = symbol_history[symbol_history["timestamp"] >= last_100_days]
+                        symbol_history = symbol_history.sort_values("timestamp")
+                        
+                        if len(symbol_history) > 1:
+                            chart_data = symbol_history.set_index("timestamp")[["brodel_score"]]
+                            st.line_chart(chart_data)
+                        else:
+                            st.info("Nicht genuegend Historien-Daten fuer ein Diagramm (mindestens 2 Snapshots benoetigt).")
+                    else:
+                        st.info("Noch keine Verlaufsdaten fuer diese Aktie vorhanden.")
+                else:
+                    st.info("Noch keine Verlaufsdaten vorhanden.")
+
+            with detail_tab_fundamentals:
+                st.markdown("#### 🏢 Unternehmensprofil")
+                st.info(ext.get("summary_de", "Keine Zusammenfassung verfuegbar."))
+
+                p_cols = st.columns(4)
+                p_cols[0].metric("Sektor", ext.get("sector_de", "-"))
+                p_cols[1].metric("Branche", ext.get("industry_de", "-"))
+                p_cols[2].metric("Hauptsitz", f"{ext.get('city', '-')}, {ext.get('country', '-')}")
+                emp = ext.get("employees")
+                p_cols[3].metric("Mitarbeiter", f"{emp:,}" if emp else "-")
+
+                st.markdown("#### 📈 Zukünftig geschätzter Wert & Analysten-Konsens")
+                v_cols = st.columns(4)
+                curr_price = ext.get("current_price")
+                target_mean = ext.get("target_mean_price")
+                target_med = ext.get("target_median_price")
+                upside = ext.get("upside_pct")
+                curr_str = ext.get("currency", "EUR")
+
+                v_cols[0].metric(
+                    "Aktueller Kurs",
+                    f"{curr_price:.2f} {curr_str}" if curr_price else "n/a"
+                )
+                v_cols[1].metric(
+                    "Kursziel (Mittelwert)",
+                    f"{target_mean:.2f} {curr_str}" if target_mean else "n/a",
+                    help="Durchschnittliches Kursziel der Analysten"
+                )
+                v_cols[2].metric(
+                    "Aufwärtspotenzial",
+                    f"{upside:+.1f} %" if upside is not None else "n/a",
+                    delta=f"{upside:+.1f} %" if upside is not None else None,
+                    help="Prozentualer Abstand zum mittleren Analysten-Kursziel"
+                )
+                imp_mc = ext.get("implied_market_cap")
+                if imp_mc:
+                    imp_str = f"{imp_mc / 1e9:.2f} Mrd. {curr_str}" if imp_mc >= 1e9 else f"{imp_mc / 1e6:.1f} Mio. {curr_str}"
+                else:
+                    imp_str = "n/a"
+                v_cols[3].metric(
+                    "Implizite Marktkapitalisierung",
+                    imp_str,
+                    help="Erwartete Marktkapitalisierung bei Erreichen des mittleren Analystenkursziels"
+                )
+
+                st.markdown("#### 📊 Bruttogewinn & Bruttomarge")
+                m_cols = st.columns(3)
+                ttm_margin = ext.get("gross_margin_ttm")
+                gm_hist = ext.get("gross_margin_history", [])
+                latest_gp = gm_hist[-1]["Bruttogewinn"] if gm_hist else None
+                latest_rev = gm_hist[-1]["Umsatz"] if gm_hist else None
+
+                m_cols[0].metric(
+                    "Bruttomarge (TTM)",
+                    f"{ttm_margin:.1f} %" if ttm_margin is not None else "n/a",
+                    help="Bruttomarge der letzten 12 Monate (Gross Margin TTM)"
+                )
+                if latest_gp is not None:
+                    gp_str = f"{latest_gp / 1e9:.2f} Mrd. {curr_str}" if abs(latest_gp) >= 1e9 else f"{latest_gp / 1e6:.1f} Mio. {curr_str}"
+                else:
+                    gp_str = "n/a"
+                m_cols[1].metric(
+                    f"Bruttogewinn ({gm_hist[-1]['Jahr']})" if gm_hist else "Letzter Bruttogewinn",
+                    gp_str,
+                    help="Gross Profit des letzten vollständigen Geschäftsjahres"
+                )
+                if latest_rev is not None:
+                    rev_str = f"{latest_rev / 1e9:.2f} Mrd. {curr_str}" if abs(latest_rev) >= 1e9 else f"{latest_rev / 1e6:.1f} Mio. {curr_str}"
+                else:
+                    rev_str = "n/a"
+                m_cols[2].metric(
+                    f"Umsatz ({gm_hist[-1]['Jahr']})" if gm_hist else "Letzter Jahresumsatz",
+                    rev_str,
+                    help="Total Revenue des letzten vollständigen Geschäftsjahres"
+                )
+
+                if gm_hist:
+                    st.caption("Historischer Verlauf von Bruttogewinn und Bruttomarge (geprüfte Jahresabschlüsse):")
+                    gm_display_rows = []
+                    for row in gm_hist:
+                        rev_fmt = f"{row['Umsatz'] / 1e9:.2f} Mrd." if row['Umsatz'] and abs(row['Umsatz']) >= 1e9 else (f"{row['Umsatz'] / 1e6:.1f} Mio." if row['Umsatz'] else "-")
+                        gp_fmt = f"{row['Bruttogewinn'] / 1e9:.2f} Mrd." if row['Bruttogewinn'] and abs(row['Bruttogewinn']) >= 1e9 else (f"{row['Bruttogewinn'] / 1e6:.1f} Mio." if row['Bruttogewinn'] else "-")
+                        gm_display_rows.append({
+                            "Jahr": str(row["Jahr"]),
+                            f"Umsatz ({curr_str})": rev_fmt,
+                            f"Bruttogewinn ({curr_str})": gp_fmt,
+                            "Bruttomarge (%)": f"{row['Bruttomarge']:.1f} %" if row['Bruttomarge'] is not None else "n/a",
+                            "_margin_raw": row["Bruttomarge"],
+                        })
+                    gm_df = pd.DataFrame(gm_display_rows)
+                    gmc1, gmc2 = st.columns([1, 1])
+                    with gmc1:
+                        st.dataframe(gm_df[["Jahr", f"Umsatz ({curr_str})", f"Bruttogewinn ({curr_str})", "Bruttomarge (%)"]], use_container_width=True, hide_index=True)
+                    with gmc2:
+                        chart_df = gm_df.dropna(subset=["_margin_raw"]).set_index("Jahr")[["_margin_raw"]]
+                        chart_df.columns = ["Bruttomarge (%)"]
+                        if not chart_df.empty:
+                            st.bar_chart(chart_df)
+                else:
+                    st.info("Keine historischen Bruttogewinn-Daten ausgewiesen (typisch für Finanzinstitute/Banken oder ETFs).")
+
+                st.markdown("#### 📊 KGV-Analyse & Bewertung")
+                k_cols = st.columns(3)
+                curr_pe = ext.get("trailing_pe")
+                fwd_pe = ext.get("forward_pe")
+                peg = ext.get("peg_ratio")
+                k_cols[0].metric(
+                    "Aktuelles KGV (Trailing)",
+                    f"{curr_pe:.1f}" if curr_pe else "n/a",
+                    help="Kurs-Gewinn-Verhaeltnis bezogen auf die letzten 12 Monate",
+                )
+                k_cols[1].metric(
+                    "KGV (Forward)",
+                    f"{fwd_pe:.1f}" if fwd_pe else "n/a",
+                    help="Erwartetes KGV auf Basis von Analystenschaetzungen",
+                )
+                k_cols[2].metric(
+                    "PEG-Verhaeltnis",
+                    f"{peg:.2f}" if peg else "n/a",
+                    help="Price/Earnings to Growth Ratio",
+                )
+
+                pe_trend = ext.get("pe_trend", [])
+                if pe_trend:
+                    st.caption("KGV-Trend der letzten Geschaeftsjahre (gepruefte Jahres-EPS und historische Jahresendkurse):")
+                    pe_df = pd.DataFrame(pe_trend)
+                    pe_c1, pe_c2 = st.columns([2, 1])
+                    with pe_c1:
+                        chart_pe = pe_df.dropna(subset=["KGV"]).set_index("Jahr")[["KGV"]]
+                        if not chart_pe.empty:
+                            st.line_chart(chart_pe)
+                    with pe_c2:
+                        st.dataframe(pe_df, use_container_width=True, hide_index=True)
+                else:
+                    st.info("Keine historischen KGV-Jahresabschluesse fuer diesen Titel verfuegbar.")
+
+                st.markdown("#### 💰 Dividenden-Analyse & Historie")
+                d_cols = st.columns(3)
+                d_yield = ext.get("dividend_yield_pct")
+                d_rate = ext.get("dividend_rate")
+                d_streak = ext.get("dividend_streak_years", 0)
+
+                d_cols[0].metric(
+                    "Dividendenrendite",
+                    f"{d_yield:.2f} %" if d_yield is not None else "0.00 %",
+                )
+                d_cols[1].metric(
+                    "Dividende (Zahlung)",
+                    f"{d_rate:.2f} {curr_str}" if d_rate is not None else "0.00",
+                )
+                if d_streak > 0:
+                    d_cols[2].metric(
+                        "Dividenden-Steigerung",
+                        f"{d_streak} Jahre in Folge 🏆",
+                        help="Anzahl aufeinanderfolgender Jahre mit gesteigerter Jahresdividende.",
                     )
                 else:
-                    st.markdown("- Kein weiterer Peer im gleichen Sektor innerhalb der Watchlist.")
+                    d_cols[2].metric(
+                        "Dividenden-Steigerung",
+                        "0 Jahre",
+                        help="Keine mehrjaehrige Steigerungsserie vorhanden.",
+                    )
 
-            st.markdown("---")
-            st.markdown("**Score-Verlauf (letzte 100 Tage)**")
-            if not score_history.empty:
-                symbol_history = score_history[score_history["symbol"] == selected_symbol].copy()
-                if not symbol_history.empty:
-                    symbol_history["timestamp"] = pd.to_datetime(symbol_history["timestamp"])
-                    last_100_days = pd.Timestamp.utcnow().normalize() - pd.Timedelta(days=100)
-                    symbol_history = symbol_history[symbol_history["timestamp"] >= last_100_days]
-                    symbol_history = symbol_history.sort_values("timestamp")
-                    
-                    if len(symbol_history) > 1:
-                        chart_data = symbol_history.set_index("timestamp")[["brodel_score"]]
-                        st.line_chart(chart_data)
-                    else:
-                        st.info("Nicht genuegend Historien-Daten fuer ein Diagramm (mindestens 2 Snapshots benoetigt).")
+                div_hist = ext.get("dividend_history", [])
+                if div_hist:
+                    st.caption("Dividenden-Verlauf der letzten 15 Jahre (Rendite & Ausschuettung):")
+                    div_df = pd.DataFrame(div_hist)
+                    div_c1, div_c2 = st.columns([2, 1])
+                    with div_c1:
+                        div_chart = div_df.set_index("Jahr")[["Dividende"]]
+                        st.bar_chart(div_chart)
+                    with div_c2:
+                        st.dataframe(div_df, use_container_width=True, hide_index=True)
                 else:
-                    st.info("Noch keine Verlaufsdaten fuer diese Aktie vorhanden.")
-            else:
-                st.info("Noch keine Verlaufsdaten vorhanden.")
+                    st.info("Keine Dividenden-Historie fuer diesen Titel vorhanden.")
 
 def render_help_tab():
     st.subheader("Hilfe & Methodik")
