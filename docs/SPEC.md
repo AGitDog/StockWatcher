@@ -100,6 +100,18 @@ Die Detail-Box für jede Aktie soll strukturiert und aufgeräumt werden, um eine
 
 ---
 
+### 2.9 Automatisierte tägliche Snapshots & Fokus-Bereinigung des Signal Monitors
+- **Motivation:** Der manuelle Button "Snapshot speichern" ist fehleranfällig und unkomfortabel. Zudem überfrachten kurzfristige Delta-Vergleiche zu gestern das Dashboard. Für aussagekräftige Backtests und Trendlinien über Monate hinweg ist eine kontinuierliche, saubere Zeitreihe essenziell.
+- **Tagesbasierte Snapshots (Idempotenz):**
+  - Jede Datenberechnung (im UI oder per `daily_job.py`) erzeugt automatisch einen Snapshot.
+  - Pro Kalendertag existiert genau ein Snapshot in der Historie. Mehrmaliges Aktualisieren an einem Tag aktualisiert den Datensatz des aktuellen Tags, statt redundante Intraday-Snapshots anzuhäufen.
+  - Der Historien-Horizont wird von 15 auf **365 Tage (rollierend)** erweitert (`MAX_SIGNAL_HISTORY_SNAPSHOTS = 365`).
+- **Entfernung von Delta-Alerts:**
+  - Der Schwellwert-Slider und der Alert-Block für Score-Deltas seit dem letzten Snapshot werden aus dem UI entfernt.
+  - Der Signal Monitor konzentriert sich voll auf den aktuellen Brodel-Score, ML-Score, Strategie-Setups, Sektor-Rankings und den langfristigen Score-Verlauf.
+
+---
+
 ## 3. Architektur-Entscheidungen (ADR)
 - **ADR-001: Tab-basierte Navigation statt monolithischer Expander:**
   - *Status:* Angenommen.
@@ -118,3 +130,8 @@ Die Detail-Box für jede Aktie soll strukturiert und aufgeräumt werden, um eine
   - *Status:* Angenommen.
   - *Kontext:* Die manuelle Watchlist-Verwaltung im UI erzeugte unnötige Komplexität und temporäre Upload-Fragmente.
   - *Entscheidung:* Vollständige Verlagerung der Watchlist-Konfiguration in die Hintergrunddatei `watchlists/meine_watchlist.txt`. Entfernung des Watchlist-Tabs aus dem Streamlit-Interface.
+- **ADR-006: Idempotente Tages-Snapshots & 365-Tage Rollierung:**
+  - *Status:* Angenommen.
+  - *Kontext:* Manuelle Snapshots und kurzzeitige 15-Tage-Limits verhinderten langfristig belastbare Backtests und führten bei häufigem Klicken zu Datenfragmentierung.
+  - *Entscheidung:* Automatische Speicherung bei Signal-Aktualisierung mit Ersetzung des bestehenden Eintrags bei identischem Kalendertag (UTC `YYYY-MM-DD`). Erweiterung des Rollierungs-Limits auf 365 Snapshots.
+

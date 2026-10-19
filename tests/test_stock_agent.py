@@ -892,4 +892,45 @@ def test_generate_delta_report_with_changes():
     assert tsla_delta["change_type"] == "Neu"
 
 
+def test_save_signal_snapshot_idempotent_same_day(tmp_path):
+    """save_signal_snapshot replaces the entry for the current day instead of appending duplicates."""
+    from stock_agent import save_signal_snapshot, load_signal_snapshot_history
+
+    first_items = [{"symbol": "AAPL", "brodel_score": 50}]
+    save_signal_snapshot("watchlist.txt", first_items, directory=str(tmp_path))
+
+    history_1 = load_signal_snapshot_history("watchlist.txt", directory=str(tmp_path))
+    assert len(history_1) == 1
+    assert history_1[0]["items"][0]["brodel_score"] == 50
+
+    # Save again on same day with new score
+    second_items = [{"symbol": "AAPL", "brodel_score": 75}]
+    save_signal_snapshot("watchlist.txt", second_items, directory=str(tmp_path))
+
+    history_2 = load_signal_snapshot_history("watchlist.txt", directory=str(tmp_path))
+    assert len(history_2) == 1, "Snapshot list should still have exactly 1 entry for the same day"
+    assert history_2[0]["items"][0]["brodel_score"] == 75, "Should have been updated with new score"
+
+
+def test_save_signal_snapshot_appends_on_different_day(tmp_path):
+    """save_signal_snapshot appends a new entry if the existing snapshot is from a different day."""
+    import json
+    from stock_agent import save_signal_snapshot, load_signal_snapshot_history
+
+    file_path = tmp_path / "watchlist.json"
+    past_snapshot = [
+        {"timestamp": "2026-10-01T12:00:00Z", "items": [{"symbol": "MSFT", "brodel_score": 40}]}
+    ]
+    file_path.write_text(json.dumps(past_snapshot), encoding="utf-8")
+
+    today_items = [{"symbol": "MSFT", "brodel_score": 85}]
+    save_signal_snapshot("watchlist.txt", today_items, directory=str(tmp_path))
+
+    history = load_signal_snapshot_history("watchlist.txt", directory=str(tmp_path))
+    assert len(history) == 2, "Snapshot from a different day must be preserved"
+    assert history[0]["items"][0]["brodel_score"] == 40
+    assert history[1]["items"][0]["brodel_score"] == 85
+
+
+
 

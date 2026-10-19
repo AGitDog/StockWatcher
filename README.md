@@ -91,7 +91,7 @@ Die App bietet zusätzlich eine Alert-Funktion für:
 ## Aufbau der Anwendung
 
 Die Anwendung gliedert sich in 3 fokussierte Tabs:
-- **Signal Monitor V2:** Frühwarnsignale, Delta-Alerts, Strategie-Setups, Sektor-Rankings, ML-Scores und zweigeteilte Detailansicht (Brodel-Index & Unternehmenswerte).
+- **Signal Monitor V2:** Frühwarnsignale, Strategie-Setups, Sektor-Rankings, ML-Scores, automatisierte Tages-Snapshots und zweigeteilte Detailansicht (Brodel-Index & Unternehmenswerte).
 - **Backtest & ML:** Historische Rebalancing-Simulation, Score-Range-Backtest und ML-Gewichtungstraining.
 - **Hilfe & Methodik:** Dokumentation der 10 Signalkomponenten, Schwellwerte und Handlungslogik.
 
@@ -111,19 +111,18 @@ Aus diesen Bausteinen wird ein `Brodel-Score` berechnet, damit interessante Akti
 
 Zusaetzlich unterstuetzt V2 jetzt:
 
-1. Snapshot-Speicherung des Signal Monitors im Ordner `signal_history/`
-2. Delta-Alerts seit dem letzten Snapshot
-3. Peer- und Sektor-Vergleiche innerhalb der geladenen Watchlist
-4. Score-Verlauf pro Symbol auf Basis der gespeicherten Snapshots
-5. Harte Delta-Alerts ab konfigurierbarem Schwellwert
+1. Automatische, idempotente Tages-Snapshot-Speicherung im Ordner `signal_history/` (bis zu 365 Tage Historie)
+2. Peer- und Sektor-Vergleiche innerhalb der geladenen Watchlist
+3. Score-Verlauf pro Symbol auf Basis der gespeicherten Snapshots
+4. Automatische Strategie-Erkennung (Pullback, Breakout, Value, Momentum)
 
 ## Hilfe in der App
 
-Die Seite `Signal Monitor V2` enthaelt eine eingebaute Hilfe-Sektion, die erklaert:
+Die Seite `Hilfe & Methodik` enthaelt eine eingebaute Hilfe-Sektion, die erklaert:
 
 1. Wie der Brodel-Score gelesen wird
 2. Was die einzelnen Signal-Bausteine bedeuten
-3. Wie Delta-Alerts und Peer-Vergleiche zu interpretieren sind
+3. Wie Peer-Vergleiche und Strategie-Setups zu interpretieren sind
 
 # Hinweise
 

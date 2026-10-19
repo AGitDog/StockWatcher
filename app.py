@@ -109,8 +109,6 @@ def render_watchlist_signal_monitor(mapping_text: str):
     active_name = st.session_state.get("active_watchlist_name", DEFAULT_WATCHLIST_NAME)
     st.caption(f"Aktive Watchlist im Hintergrund: `{active_name}` (wird automatisch aus `watchlists/` verwaltet)")
 
-    alert_threshold = st.slider("Harter Delta-Alert ab Score-Anstieg von", min_value=1, max_value=30, value=10)
-
     if st.button("Signale aktualisieren"):
         watchlist_content = st.session_state.get("watchlist_text", "").strip()
         if not watchlist_content:
@@ -170,7 +168,10 @@ def render_watchlist_signal_monitor(mapping_text: str):
                 key=lambda x: x.get("ml_score", x.get("brodel_score", 0)),
                 reverse=True,
             )
-            st.session_state.signal_monitor_watchlist_name = st.session_state.get("active_watchlist_name", DEFAULT_WATCHLIST_NAME)
+            watchlist_name = st.session_state.get("active_watchlist_name", DEFAULT_WATCHLIST_NAME)
+            st.session_state.signal_monitor_watchlist_name = watchlist_name
+            # Automatisch als Tages-Snapshot abspeichern (idempotent)
+            save_signal_snapshot(watchlist_name, st.session_state.signal_monitor_items)
             
             progress_bar.empty()
             live_table.empty()
@@ -187,59 +188,13 @@ def render_watchlist_signal_monitor(mapping_text: str):
         st.info("Noch kein Signal Monitor vorhanden. Starte die Analyse mit 'Signale aktualisieren'.")
         return
 
-    if not signal_items:
-            st.info("Fuer diese Watchlist konnten keine Signale berechnet werden.")
-            return
-
     st.success(f"{len(signal_items)} Symbole mit V2-Signalprofil berechnet.")
 
     watchlist_name = st.session_state.get("signal_monitor_watchlist_name", st.session_state.get("active_watchlist_name", DEFAULT_WATCHLIST_NAME))
     history = load_signal_snapshot_history(watchlist_name)
-    previous_snapshot = history[-1] if history else None
-    delta_items = build_signal_delta_report(signal_items, previous_snapshot)
     score_history = build_score_history_frame(history)
 
-    history_cols = st.columns(2)
-    with history_cols[0]:
-        if st.button("Snapshot speichern", use_container_width=True):
-            snapshot_path = save_signal_snapshot(watchlist_name, signal_items)
-            st.success(f"Snapshot gespeichert: {snapshot_path.as_posix()}")
-    with history_cols[1]:
-        st.caption(f"Snapshot-Historie: {len(history)} vorhandene Snapshots fuer {watchlist_name}")
-
-
-    st.markdown("**Delta-Alerts seit letztem Snapshot**")
-    if delta_items:
-        real_deltas = [item for item in delta_items if item["change_type"] != "Neu"]
-        new_stocks = [item for item in delta_items if item["change_type"] == "Neu"]
-        hard_alerts = [item for item in real_deltas if item["score_delta"] >= alert_threshold]
-        
-        if hard_alerts:
-            st.warning(f"🚨 {len(hard_alerts)} Aktien ueberschreiten den Alert-Schwellwert von +{alert_threshold} Punkten seit dem letzten Snapshot!")
-
-        delta_rows = []
-        for item in real_deltas:
-            if item["score_delta"] != 0 or item["new_signals"]:
-                delta_rows.append(
-                    {
-                        "Symbol": item["symbol"],
-                        "Aenderung": item["change_type"],
-                        "Score jetzt": item["current_score"],
-                        "Score davor": item["previous_score"],
-                        "Delta": item["score_delta"],
-                        "Neue Signale": " | ".join(item["new_signals"]) if item["new_signals"] else "-",
-                    }
-                )
-                
-        if delta_rows:
-            st.dataframe(pd.DataFrame(delta_rows), use_container_width=True, hide_index=True)
-        else:
-            st.info("Keine relevanten Score-Veraenderungen oder neue Signale bei bestehenden Aktien.")
-            
-        if new_stocks:
-            st.caption(f"Info: {len(new_stocks)} Aktien wurden seit dem letzten Snapshot neu in die Watchlist aufgenommen.")
-    else:
-        st.info("Noch kein vorheriger Snapshot oder keine relevanten Veraenderungen seit dem letzten Snapshot.")
+    st.caption(f"Snapshot-Historie: {len(history)} gespeicherte Tages-Snapshots für `{watchlist_name}`")
 
     st.markdown("**Strategie-Signale & Handlungsempfehlungen**")
     strategy_rows = []
@@ -567,14 +522,14 @@ def render_help_tab():
     st.markdown(
         "1. Konfiguriere deine Watchlist im Hintergrund über `watchlists/meine_watchlist.txt` (Symbole oder unterstützte Indexkürzel wie DAX, S&P 500, SOX, NBI, Nikkei 225).\n"
         "2. Öffne **Signal Monitor V2** und starte **Signale aktualisieren**. Die App lädt die verfügbaren Marktdaten, berechnet die Komponenten und ordnet die Watchlist nach Priorität.\n"
-        "3. Speichere nach einer Analyse einen **Snapshot**. Erst mehrere Snapshots ergeben einen aussagekräftigen Score-Verlauf, einen Backtest und Trainingsdaten für die ML-Gewichte.\n"
+        "3. Beim Aktualisieren der Signale wird automatisch ein **Tages-Snapshot** gespeichert. Die so kontinuierlich aufgebaute Historie versorgt den Score-Verlauf, den Backtest und die Trainingsdaten für die ML-Gewichte.\n"
         "4. Prüfe neben dem Gesamtscore immer die Einzelkomponenten, das Setup, den Stop-Loss, die Liquidität und den Sektor-Kontext.\n"
         "5. Nutze **Backtest & ML** zunächst zur Prüfung und danach im Paper-Trading. Ein hoher Score ist ein Recherche-Signal und keine automatische Kaufentscheidung."
     )
 
     with st.expander("Die drei Tabs im Überblick"):
         st.markdown(
-            "- **Signal Monitor V2:** aktuelle Frühwarnsignale, Delta-Alerts gegenüber dem letzten Snapshot, Strategie-Setups, ML-Score, Detailanalyse und Score-Verlauf.\n"
+            "- **Signal Monitor V2:** aktuelle Frühwarnsignale, Strategie-Setups, ML-Score, Detailanalyse und historischer Score-Verlauf.\n"
             "- **Backtest & ML:** historische Simulation des Top-N-Portfolios, Equity-Kurve, Trade-Liste und Training der Komponenten-Gewichte.\n"
             "- **Hilfe & Methodik:** Definitionen der Signale, Datenquellen, Berechnungen, Grenzen und Bedienhinweise.\n\n"
             "*Hinweis: Die Watchlist-Verwaltung läuft headless im Hintergrund über `watchlists/meine_watchlist.txt`.*"
