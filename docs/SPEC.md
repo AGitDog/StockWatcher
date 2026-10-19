@@ -84,6 +84,22 @@ Die Detail-Box für jede Aktie soll strukturiert und aufgeräumt werden, um eine
 
 ---
 
+### 2.8 Watchlist-Verwaltung im Hintergrund & UI-Bereinigung (IDEA-001)
+- **Motivation:** Das Dashboard wird als Single-User-/Personal-Monitoring-System betrieben. Ein separater Tab zur Watchlist-Verwaltung mit Upload-Elementen ist nicht erforderlich und überfrachtet das UI.
+- **UI-Bereinigung:**
+  - Der Tab "Watchlist Verwaltung" wird vollständig aus `app.py` entfernt.
+  - Das Streamlit-Interface besteht nun aus den 3 Tabs: `Signal Monitor V2`, `Backtest & ML`, `Hilfe & Methodik`.
+  - Im Signal Monitor wird auf Dropdown-Auswahlen verzichtet; die App lädt fest die zentrale Hintergrund-Watchlist.
+- **Hintergrund-Watchlist (`watchlists/meine_watchlist.txt`):**
+  - Dient als alleinige Standardquelle für `app.py` und `daily_job.py`.
+  - Enthält standardmäßig alle konfigurierten Indizes inklusive der neuen Zugänge:
+    - `SOX` (PHLX Semiconductor Sector)
+    - `NBI` (NASDAQ Biotechnology Index)
+    - `Nikkei 225`
+  - Sämtliche verwaiste temporäre Upload-Dateien (z. B. `1832802889664.txt` etc.) werden aus dem Ordner `watchlists/` bereinigt.
+
+---
+
 ## 3. Architektur-Entscheidungen (ADR)
 - **ADR-001: Tab-basierte Navigation statt monolithischer Expander:**
   - *Status:* Angenommen.
@@ -98,3 +114,7 @@ Die Detail-Box für jede Aktie soll strukturiert und aufgeräumt werden, um eine
 - **ADR-004: Persistentes Klarnamen-Mapping für internationale/numerische Indizes (Nikkei 225):**
   - *Status:* Angenommen.
   - *Entscheidung:* Festes Wörterbuch aller 225 Nikkei-Titel verhindert unleserliche Zahlencodes bei Yahoo-Throttling oder Neustarts.
+- **ADR-005: Headless/Background Watchlist Management:**
+  - *Status:* Angenommen.
+  - *Kontext:* Die manuelle Watchlist-Verwaltung im UI erzeugte unnötige Komplexität und temporäre Upload-Fragmente.
+  - *Entscheidung:* Vollständige Verlagerung der Watchlist-Konfiguration in die Hintergrunddatei `watchlists/meine_watchlist.txt`. Entfernung des Watchlist-Tabs aus dem Streamlit-Interface.

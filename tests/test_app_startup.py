@@ -69,3 +69,33 @@ def test_stock_agent_resilient_to_missing_genai():
         import stock_agent
         assert hasattr(stock_agent, "build_symbol_signal_monitor")
         assert hasattr(stock_agent, "fetch_company_extended_fundamentals")
+
+
+def test_render_stock_agent_layout():
+    """Verify render_stock_agent creates exactly 3 tabs (Signal Monitor V2, Backtest & ML, Hilfe & Methodik)."""
+    from unittest.mock import MagicMock
+    import app
+
+    tab_mock_1 = MagicMock()
+    tab_mock_2 = MagicMock()
+    tab_mock_3 = MagicMock()
+
+    with patch("streamlit.tabs", return_value=[tab_mock_1, tab_mock_2, tab_mock_3]) as mock_tabs, \
+         patch("streamlit.title"), \
+         patch("streamlit.caption"), \
+         patch("app.render_watchlist_signal_monitor"), \
+         patch("app.render_backtest_tab"), \
+         patch("app.render_help_tab"):
+        app.render_stock_agent()
+        mock_tabs.assert_called_once_with(["Signal Monitor V2", "Backtest & ML", "Hilfe & Methodik"])
+
+
+def test_default_watchlist_contains_new_indices():
+    """Verify that meine_watchlist.txt contains SOX, NBI, and Nikkei 225."""
+    import app
+    name, text = app.load_default_watchlist_text()
+    assert name == "meine_watchlist.txt"
+    assert "SOX" in text
+    assert "NBI" in text
+    assert "Nikkei 225" in text
+

@@ -94,120 +94,6 @@ def build_score_history_frame(history: list[dict[str, object]]) -> pd.DataFrame:
     return frame.sort_values(["timestamp", "symbol"])
 
 
-def append_indices_to_watchlist():
-    raw_text = st.session_state.get("index_input_text", "")
-    if not raw_text.strip():
-        return
-
-    normalized_entries = [entry.strip() for entry in raw_text.replace(";", ",").split(",") if entry.strip()]
-    if not normalized_entries:
-        return
-
-    current_text = st.session_state.get("watchlist_text", "").strip()
-    appended_text = "\n".join(normalized_entries)
-    st.session_state.watchlist_text = f"{current_text}\n{appended_text}".strip() + "\n"
-    st.session_state.pending_index_input_clear = True
-
-
-def render_watchlist_source_controls():
-    if "watchlist_initialized" not in st.session_state:
-        default_name, default_text = load_default_watchlist_text()
-        st.session_state.watchlist_text = default_text
-        st.session_state.active_watchlist_name = default_name
-        st.session_state.selected_watchlist_name = default_name if default_text else ""
-        st.session_state.watchlist_initialized = True
-
-    if "watchlist_text" not in st.session_state:
-        default_name, default_text = load_default_watchlist_text()
-        st.session_state.watchlist_text = default_text
-        st.session_state.active_watchlist_name = default_name
-    if "active_watchlist_name" not in st.session_state:
-        st.session_state.active_watchlist_name = DEFAULT_WATCHLIST_NAME
-    if st.session_state.pop("pending_index_input_clear", False):
-        st.session_state.index_input_text = ""
-    pending_selected_watchlist = st.session_state.pop("pending_selected_watchlist_name", None)
-    if pending_selected_watchlist is not None:
-        st.session_state.selected_watchlist_name = pending_selected_watchlist
-
-    watchlist_files = list_watchlist_files()
-    supported_indices = get_supported_indices()
-    current_selected_watchlist = st.session_state.get("selected_watchlist_name", DEFAULT_WATCHLIST_NAME)
-    if current_selected_watchlist not in watchlist_files:
-        st.session_state.selected_watchlist_name = ""
-    selected_watchlist = st.selectbox(
-        "Gespeicherte Watchlist",
-        options=[""] + watchlist_files,
-        format_func=lambda value: value if value else "Bitte waehlen",
-        key="selected_watchlist_name",
-    )
-    uploaded_file = st.file_uploader("Textdatei mit Tickern", type=["txt"])
-
-    st.caption("Unterstuetzte Indizes in der Watchlist: " + ", ".join(supported_indices))
-
-    index_cols = st.columns([3, 1])
-    with index_cols[0]:
-        index_input = st.text_input(
-            "Indexlisten zur Watchlist hinzufuegen",
-            key="index_input_text",
-            help="Mehrere Indexnamen per Komma oder in separaten Durchlaeufen eingeben, zum Beispiel: DAX, S&P 500",
-        )
-    with index_cols[1]:
-        st.button("Indizes einfuegen", use_container_width=True, on_click=append_indices_to_watchlist)
-
-    control_cols = st.columns(3)
-
-    with control_cols[0]:
-        if st.button("Gespeicherte Watchlist laden", use_container_width=True):
-            if selected_watchlist:
-                st.session_state.watchlist_text = load_watchlist_file(selected_watchlist)
-                st.session_state.active_watchlist_name = selected_watchlist
-            else:
-                st.warning("Bitte zuerst eine gespeicherte Watchlist auswaehlen.")
-
-    with control_cols[1]:
-        if st.button("Hochgeladene Datei uebernehmen", use_container_width=True):
-            if uploaded_file is not None:
-                st.session_state.watchlist_text = uploaded_file.getvalue().decode("utf-8")
-                st.session_state.active_watchlist_name = uploaded_file.name or "upload_watchlist.txt"
-            else:
-                st.warning("Bitte zuerst eine Textdatei hochladen.")
-
-    save_name_default = selected_watchlist[:-4] if selected_watchlist.endswith(".txt") else "meine_watchlist"
-    with control_cols[2]:
-        save_name = st.text_input("Dateiname zum Speichern", value=save_name_default or "meine_watchlist")
-        if st.button("Aktuelle Watchlist speichern", use_container_width=True):
-            if st.session_state.watchlist_text.strip():
-                saved_path = save_watchlist_file(save_name, st.session_state.watchlist_text)
-                st.session_state.active_watchlist_name = saved_path.name
-                st.session_state.pending_selected_watchlist_name = saved_path.name
-                st.success(f"Watchlist gespeichert: {saved_path.as_posix()}")
-            else:
-                st.warning("Die Watchlist ist leer und wurde nicht gespeichert.")
-
-    st.text_area(
-        "Oder Watchlist direkt einfuegen",
-        key="watchlist_text",
-        help="Ein Symbol pro Zeile oder komma-separiert. Kommentare mit # sind erlaubt. Bekannte Indexnamen wie DAX erweitern sich automatisch auf ihre Mitglieder.",
-        height=180,
-    )
-
-    index_summary = summarize_index_entries(st.session_state.get("watchlist_text", ""))
-    if index_summary["supported"]:
-        supported_lines = [
-            f"{item['entry']} -> {item['index_name']} ({item['count']} Titel)"
-            for item in index_summary["supported"]
-        ]
-        st.info("Erkannte Index-Erweiterungen: " + " | ".join(supported_lines))
-
-    if index_summary["unsupported"]:
-        unsupported_lines = [item["entry"] for item in index_summary["unsupported"]]
-        st.warning(
-            "Diese indexaehnlichen Eintraege werden aktuell nicht auf Mitglieder erweitert: "
-            + ", ".join(unsupported_lines)
-            + ". Unterstuetzt werden derzeit DAX, S&P 500 und Dow Jones."
-        )
-
-
 def render_watchlist_signal_monitor(mapping_text: str):
     st.subheader("Signal Monitor V2")
     st.write(
@@ -215,11 +101,26 @@ def render_watchlist_signal_monitor(mapping_text: str):
         "News-Sentiment, Preis/Volumen-Verhalten, Event-Naehe, Insider-Aktivitaet, Short Interest, Relative Staerke und Fundamentaldaten."
     )
 
+    if "watchlist_text" not in st.session_state or not st.session_state.get("watchlist_text", "").strip():
+        default_name, default_text = load_default_watchlist_text()
+        st.session_state.watchlist_text = default_text
+        st.session_state.active_watchlist_name = default_name
+
+    active_name = st.session_state.get("active_watchlist_name", DEFAULT_WATCHLIST_NAME)
+    st.caption(f"Aktive Watchlist im Hintergrund: `{active_name}` (wird automatisch aus `watchlists/` verwaltet)")
+
     alert_threshold = st.slider("Harter Delta-Alert ab Score-Anstieg von", min_value=1, max_value=30, value=10)
 
     if st.button("Signale aktualisieren"):
-        if not st.session_state.watchlist_text.strip():
-            st.warning("Bitte eine Watchlist-Datei hochladen, laden oder mindestens ein Symbol eingeben.")
+        watchlist_content = st.session_state.get("watchlist_text", "").strip()
+        if not watchlist_content:
+            default_name, default_text = load_default_watchlist_text()
+            watchlist_content = default_text.strip()
+            st.session_state.watchlist_text = default_text
+            st.session_state.active_watchlist_name = default_name
+
+        if not watchlist_content:
+            st.warning("Die Watchlist-Datei `watchlists/meine_watchlist.txt` ist leer oder nicht vorhanden.")
             return
 
         with st.spinner("Berechne V2-Fruehsignale..."):
@@ -664,19 +565,19 @@ def render_help_tab():
 
     st.markdown("### Schnellstart: der empfohlene Ablauf")
     st.markdown(
-        "1. Öffne **Watchlist Verwaltung** und wähle eine gespeicherte Watchlist oder lege eine neue Liste mit Symbolen, Namen oder Indexkürzeln an.\n"
+        "1. Konfiguriere deine Watchlist im Hintergrund über `watchlists/meine_watchlist.txt` (Symbole oder unterstützte Indexkürzel wie DAX, S&P 500, SOX, NBI, Nikkei 225).\n"
         "2. Öffne **Signal Monitor V2** und starte **Signale aktualisieren**. Die App lädt die verfügbaren Marktdaten, berechnet die Komponenten und ordnet die Watchlist nach Priorität.\n"
         "3. Speichere nach einer Analyse einen **Snapshot**. Erst mehrere Snapshots ergeben einen aussagekräftigen Score-Verlauf, einen Backtest und Trainingsdaten für die ML-Gewichte.\n"
         "4. Prüfe neben dem Gesamtscore immer die Einzelkomponenten, das Setup, den Stop-Loss, die Liquidität und den Sektor-Kontext.\n"
         "5. Nutze **Backtest & ML** zunächst zur Prüfung und danach im Paper-Trading. Ein hoher Score ist ein Recherche-Signal und keine automatische Kaufentscheidung."
     )
 
-    with st.expander("Die vier Tabs im Überblick"):
+    with st.expander("Die drei Tabs im Überblick"):
         st.markdown(
             "- **Signal Monitor V2:** aktuelle Frühwarnsignale, Delta-Alerts gegenüber dem letzten Snapshot, Strategie-Setups, ML-Score, Detailanalyse und Score-Verlauf.\n"
             "- **Backtest & ML:** historische Simulation des Top-N-Portfolios, Equity-Kurve, Trade-Liste und Training der Komponenten-Gewichte.\n"
-            "- **Watchlist Verwaltung:** Watchlist-Dateien laden, bearbeiten und speichern. Manuelle Zuordnungen aus `stock_mappings.txt` helfen bei Namen, die nicht eindeutig aufgelöst werden können.\n"
-            "- **Hilfe & Methodik:** Definitionen der Signale, Datenquellen, Berechnungen, Grenzen und Bedienhinweise."
+            "- **Hilfe & Methodik:** Definitionen der Signale, Datenquellen, Berechnungen, Grenzen und Bedienhinweise.\n\n"
+            "*Hinweis: Die Watchlist-Verwaltung läuft headless im Hintergrund über `watchlists/meine_watchlist.txt`.*"
         )
 
     with st.expander("Scores richtig interpretieren"):
@@ -1085,19 +986,12 @@ def render_stock_agent():
 
     mapping_text = load_mapping_text()
 
-    stock_tabs = st.tabs(["Signal Monitor V2", "Backtest & ML", "Watchlist Verwaltung", "Hilfe & Methodik"])
+    stock_tabs = st.tabs(["Signal Monitor V2", "Backtest & ML", "Hilfe & Methodik"])
     with stock_tabs[0]:
         render_watchlist_signal_monitor(mapping_text)
     with stock_tabs[1]:
         render_backtest_tab()
     with stock_tabs[2]:
-        st.subheader("Watchlist-Quelle")
-        st.write(
-            "Hier kannst du gespeicherte Watchlists aus dem Projekt laden oder neue Watchlists als Datei speichern."
-        )
-        st.caption("Manuelle Namens-zu-Ticker-Zuordnungen werden aus stock_mappings.txt geladen.")
-        render_watchlist_source_controls()
-    with stock_tabs[3]:
         render_help_tab()
 
 

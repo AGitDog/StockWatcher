@@ -60,25 +60,40 @@ Appen=APX.AX
 
 Die Datei wird beim Erstellen der Zusammenfassung automatisch beruecksichtigt.
 
-## Gespeicherte Watchlists und Alerts
+## Watchlists und Hintergrundverwaltung
 
-Gespeicherte Watchlists liegen im Projektordner `watchlists/` und koennen direkt in der App geladen oder ueberschrieben werden.
+Die Watchlist-Verwaltung erfolgt headless im Hintergrund über Textdateien im Projektordner `watchlists/`. Standardmäßig lädt und überwacht das System automatisch die Datei `watchlists/meine_watchlist.txt`.
 
-Beim Start wird automatisch `meine_watchlist.txt` geladen, sofern die Datei im Ordner `watchlists/` vorhanden ist.
+Unterstützte Index-Aliase (werden automatisch in Einzelwerte aufgelöst):
 
-Aktuell unterstuetzte Index-Aliase:
+1. **DAX**
+2. **S&P 500**
+3. **Dow Jones**
+4. **NASDAQ-100**
+5. **MDAX**
+6. **CAC 40**
+7. **EURO STOXX 50**
+8. **FTSE 100**
+9. **SMI**
+10. **NIFTY 50**
+11. **TSX 60**
+12. **TECDAX**
+13. **PHLX Semiconductor Sector (SOX)**
+14. **NASDAQ Biotechnology Index (NBI)**
+15. **Nikkei 225**
 
-1. DAX
-2. S&P 500
-3. Dow Jones
-
-Die App bietet zusaetzlich eine Alert-Funktion fuer:
+Die App bietet zusätzlich eine Alert-Funktion für:
 
 1. Neue Analysten-Upgrades oder Downgrades
-2. Insiderkaeufe oder Insidertransaktionen
+2. Insiderkäufe oder Insidertransaktionen
 3. Anstehende Termine innerhalb eines einstellbaren Zeitfensters
 
-Watchlists koennen in der App als `.txt`-Dateien gespeichert und spaeter wiederverwendet werden.
+## Aufbau der Anwendung
+
+Die Anwendung gliedert sich in 3 fokussierte Tabs:
+- **Signal Monitor V2:** Frühwarnsignale, Delta-Alerts, Strategie-Setups, Sektor-Rankings, ML-Scores und zweigeteilte Detailansicht (Brodel-Index & Unternehmenswerte).
+- **Backtest & ML:** Historische Rebalancing-Simulation, Score-Range-Backtest und ML-Gewichtungstraining.
+- **Hilfe & Methodik:** Dokumentation der 10 Signalkomponenten, Schwellwerte und Handlungslogik.
 
 ## Signal Monitor V2
 
