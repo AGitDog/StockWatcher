@@ -72,7 +72,7 @@ def test_stock_agent_resilient_to_missing_genai():
 
 
 def test_render_stock_agent_layout():
-    """Verify render_stock_agent creates exactly 3 tabs (Signal Monitor V2, Backtest & ML, Hilfe & Methodik)."""
+    """Verify render_stock_agent creates exactly 3 tabs (🔥 Signal Monitor, Backtest & ML, Hilfe & Methodik)."""
     from unittest.mock import MagicMock
     import app
 

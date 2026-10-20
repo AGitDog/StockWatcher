@@ -625,16 +625,16 @@ def render_help_tab():
     st.markdown("### Schnellstart: der empfohlene Ablauf")
     st.markdown(
         "1. Konfiguriere deine Watchlist im Hintergrund über `watchlists/meine_watchlist.txt` (Symbole oder unterstützte Indexkürzel wie DAX, S&P 500, SOX, NBI, Nikkei 225).\n"
-        "2. Öffne **Signal Monitor V2** und starte **Signale aktualisieren**. Die App lädt die verfügbaren Marktdaten, berechnet die Komponenten und ordnet die Watchlist nach Priorität.\n"
+        "2. Öffne **Signal Monitor** und navigiere bei Bedarf in **Backtest & ML**, um über **⚙️ Datenpflege** die Signale manuell zu aktualisieren. Die App lädt die verfügbaren Marktdaten, berechnet die Komponenten und ordnet die Watchlist nach Priorität.\n"
         "3. Beim Aktualisieren der Signale wird automatisch ein **Tages-Snapshot** gespeichert. Die so kontinuierlich aufgebaute Historie versorgt den Score-Verlauf, den Backtest und die Trainingsdaten für die ML-Gewichte.\n"
-        "4. Prüfe neben dem Gesamtscore immer die Einzelkomponenten, das Setup, den Stop-Loss, die Liquidität und den Sektor-Kontext.\n"
+        "4. Prüfe neben dem Gesamtscore immer die Einzelkomponenten, die fundamentale Verfassung, die Liquidität und den Sektor-Kontext.\n"
         "5. Nutze **Backtest & ML** zunächst zur Prüfung und danach im Paper-Trading. Ein hoher Score ist ein Recherche-Signal und keine automatische Kaufentscheidung."
     )
 
     with st.expander("Die drei Tabs im Überblick"):
         st.markdown(
-            "- **Signal Monitor V2:** aktuelle Frühwarnsignale, Strategie-Setups, ML-Score, Detailanalyse und historischer Score-Verlauf.\n"
-            "- **Backtest & ML:** historische Simulation des Top-N-Portfolios, Equity-Kurve, Trade-Liste und Training der Komponenten-Gewichte.\n"
+            "- **🔥 Signal Monitor:** aktuelle Frühwarnsignale, ML-Score, Detailanalyse und historischer Score-Verlauf.\n"
+            "- **Backtest & ML:** historische Simulation des Top-N-Portfolios, Equity-Kurve, Trade-Liste, Training der Komponenten-Gewichte sowie manuelle Datenpflege.\n"
             "- **Hilfe & Methodik:** Definitionen der Signale, Datenquellen, Berechnungen, Grenzen und Bedienhinweise.\n\n"
             "*Hinweis: Die Watchlist-Verwaltung läuft headless im Hintergrund über `watchlists/meine_watchlist.txt`.*"
         )

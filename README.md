@@ -91,13 +91,13 @@ Die App bietet zusätzlich eine Alert-Funktion für:
 ## Aufbau der Anwendung
 
 Die Anwendung gliedert sich in 3 fokussierte Tabs:
-- **Signal Monitor V2:** Frühwarnsignale, Strategie-Setups, Sektor-Rankings, ML-Scores, automatisierte Tages-Snapshots und zweigeteilte Detailansicht (Brodel-Index & Unternehmenswerte).
-- **Backtest & ML:** Historische Rebalancing-Simulation, Score-Range-Backtest und ML-Gewichtungstraining.
+- **🔥 Signal Monitor:** Frühwarnsignale, Sektor-Rankings, ML-Scores, automatisierte Tages-Snapshots und zweigeteilte Detailansicht (Brodel-Index & Unternehmenswerte).
+- **Backtest & ML:** Historische Rebalancing-Simulation, Score-Range-Backtest, ML-Gewichtungstraining und Datenpflege.
 - **Hilfe & Methodik:** Dokumentation der 10 Signalkomponenten, Schwellwerte und Handlungslogik.
 
-## Signal Monitor V2
+## 🔥 Signal Monitor
 
-Die App enthaelt zusaetzlich einen `Signal Monitor V2`, der die Watchlist nach Fruehsignalen priorisiert.
+Die App enthält einen `Signal Monitor`, der die Watchlist nach Frühsignalen priorisiert.
 
 Bewertet werden aktuell:
 
@@ -109,7 +109,7 @@ Bewertet werden aktuell:
 
 Aus diesen Bausteinen wird ein `Brodel-Score` berechnet, damit interessante Aktien schneller oben landen.
 
-Zusaetzlich unterstuetzt V2 jetzt:
+Zusätzlich unterstützt das System:
 
 1. Automatische, idempotente Tages-Snapshot-Speicherung im Ordner `signal_history/` (bis zu 3665 Tage / ca. 10 Jahre Historie)
 2. Peer- und Sektor-Vergleiche innerhalb der geladenen Watchlist
