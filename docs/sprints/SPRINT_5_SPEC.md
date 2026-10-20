@@ -6,8 +6,8 @@
 **Ziel:** Modernisierung des UI-Headers mit Hero-Banner („Was wir tun vs. Was wir nicht tun“), direkte Synchronisation der Detailansicht per Klick auf eine Tabellenzeile (`st.dataframe` on_select), Verschiebung des manuellen Aktualisierungs-Buttons in den Backtest-Tab, Entfernung des Strategie-Blocks und von "V2", Bereinigung von PEG/EPS im Tab Unternehmenswerte, Korrektur des Dividenden-Streaks bei aktuellem Rückgang sowie Bereitstellung eines Cache-Refresh-Buttons für Einzeltitel.
 
 ## Testergebnisse & Verifikation:
-- **173 Tests erfolgreich bestanden** (0 Fehler, 0 Regressionen in `pytest tests/`).
-- Neue & erweiterte Testsuiten: `tests/test_deep_fundamentals.py` (5 Tests), `tests/test_app_startup.py` (7 Tests).
+- **177 Tests erfolgreich bestanden** (0 Fehler, 0 Regressionen in `pytest tests/`).
+- Neue & erweiterte Testsuiten: `tests/test_interactive_table.py` (4 Tests), `tests/test_deep_fundamentals.py` (5 Tests), `tests/test_app_startup.py` (7 Tests).
 
 ---
 
@@ -18,29 +18,30 @@ Der Signal Monitor soll fokussiert, extrem performant und modern wirken. Bisher 
 
 ## 2. Detaillierte Task-Liste
 
-### Task 1: Interaktive Tabellen-Zeilenauswahl in `app.py`
-- **Komponente:** `app.py` (`render_watchlist_signal_monitor`)
+### Task 1: Interaktive Tabellen-Zeilenauswahl ohne Checkboxen (Option C) in `app.py`
+- **Komponente:** `stock_monitor_app/components/interactive_table/index.html`, `app.py` (`render_interactive_signals_table`)
 - **Implementierungsdetails:**
-  1. Ergänzung von `st.dataframe`:
+  1. Eigenes leichtgewichtiges Streamlit-Custom-Component (`interactive_table`) via `components.declare_component`:
+     - 100% frei von Checkboxen / Radio-Spalten.
+     - Jeder Klick auf eine Spalte/Zelle einer Zeile ruft `Streamlit.setComponentValue(symbol)` auf.
+     - Visuelles Feedback über Zeilen-Hover und aktive Zeilenhervorhebung.
+     - Integriertes schnelles Client-Suchfeld (`#searchInput`) und Spaltensortierung.
+     - Fester Scrollbereich (450px) mit Sticky-Header.
+  2. Integration in `app.py`:
      ```python
-     selection = st.dataframe(
-         signal_df,
-         use_container_width=True,
-         hide_index=True,
-         on_select="rerun",
-         selection_mode="single-row",
+     clicked_symbol = render_interactive_signals_table(
+         table_rows,
+         selected_symbol=active_sym,
          key="main_signals_table",
      )
+     if clicked_symbol and clicked_symbol != active_sym:
+         st.session_state["active_selected_symbol"] = clicked_symbol
+         st.rerun()
      ```
-  2. Auslesen der Auswahl:
-     ```python
-     if selection and selection.get("selection", {}).get("rows"):
-         selected_idx = selection["selection"]["rows"][0]
-         st.session_state["selected_symbol_override"] = signal_items[selected_idx]["symbol"]
-     ```
-  3. Automatische Synchronisation des Dropdown-Index mit dem ausgewählten Symbol.
+  3. Automatische Synchronisation mit dem Dropdown-Index der Detailansicht.
 - **Akzeptanzkriterien:**
-  - Ein Klick auf eine beliebige Zeile der Tabelle schaltet die darunterliegende Detailansicht sofort auf diese Aktie um.
+  - Keine Checkboxen in der Tabelle sichtbar.
+  - Ein Klick auf jede beliebige Spalte einer Zeile selektiert die gesamte Zeile und schaltet die darunterliegende Detailansicht sofort auf diese Aktie um.
   - Das Dropdown spiegelt die Auswahl wider und bleibt als alternative Schnellauswahl voll funktionsfähig.
 
 ---

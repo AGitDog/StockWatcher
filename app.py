@@ -31,9 +31,34 @@ from backtest_engine import (
 )
 from ml_weights import load_trained_weights, train_on_snapshots
 from backtest_engine.engine import load_snapshots
+import streamlit.components.v1 as components
 
 
 st.set_page_config(layout="wide")
+
+
+INTERACTIVE_TABLE_DIR = Path(__file__).parent / "components" / "interactive_table"
+if INTERACTIVE_TABLE_DIR.exists() and (INTERACTIVE_TABLE_DIR / "index.html").exists():
+    _interactive_table_func = components.declare_component("interactive_table", path=str(INTERACTIVE_TABLE_DIR))
+else:
+    _interactive_table_func = None
+
+
+def render_interactive_signals_table(rows: list[dict], selected_symbol: str = None, key: str = "main_signals_table") -> str | None:
+    """Renders the custom interactive signals table without checkboxes, supporting row clicks and instant filtering."""
+    if _interactive_table_func is not None:
+        try:
+            return _interactive_table_func(
+                rows=rows,
+                selected_symbol=selected_symbol,
+                key=key,
+                default=selected_symbol,
+            )
+        except Exception:
+            pass
+    # Fallback to standard dataframe without selection checkboxes if component cannot be loaded
+    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    return None
 
 
 DEFAULT_WATCHLIST_NAME = "meine_watchlist.txt"
@@ -216,27 +241,27 @@ def render_watchlist_signal_monitor(mapping_text: str):
             }
         )
 
-    selection = st.dataframe(
-        pd.DataFrame(table_rows),
-        use_container_width=True,
-        hide_index=True,
-        on_select="rerun",
-        selection_mode="single-row",
+    active_sym = st.session_state.get("active_selected_symbol")
+    if not active_sym and signal_items:
+        active_sym = signal_items[0]["symbol"]
+        st.session_state["active_selected_symbol"] = active_sym
+
+    clicked_symbol = render_interactive_signals_table(
+        table_rows,
+        selected_symbol=active_sym,
         key="main_signals_table",
     )
 
+    if clicked_symbol and clicked_symbol != active_sym:
+        st.session_state["active_selected_symbol"] = clicked_symbol
+        st.rerun()
+
+    active_sym = st.session_state.get("active_selected_symbol", signal_items[0]["symbol"] if signal_items else "")
     selected_row_idx = 0
-    if selection and selection.get("selection", {}).get("rows"):
-        clicked_idx = selection["selection"]["rows"][0]
-        if 0 <= clicked_idx < len(signal_items):
-            selected_row_idx = clicked_idx
-            st.session_state["active_selected_symbol"] = signal_items[clicked_idx]["symbol"]
-    elif "active_selected_symbol" in st.session_state:
-        stored_sym = st.session_state["active_selected_symbol"]
-        for idx, it in enumerate(signal_items):
-            if it["symbol"] == stored_sym:
-                selected_row_idx = idx
-                break
+    for idx, it in enumerate(signal_items):
+        if it["symbol"] == active_sym:
+            selected_row_idx = idx
+            break
 
     st.markdown("---")
     st.subheader("🔍 Detail-Analyse")

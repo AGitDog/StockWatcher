@@ -193,5 +193,16 @@ Die Detail-Box für jede Aktie soll strukturiert und aufgeräumt werden, um eine
 - **ADR-008: Read-Only Signal Monitor mit Event-basierter Zeilenselektion & strikter Trennung von Berechnungs-Jobs:**
   - *Status:* Angenommen.
   - *Kontext:* Das Triggern manueller Berechnungen direkt im Monitor verlangsamt die Nutzung und erzeugt Fehlbedienungen. Ebenso war die Auswahl von Detailaktien über eine separate Dropdown-Liste unkomfortabel.
-  - *Entscheidung:* Der Signal Monitor lädt standardmäßig direkt den letzten Snapshot im Read-Only-Modus. Zeilenklicks in `st.dataframe` steuern per Session-State direkt die Detail-Box. Manuelle Neuberechnungen werden in den Reiter `Backtest & ML` verschoben.
+  - *Entscheidung:* Der Signal Monitor lädt standardmäßig direkt den letzten Snapshot im Read-Only-Modus. Zeilenklicks steuern per Session-State direkt die Detail-Box. Manuelle Neuberechnungen werden in den Reiter `Backtest & ML` verschoben.
+- **ADR-009: Maßgeschneidertes Tabellen-Widget ohne Checkboxen für nahtlose Zeilenauswahl (Option C):**
+  - *Status:* Angenommen.
+  - *Kontext:* Die native Streamlit-Funktion `st.dataframe(..., on_select="rerun")` rendert auf dem Canvas zwingend eine Checkbox-Spalte ganz links. Klicks auf Textzellen fokussieren lediglich die Zelle statt die Zeile auszuwählen; nur Klicks auf das Kästchen triggerten die Zeile, was unintuitiv wirkte.
+  - *Entscheidung:* Bereitstellung einer maßgeschneiderten Streamlit-Komponente (`interactive_table`) via `streamlit.components.v1.declare_component`. Das Widget rendert eine professionelle Finanztabelle:
+    - 100% frei von Checkboxen.
+    - Klick auf jede beliebige Spalte/Zelle einer Zeile selektiert die Aktie sofort und meldet das Symbol an Python (`Streamlit.setComponentValue`).
+    - Visuelles Feedback über Zeilen-Hover und aktive Zeilenhervorhebung.
+    - Sticky-Header mit fixem Scrollbereich (450px) für maximale Übersicht auch bei Hunderten Werten.
+    - Integriertes Live-Filter-/Suchfeld im Tabellenkopf.
+    - Graceful Fallback auf `st.dataframe` ohne Selektion, falls die Komponente nicht verfügbar ist.
+
 
