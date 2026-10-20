@@ -438,12 +438,15 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     st.info("Keine historischen Bruttogewinn-Daten ausgewiesen (typisch für Finanzinstitute/Banken oder ETFs).")
 
                 st.markdown("#### ⚙️ Operative Kosten & Aufwand (OpEx)")
-                op_cols = st.columns(4)
+                op_cols = st.columns(5)
                 ttm_op_margin = ext.get("operating_margin_ttm")
                 oc_hist = ext.get("operating_cost_history", [])
                 latest_opex = oc_hist[-1]["OpEx"] if oc_hist else None
                 latest_fe = oc_hist[-1]["FE"] if oc_hist else None
                 latest_sga = oc_hist[-1]["SGA"] if oc_hist else None
+                latest_ebit = (oc_hist[-1].get("Operativer_Gewinn") if oc_hist[-1].get("Operativer_Gewinn") is not None else oc_hist[-1].get("EBIT")) if oc_hist else None
+                latest_op_margin = oc_hist[-1].get("Operative_Marge") if oc_hist else None
+                latest_opex_quote = oc_hist[-1].get("OpEx_Quote") if oc_hist else None
                 latest_fe_quote = oc_hist[-1]["FE_Quote"] if oc_hist else None
                 latest_sga_quote = oc_hist[-1]["SGA_Quote"] if oc_hist else None
                 latest_year = oc_hist[-1]["Jahr"] if oc_hist else None
@@ -454,13 +457,27 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     help="Operative Marge (Operating Margin) der letzten 12 Monate"
                 )
 
+                if latest_ebit is not None:
+                    ebit_str = f"{latest_ebit / 1e9:.2f} Mrd. {curr_str}" if abs(latest_ebit) >= 1e9 else f"{latest_ebit / 1e6:.1f} Mio. {curr_str}"
+                else:
+                    ebit_str = "n/a"
+                op_cols[1].metric(
+                    f"EBIT / Op. Gewinn ({latest_year})" if latest_year else "EBIT / Op. Gewinn",
+                    ebit_str,
+                    delta=f"{latest_op_margin:+.1f} % Marge" if latest_op_margin is not None else None,
+                    delta_color="normal",
+                    help="Operativer Gewinn (Earnings Before Interest and Taxes / Operating Income) des letzten vollständigen Geschäftsjahres"
+                )
+
                 if latest_opex is not None:
                     opex_str = f"{latest_opex / 1e9:.2f} Mrd. {curr_str}" if abs(latest_opex) >= 1e9 else f"{latest_opex / 1e6:.1f} Mio. {curr_str}"
                 else:
                     opex_str = "n/a"
-                op_cols[1].metric(
+                op_cols[2].metric(
                     f"OpEx gesamt ({latest_year})" if latest_year else "Letzte OpEx gesamt",
                     opex_str,
+                    delta=f"{latest_opex_quote:.1f} % v. Umsatz" if latest_opex_quote is not None else None,
+                    delta_color="off",
                     help="Gesamte operative Betriebskosten (Operating Expenses) des letzten Geschäftsjahres"
                 )
 
@@ -468,7 +485,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     fe_str = f"{latest_fe / 1e9:.2f} Mrd. {curr_str}" if abs(latest_fe) >= 1e9 else f"{latest_fe / 1e6:.1f} Mio. {curr_str}"
                 else:
                     fe_str = "n/a"
-                op_cols[2].metric(
+                op_cols[3].metric(
                     f"F&E / R&D ({latest_year})" if latest_year else "Forschung & Entwicklung",
                     fe_str,
                     delta=f"{latest_fe_quote:.1f} % v. Umsatz" if latest_fe_quote is not None else None,
@@ -480,7 +497,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     sga_str = f"{latest_sga / 1e9:.2f} Mrd. {curr_str}" if abs(latest_sga) >= 1e9 else f"{latest_sga / 1e6:.1f} Mio. {curr_str}"
                 else:
                     sga_str = "n/a"
-                op_cols[3].metric(
+                op_cols[4].metric(
                     f"SG&A ({latest_year})" if latest_year else "Vertrieb & Verwaltung",
                     sga_str,
                     delta=f"{latest_sga_quote:.1f} % v. Umsatz" if latest_sga_quote is not None else None,
@@ -494,6 +511,8 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     chart_rows = []
                     for row in oc_hist:
                         rev_f = f"{row['Umsatz'] / 1e9:.2f} Mrd." if row['Umsatz'] and abs(row['Umsatz']) >= 1e9 else (f"{row['Umsatz'] / 1e6:.1f} Mio." if row['Umsatz'] else "-")
+                        eb_val = row.get("Operativer_Gewinn") if row.get("Operativer_Gewinn") is not None else row.get("EBIT")
+                        ebit_f = f"{eb_val / 1e9:.2f} Mrd." if eb_val and abs(eb_val) >= 1e9 else (f"{eb_val / 1e6:.1f} Mio." if eb_val else "-")
                         opex_f = f"{row['OpEx'] / 1e9:.2f} Mrd." if row['OpEx'] and abs(row['OpEx']) >= 1e9 else (f"{row['OpEx'] / 1e6:.1f} Mio." if row['OpEx'] else "-")
                         fe_f = f"{row['FE'] / 1e9:.2f} Mrd." if row['FE'] and abs(row['FE']) >= 1e9 else (f"{row['FE'] / 1e6:.1f} Mio." if row['FE'] else "-")
                         sga_f = f"{row['SGA'] / 1e9:.2f} Mrd." if row['SGA'] and abs(row['SGA']) >= 1e9 else (f"{row['SGA'] / 1e6:.1f} Mio." if row['SGA'] else "-")
@@ -501,6 +520,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
                         oc_display_rows.append({
                             "Jahr": str(row["Jahr"]),
                             f"Umsatz ({curr_str})": rev_f,
+                            f"EBIT ({curr_str})": ebit_f,
                             f"OpEx ({curr_str})": opex_f,
                             f"F&E ({curr_str})": fe_f,
                             f"SG&A ({curr_str})": sga_f,

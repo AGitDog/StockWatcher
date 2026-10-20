@@ -130,11 +130,12 @@ Die Detail-Box für jede Aktie soll strukturiert und aufgeräumt werden, um eine
   - Historische operative Marge (`Operating Income / Total Revenue * 100`) sowie TTM-Operative-Marge.
 - **UI-Darstellung (Reiter 2: 🏢 Unternehmenswerte):**
   - Eigener strukturierter Abschnitt **„⚙️ Operative Kosten & Aufwand (OpEx)“**.
-  - 4 Metrik-Kacheln: Operative Marge (TTM), Gesamtkosten OpEx (letztes Jahr), F&E (R&D) und Verwaltung/Vertrieb (SG&A).
+  - 5 Metrik-Kacheln: Operative Marge (TTM), EBIT / Operativer Gewinn (letztes Jahr inkl. Margen-Delta), Gesamtkosten OpEx (letztes Jahr), F&E (R&D) und Verwaltung/Vertrieb (SG&A).
   - Gestapeltes Balkendiagramm für die jährliche Kostenentwicklung (F&E vs. SG&A).
-  - Kombinierte Jahrestabelle mit Umsatz, OpEx, F&E, SG&A, Operativer Marge (%) und OpEx-Quote (%).
+  - Kombinierte Jahrestabelle mit Umsatz, EBIT (absolut), OpEx, F&E, SG&A, Operativer Marge (%) und OpEx-Quote (%).
 - **Ausfallsicherheit & Sonderfälle:**
   - Banken, Versicherungen oder ETFs ohne OpEx-/F&E-Ausweis stürzen nicht ab, sondern zeigen transparente Fallbacks bzw. den Hinweis *"Keine klassischen OpEx/F&E ausgewiesen"*.
+  - Fehlt die Zeile `"Operating Income"` in den Jahresabschlüssen, wird das EBIT automatisch über die Bilanzformel `Gross Profit - OpEx` berechnet.
 - **Einfluss auf den Brodel-Score:**
   - Rein informativ für die fundamentale Tiefenanalyse (keine Veränderung des Brodel-Scores).
 

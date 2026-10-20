@@ -2253,7 +2253,7 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
         opex_key = next((k for k in ["Operating Expense", "Total Operating Expense", "Operating Expenses"] if k in income_stmt.index), None)
         rd_key = next((k for k in ["Research And Development", "Research & Development", "Research and Development"] if k in income_stmt.index), None)
         sga_key = next((k for k in ["Selling General And Administration", "Selling General Administrative", "Selling General and Administrative", "Selling, General and Administrative", "General And Administrative Expense"] if k in income_stmt.index), None)
-        op_inc_key = next((k for k in ["Operating Income", "Operating Profit", "EBIT"] if k in income_stmt.index), None)
+        op_inc_key = next((k for k in ["Operating Income", "Operating Profit", "EBIT", "Ebit", "Operating Profit / Loss"] if k in income_stmt.index), None)
 
         col_dates = []
         for c in income_stmt.columns:
@@ -2280,6 +2280,8 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
             rd_val = _safe_float(income_stmt.at[rd_key, c]) if rd_key else None
             sga_val = _safe_float(income_stmt.at[sga_key, c]) if sga_key else None
             op_inc_val = _safe_float(income_stmt.at[op_inc_key, c]) if op_inc_key else None
+            if op_inc_val is None and gp_val is not None and opex_val is not None:
+                op_inc_val = round(gp_val - opex_val, 2)
 
             op_margin_pct = round((op_inc_val / rev_val) * 100, 2) if (op_inc_val is not None and rev_val and rev_val > 0) else None
             opex_ratio_pct = round((opex_val / rev_val) * 100, 2) if (opex_val is not None and rev_val and rev_val > 0) else None
@@ -2294,6 +2296,7 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
                     "FE": rd_val,
                     "SGA": sga_val,
                     "Operativer_Gewinn": op_inc_val,
+                    "EBIT": op_inc_val,
                     "Operative_Marge": op_margin_pct,
                     "OpEx_Quote": opex_ratio_pct,
                     "FE_Quote": rd_ratio_pct,

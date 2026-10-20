@@ -91,6 +91,7 @@ def test_fetch_company_extended_fundamentals_gross_margin_and_valuation():
     assert oh2["OpEx_Quote"] == 40.0
     assert oh2["FE_Quote"] == 15.83
     assert oh2["SGA_Quote"] == 24.17
+    assert oh2["EBIT"] == 39_000_000_000
 
     assert result["current_price"] == 200.0
     assert result["target_mean_price"] == 240.0
@@ -177,5 +178,44 @@ def test_fetch_company_extended_fundamentals_opex_partial_sga_only():
     assert oh["FE_Quote"] is None
     assert oh["SGA"] == 13_500_000_000
     assert oh["SGA_Quote"] == 27.0
+    assert oh["Operativer_Gewinn"] == 4_000_000_000
+    assert oh["EBIT"] == 4_000_000_000
     assert oh["Operative_Marge"] == 8.0
+
+
+def test_fetch_company_extended_fundamentals_ebit_calculated_fallback():
+    """Verify that EBIT is calculated as Gross Profit - OpEx when Operating Income row is missing."""
+    mock_ticker = MagicMock()
+    mock_ticker.get_info.return_value = {
+        "longName": "Fallback Industrial SE",
+        "operatingMargins": 0.20,
+    }
+    income_df = pd.DataFrame(
+        {
+            "2024-12-31": [40_000_000_000, 20_000_000_000, 12_000_000_000],
+        },
+        index=[
+            "Total Revenue",
+            "Gross Profit",
+            "Operating Expense",
+            # Operating Income is intentionally missing
+        ],
+    )
+    mock_ticker.income_stmt = income_df
+    mock_ticker.history.return_value = pd.DataFrame()
+    mock_ticker.dividends = pd.Series(dtype=float)
+
+    with patch("yfinance.Ticker", return_value=mock_ticker):
+        result = fetch_company_extended_fundamentals("IND.DE")
+
+    assert len(result["operating_cost_history"]) == 1
+    oh = result["operating_cost_history"][0]
+    assert oh["Jahr"] == 2024
+    assert oh["OpEx"] == 12_000_000_000
+    # EBIT = Gross Profit (20 Mrd) - OpEx (12 Mrd) = 8 Mrd
+    assert oh["EBIT"] == 8_000_000_000
+    assert oh["Operativer_Gewinn"] == 8_000_000_000
+    # Operative Marge = 8 / 40 = 20.0%
+    assert oh["Operative_Marge"] == 20.0
+
 
