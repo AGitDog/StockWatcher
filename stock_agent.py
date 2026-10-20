@@ -2243,11 +2243,17 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
 
     currency = str(info.get("currency") or "EUR")
 
-    # Gross Profit & Gross Margin history
+    # Gross Profit, Gross Margin & Operating Expenses history
     gross_margin_history: list[dict[str, Any]] = []
+    operating_cost_history: list[dict[str, Any]] = []
     if income_stmt is not None and not income_stmt.empty:
         rev_key = "Total Revenue" if "Total Revenue" in income_stmt.index else ("Operating Revenue" if "Operating Revenue" in income_stmt.index else None)
         gp_key = "Gross Profit" if "Gross Profit" in income_stmt.index else None
+
+        opex_key = next((k for k in ["Operating Expense", "Total Operating Expense", "Operating Expenses"] if k in income_stmt.index), None)
+        rd_key = next((k for k in ["Research And Development", "Research & Development", "Research and Development"] if k in income_stmt.index), None)
+        sga_key = next((k for k in ["Selling General And Administration", "Selling General Administrative", "Selling General and Administrative", "Selling, General and Administrative", "General And Administrative Expense"] if k in income_stmt.index), None)
+        op_inc_key = next((k for k in ["Operating Income", "Operating Profit", "EBIT"] if k in income_stmt.index), None)
 
         col_dates = []
         for c in income_stmt.columns:
@@ -2270,8 +2276,35 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
                     "Bruttomarge": margin_pct,
                 })
 
+            opex_val = _safe_float(income_stmt.at[opex_key, c]) if opex_key else None
+            rd_val = _safe_float(income_stmt.at[rd_key, c]) if rd_key else None
+            sga_val = _safe_float(income_stmt.at[sga_key, c]) if sga_key else None
+            op_inc_val = _safe_float(income_stmt.at[op_inc_key, c]) if op_inc_key else None
+
+            op_margin_pct = round((op_inc_val / rev_val) * 100, 2) if (op_inc_val is not None and rev_val and rev_val > 0) else None
+            opex_ratio_pct = round((opex_val / rev_val) * 100, 2) if (opex_val is not None and rev_val and rev_val > 0) else None
+            rd_ratio_pct = round((rd_val / rev_val) * 100, 2) if (rd_val is not None and rev_val and rev_val > 0) else None
+            sga_ratio_pct = round((sga_val / rev_val) * 100, 2) if (sga_val is not None and rev_val and rev_val > 0) else None
+
+            if opex_val is not None or rd_val is not None or sga_val is not None or op_inc_val is not None:
+                operating_cost_history.append({
+                    "Jahr": year,
+                    "Umsatz": rev_val,
+                    "OpEx": opex_val,
+                    "FE": rd_val,
+                    "SGA": sga_val,
+                    "Operativer_Gewinn": op_inc_val,
+                    "Operative_Marge": op_margin_pct,
+                    "OpEx_Quote": opex_ratio_pct,
+                    "FE_Quote": rd_ratio_pct,
+                    "SGA_Quote": sga_ratio_pct,
+                })
+
     raw_gm = _safe_float(info.get("grossMargins"))
     gross_margin_ttm = round(raw_gm * 100, 2) if raw_gm is not None else None
+
+    raw_om = _safe_float(info.get("operatingMargins"))
+    operating_margin_ttm = round(raw_om * 100, 2) if raw_om is not None else None
 
     # Future valuation & analyst consensus
     target_mean = _safe_float(info.get("targetMeanPrice"))
@@ -2317,6 +2350,8 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
         "dividend_history": div_records,
         "gross_margin_ttm": gross_margin_ttm,
         "gross_margin_history": gross_margin_history,
+        "operating_margin_ttm": operating_margin_ttm,
+        "operating_cost_history": operating_cost_history,
         "current_price": current_price,
         "target_mean_price": target_mean,
         "target_median_price": target_median,

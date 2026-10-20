@@ -112,6 +112,34 @@ Die Detail-Box für jede Aktie soll strukturiert und aufgeräumt werden, um eine
 
 ---
 
+### 2.10 Operative Kosten (OpEx) & Aufwandsaufschlüsselung (F&E vs. SG&A)
+- **Motivation:** Zur ganzheitlichen Beurteilung der Ertragskraft reicht die Bruttomarge allein nicht aus. Die operativen Kosten (Operating Expenses / OpEx) und deren Verteilung auf Forschung & Entwicklung (F&E / R&D) sowie Vertrieb und Verwaltung (SG&A) zeigen, wie effizient ein Unternehmen skaliert, ob Skaleneffekte greifen oder Kosten ausufern.
+- **Datenquellen:**
+  - `ticker.income_stmt` (Jahresabschlüsse der letzten 4–5 Geschäftsjahre):
+    - `Operating Expense` (Operative Gesamtkosten)
+    - `Research And Development` (F&E-Kosten)
+    - `Selling General And Administration` (Vertriebs- & Verwaltungskosten)
+    - `Operating Income` / `EBIT` (Operativer Gewinn)
+    - `Total Revenue` / `Operating Revenue` (Umsatz zur Quotenberechnung)
+  - `ticker.info.get('operatingMargins')` für die aktuelle TTM-Operative-Marge.
+- **Berechnete Kennzahlen & Quoten:**
+  - Absoluter Betrag für OpEx, F&E und SG&A in Landeswährung (Mrd. / Mio.).
+  - F&E-Quote (`R&D / Total Revenue * 100`).
+  - SG&A-Quote (`SG&A / Total Revenue * 100`).
+  - Operative Gesamtkostenquote (`OpEx / Total Revenue * 100`).
+  - Historische operative Marge (`Operating Income / Total Revenue * 100`) sowie TTM-Operative-Marge.
+- **UI-Darstellung (Reiter 2: 🏢 Unternehmenswerte):**
+  - Eigener strukturierter Abschnitt **„⚙️ Operative Kosten & Aufwand (OpEx)“**.
+  - 4 Metrik-Kacheln: Operative Marge (TTM), Gesamtkosten OpEx (letztes Jahr), F&E (R&D) und Verwaltung/Vertrieb (SG&A).
+  - Gestapeltes Balkendiagramm für die jährliche Kostenentwicklung (F&E vs. SG&A).
+  - Kombinierte Jahrestabelle mit Umsatz, OpEx, F&E, SG&A, Operativer Marge (%) und OpEx-Quote (%).
+- **Ausfallsicherheit & Sonderfälle:**
+  - Banken, Versicherungen oder ETFs ohne OpEx-/F&E-Ausweis stürzen nicht ab, sondern zeigen transparente Fallbacks bzw. den Hinweis *"Keine klassischen OpEx/F&E ausgewiesen"*.
+- **Einfluss auf den Brodel-Score:**
+  - Rein informativ für die fundamentale Tiefenanalyse (keine Veränderung des Brodel-Scores).
+
+---
+
 ## 3. Architektur-Entscheidungen (ADR)
 - **ADR-001: Tab-basierte Navigation statt monolithischer Expander:**
   - *Status:* Angenommen.
@@ -134,4 +162,8 @@ Die Detail-Box für jede Aktie soll strukturiert und aufgeräumt werden, um eine
   - *Status:* Angenommen.
   - *Kontext:* Manuelle Snapshots und kurzzeitige Limits verhinderten langfristig belastbare Backtests und führten bei häufigem Klicken zu Datenfragmentierung.
   - *Entscheidung:* Automatische Speicherung bei Signal-Aktualisierung mit Ersetzung des bestehenden Eintrags bei identischem Kalendertag (UTC `YYYY-MM-DD`). Erweiterung des Rollierungs-Limits auf 3665 Snapshots (ca. 10 Jahre Historie).
+- **ADR-007: Detaillierte Extraktion operativer Kosten (OpEx, F&E, SG&A) aus Jahresabschlüssen:**
+  - *Status:* Angenommen.
+  - *Kontext:* Bruttomargen allein verdeutlichen nicht, wie viel Kapital in zukünftiges Wachstum (F&E) investiert wird oder für die Verwaltung aufgewendet werden muss.
+  - *Entscheidung:* Extraktion von `Operating Expense`, `Research And Development`, `Selling General And Administration` und `Operating Income` aus `ticker.income_stmt`. Robuste Quotenberechnung relativ zum Umsatz und Visualisierung über gestapelte Säulen-Charts im Unternehmenswerte-Tab.
 

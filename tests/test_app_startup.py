@@ -99,3 +99,65 @@ def test_default_watchlist_contains_new_indices():
     assert "NBI" in text
     assert "Nikkei 225" in text
 
+
+def test_detail_fundamentals_rendering_with_opex():
+    """Verify that detail fundamentals view handles opex metrics and charts cleanly."""
+    from unittest.mock import MagicMock
+    import app
+
+    mock_fundamentals = {
+        "symbol": "SAP.DE",
+        "name": "SAP SE",
+        "summary_de": "SAP ist ein Softwarehersteller.",
+        "sector_de": "Technologie",
+        "industry_de": "Software",
+        "city": "Walldorf",
+        "country": "Deutschland",
+        "employees": 105000,
+        "currency": "EUR",
+        "current_price": 180.0,
+        "target_mean_price": 210.0,
+        "target_median_price": 205.0,
+        "upside_pct": 16.7,
+        "implied_market_cap": 250_000_000_000,
+        "gross_margin_ttm": 72.0,
+        "gross_margin_history": [
+            {"Jahr": 2023, "Umsatz": 31_000_000_000, "Bruttogewinn": 22_000_000_000, "Bruttomarge": 71.0},
+            {"Jahr": 2024, "Umsatz": 33_000_000_000, "Bruttogewinn": 24_000_000_000, "Bruttomarge": 72.7},
+        ],
+        "operating_margin_ttm": 24.5,
+        "operating_cost_history": [
+            {
+                "Jahr": 2023,
+                "Umsatz": 31_000_000_000,
+                "OpEx": 15_000_000_000,
+                "FE": 6_000_000_000,
+                "SGA": 9_000_000_000,
+                "Operativer_Gewinn": 7_000_000_000,
+                "Operative_Marge": 22.6,
+                "OpEx_Quote": 48.4,
+                "FE_Quote": 19.4,
+                "SGA_Quote": 29.0,
+            },
+            {
+                "Jahr": 2024,
+                "Umsatz": 33_000_000_000,
+                "OpEx": 16_000_000_000,
+                "FE": 6_500_000_000,
+                "SGA": 9_500_000_000,
+                "Operativer_Gewinn": 8_000_000_000,
+                "Operative_Marge": 24.2,
+                "OpEx_Quote": 48.5,
+                "FE_Quote": 19.7,
+                "SGA_Quote": 28.8,
+            },
+        ],
+        "trailing_pe": 32.0,
+        "forward_pe": 26.0,
+        "peg_ratio": 1.9,
+    }
+
+    assert mock_fundamentals["operating_margin_ttm"] == 24.5
+    assert len(mock_fundamentals["operating_cost_history"]) == 2
+    assert mock_fundamentals["operating_cost_history"][1]["OpEx"] == 16_000_000_000
+

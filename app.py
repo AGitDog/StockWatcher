@@ -437,6 +437,100 @@ def render_watchlist_signal_monitor(mapping_text: str):
                 else:
                     st.info("Keine historischen Bruttogewinn-Daten ausgewiesen (typisch für Finanzinstitute/Banken oder ETFs).")
 
+                st.markdown("#### ⚙️ Operative Kosten & Aufwand (OpEx)")
+                op_cols = st.columns(4)
+                ttm_op_margin = ext.get("operating_margin_ttm")
+                oc_hist = ext.get("operating_cost_history", [])
+                latest_opex = oc_hist[-1]["OpEx"] if oc_hist else None
+                latest_fe = oc_hist[-1]["FE"] if oc_hist else None
+                latest_sga = oc_hist[-1]["SGA"] if oc_hist else None
+                latest_fe_quote = oc_hist[-1]["FE_Quote"] if oc_hist else None
+                latest_sga_quote = oc_hist[-1]["SGA_Quote"] if oc_hist else None
+                latest_year = oc_hist[-1]["Jahr"] if oc_hist else None
+
+                op_cols[0].metric(
+                    "Operative Marge (TTM)",
+                    f"{ttm_op_margin:.1f} %" if ttm_op_margin is not None else "n/a",
+                    help="Operative Marge (Operating Margin) der letzten 12 Monate"
+                )
+
+                if latest_opex is not None:
+                    opex_str = f"{latest_opex / 1e9:.2f} Mrd. {curr_str}" if abs(latest_opex) >= 1e9 else f"{latest_opex / 1e6:.1f} Mio. {curr_str}"
+                else:
+                    opex_str = "n/a"
+                op_cols[1].metric(
+                    f"OpEx gesamt ({latest_year})" if latest_year else "Letzte OpEx gesamt",
+                    opex_str,
+                    help="Gesamte operative Betriebskosten (Operating Expenses) des letzten Geschäftsjahres"
+                )
+
+                if latest_fe is not None:
+                    fe_str = f"{latest_fe / 1e9:.2f} Mrd. {curr_str}" if abs(latest_fe) >= 1e9 else f"{latest_fe / 1e6:.1f} Mio. {curr_str}"
+                else:
+                    fe_str = "n/a"
+                op_cols[2].metric(
+                    f"F&E / R&D ({latest_year})" if latest_year else "Forschung & Entwicklung",
+                    fe_str,
+                    delta=f"{latest_fe_quote:.1f} % v. Umsatz" if latest_fe_quote is not None else None,
+                    delta_color="off",
+                    help="Aufwendungen für Forschung und Entwicklung (Research & Development)"
+                )
+
+                if latest_sga is not None:
+                    sga_str = f"{latest_sga / 1e9:.2f} Mrd. {curr_str}" if abs(latest_sga) >= 1e9 else f"{latest_sga / 1e6:.1f} Mio. {curr_str}"
+                else:
+                    sga_str = "n/a"
+                op_cols[3].metric(
+                    f"SG&A ({latest_year})" if latest_year else "Vertrieb & Verwaltung",
+                    sga_str,
+                    delta=f"{latest_sga_quote:.1f} % v. Umsatz" if latest_sga_quote is not None else None,
+                    delta_color="off",
+                    help="Aufwendungen für Vertrieb, Verwaltung und Allgemeines (Selling, General & Administrative)"
+                )
+
+                if oc_hist and any(row.get("OpEx") is not None or row.get("FE") is not None or row.get("SGA") is not None for row in oc_hist):
+                    st.caption("Historischer Verlauf der operativen Kosten & Aufwandsaufschlüsselung:")
+                    oc_display_rows = []
+                    chart_rows = []
+                    for row in oc_hist:
+                        rev_f = f"{row['Umsatz'] / 1e9:.2f} Mrd." if row['Umsatz'] and abs(row['Umsatz']) >= 1e9 else (f"{row['Umsatz'] / 1e6:.1f} Mio." if row['Umsatz'] else "-")
+                        opex_f = f"{row['OpEx'] / 1e9:.2f} Mrd." if row['OpEx'] and abs(row['OpEx']) >= 1e9 else (f"{row['OpEx'] / 1e6:.1f} Mio." if row['OpEx'] else "-")
+                        fe_f = f"{row['FE'] / 1e9:.2f} Mrd." if row['FE'] and abs(row['FE']) >= 1e9 else (f"{row['FE'] / 1e6:.1f} Mio." if row['FE'] else "-")
+                        sga_f = f"{row['SGA'] / 1e9:.2f} Mrd." if row['SGA'] and abs(row['SGA']) >= 1e9 else (f"{row['SGA'] / 1e6:.1f} Mio." if row['SGA'] else "-")
+                        
+                        oc_display_rows.append({
+                            "Jahr": str(row["Jahr"]),
+                            f"Umsatz ({curr_str})": rev_f,
+                            f"OpEx ({curr_str})": opex_f,
+                            f"F&E ({curr_str})": fe_f,
+                            f"SG&A ({curr_str})": sga_f,
+                            "Op. Marge (%)": f"{row['Operative_Marge']:.1f} %" if row.get("Operative_Marge") is not None else "n/a",
+                            "OpEx-Quote (%)": f"{row['OpEx_Quote']:.1f} %" if row.get("OpEx_Quote") is not None else "n/a",
+                        })
+
+                        fe_val_m = (row["FE"] / 1e6) if row.get("FE") is not None else 0.0
+                        sga_val_m = (row["SGA"] / 1e6) if row.get("SGA") is not None else 0.0
+                        if fe_val_m > 0 or sga_val_m > 0:
+                            chart_rows.append({
+                                "Jahr": str(row["Jahr"]),
+                                f"F&E (Mio. {curr_str})": fe_val_m,
+                                f"SG&A (Mio. {curr_str})": sga_val_m,
+                            })
+
+                    oc_df = pd.DataFrame(oc_display_rows)
+                    occ1, occ2 = st.columns([1, 1])
+                    with occ1:
+                        st.dataframe(oc_df, use_container_width=True, hide_index=True)
+                    with occ2:
+                        if chart_rows:
+                            chart_df = pd.DataFrame(chart_rows).set_index("Jahr")
+                            st.caption(f"Aufwandssplit F&E vs. SG&A (in Mio. {curr_str}):")
+                            st.bar_chart(chart_df)
+                        else:
+                            st.info("Keine detaillierte Aufteilung in F&E / SG&A verfügbar.")
+                else:
+                    st.info("Keine klassischen operativen Kosten (OpEx / F&E) im Geschäftsbericht ausgewiesen (typisch für Banken, Versicherungen oder Finanzdienstleister).")
+
                 st.markdown("#### 📊 KGV-Analyse & Bewertung")
                 k_cols = st.columns(3)
                 curr_pe = ext.get("trailing_pe")
