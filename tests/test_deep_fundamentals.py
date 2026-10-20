@@ -219,3 +219,27 @@ def test_fetch_company_extended_fundamentals_ebit_calculated_fallback():
     assert oh["Operative_Marge"] == 20.0
 
 
+def test_fetch_company_extended_fundamentals_dividend_streak_reset_on_cut():
+    """Verify that dividend streak is 0 if the dividend rate in the current year is lower than previous year."""
+    mock_ticker = MagicMock()
+    mock_ticker.get_info.return_value = {
+        "longName": "Dividend Cut Corp",
+        "dividendRate": 1.50,  # Current rate cut down from 2.00
+        "dividendYield": 0.03,
+    }
+    mock_ticker.income_stmt = pd.DataFrame()
+    mock_ticker.history.return_value = pd.DataFrame()
+    
+    # 4 years of increases: 2021: 1.00, 2022: 1.20, 2023: 1.50, 2024: 2.00
+    div_idx = pd.to_datetime(["2021-06-01", "2022-06-01", "2023-06-01", "2024-06-01"])
+    mock_ticker.dividends = pd.Series([1.00, 1.20, 1.50, 2.00], index=div_idx)
+
+    with patch("yfinance.Ticker", return_value=mock_ticker):
+        result = fetch_company_extended_fundamentals("CUT.DE")
+
+    # Because current dividendRate (1.50) < 2024 dividend (2.00), streak must be 0!
+    assert result["dividend_streak_years"] == 0
+    assert result["dividend_rate"] == 1.50
+
+
+

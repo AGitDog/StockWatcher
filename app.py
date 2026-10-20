@@ -94,134 +94,102 @@ def build_score_history_frame(history: list[dict[str, object]]) -> pd.DataFrame:
     return frame.sort_values(["timestamp", "symbol"])
 
 
-def render_watchlist_signal_monitor(mapping_text: str):
-    st.subheader("Signal Monitor V2")
-    st.write(
-        "V2 priorisiert die Watchlist nach 9 Fruehsignalen: EPS-Revisionen, Kursziel-Potenzial & Konsens, "
-        "News-Sentiment, Preis/Volumen-Verhalten, Event-Naehe, Insider-Aktivitaet, Short Interest, Relative Staerke und Fundamentaldaten."
-    )
-
+def execute_signal_calculation(mapping_text: str = ""):
+    """Berechnet die Fruehsignale fuer alle Eintraege der Hintergrund-Watchlist und speichert einen Tages-Snapshot."""
     if "watchlist_text" not in st.session_state or not st.session_state.get("watchlist_text", "").strip():
         default_name, default_text = load_default_watchlist_text()
         st.session_state.watchlist_text = default_text
         st.session_state.active_watchlist_name = default_name
 
-    active_name = st.session_state.get("active_watchlist_name", DEFAULT_WATCHLIST_NAME)
-    st.caption(f"Aktive Watchlist im Hintergrund: `{active_name}` (wird automatisch aus `watchlists/` verwaltet)")
+    watchlist_content = st.session_state.get("watchlist_text", "").strip()
+    if not watchlist_content:
+        default_name, default_text = load_default_watchlist_text()
+        watchlist_content = default_text.strip()
+        st.session_state.watchlist_text = default_text
+        st.session_state.active_watchlist_name = default_name
 
-    if st.button("Signale aktualisieren"):
-        watchlist_content = st.session_state.get("watchlist_text", "").strip()
-        if not watchlist_content:
-            default_name, default_text = load_default_watchlist_text()
-            watchlist_content = default_text.strip()
-            st.session_state.watchlist_text = default_text
-            st.session_state.active_watchlist_name = default_name
+    if not watchlist_content:
+        st.warning("Die Watchlist-Datei `watchlists/meine_watchlist.txt` ist leer oder nicht vorhanden.")
+        return
 
-        if not watchlist_content:
-            st.warning("Die Watchlist-Datei `watchlists/meine_watchlist.txt` ist leer oder nicht vorhanden.")
+    with st.spinner("Berechne Fruehsignale & Tages-Snapshot..."):
+        entries = parse_watchlist_text(st.session_state.watchlist_text)
+        symbol_mappings = parse_symbol_mappings(mapping_text or load_mapping_text())
+        
+        if not entries:
+            st.warning("Es wurden keine gueltigen Symbole gefunden.")
             return
+            
+        progress_bar = st.progress(0, text="Lade Signale...")
+        raw_results = []
+        
+        for i, entry in enumerate(entries):
+            progress_bar.progress((i) / len(entries), text=f"Lade Signale für {entry} ({i}/{len(entries)})...")
+            item = get_symbol_signal_monitor(entry, symbol_mappings)
+            raw_results.append(item)
+        
+        progress_bar.progress(1.0, text="Berechnung Peer-Kontext...")
+        
+        enriched_results = add_watchlist_peer_context(raw_results)
+        strategy_results = build_strategy_signals(enriched_results)
+        
+        trainer = load_trained_weights()
+        for item in strategy_results:
+            item["ml_score"] = round(trainer.predict_score(item), 2)
+        
+        st.session_state.signal_monitor_items = sorted(
+            strategy_results,
+            key=lambda x: x.get("ml_score", x.get("brodel_score", 0)),
+            reverse=True,
+        )
+        watchlist_name = st.session_state.get("active_watchlist_name", DEFAULT_WATCHLIST_NAME)
+        st.session_state.signal_monitor_watchlist_name = watchlist_name
+        save_signal_snapshot(watchlist_name, st.session_state.signal_monitor_items)
+        progress_bar.empty()
+        st.success("Frühsignale erfolgreich berechnet und als Tages-Snapshot gespeichert!")
 
-        with st.spinner("Berechne V2-Fruehsignale..."):
-            entries = parse_watchlist_text(st.session_state.watchlist_text)
-            symbol_mappings = parse_symbol_mappings(mapping_text or "")
-            
-            if not entries:
-                st.warning("Es wurden keine gueltigen Symbole gefunden.")
-                return
-                
-            progress_bar = st.progress(0, text="Lade Signale...")
-            live_table = st.empty()
-            raw_results = []
-            
-            for i, entry in enumerate(entries):
-                progress_bar.progress((i) / len(entries), text=f"Lade Signale für {entry} ({i}/{len(entries)})...")
-                item = get_symbol_signal_monitor(entry, symbol_mappings)
-                raw_results.append(item)
-                
-                # Show live updates without peer context yet
-                temp_rows = []
-                for tmp_item in raw_results:
-                    temp_rows.append({
-                        "Symbol": tmp_item["symbol"],
-                        "Name": tmp_item["name"],
-                        "Sektor": "Berechne...",
-                        "Brodel-Score": tmp_item["brodel_score"],
-                        "Vs. Sektor": 0,
-                        "Sektor-Rang": "-",
-                        "Top-Signal": tmp_item["signal_items"][0] if tmp_item["signal_items"] else "Keine Signale",
-                    })
-                live_table.dataframe(pd.DataFrame(temp_rows), use_container_width=True, hide_index=True)
-            
-            progress_bar.progress(1.0, text="Berechnung Peer-Kontext...")
-            
-            # Final calculation with peer context and strategy signals
-            enriched_results = add_watchlist_peer_context(raw_results)
-            strategy_results = build_strategy_signals(enriched_results)
-            
-            # Apply ML weights if available
-            trainer = load_trained_weights()
-            for item in strategy_results:
-                item["ml_score"] = round(trainer.predict_score(item), 2)
-            
-            st.session_state.signal_monitor_items = sorted(
-                strategy_results,
-                key=lambda x: x.get("ml_score", x.get("brodel_score", 0)),
-                reverse=True,
+
+def render_watchlist_signal_monitor(mapping_text: str):
+    st.subheader("🔥 Signal Monitor")
+
+    with st.expander("ℹ️ Über diesen StockWatcher – Mission & Prinzipien", expanded=False):
+        ec1, ec2 = st.columns(2)
+        with ec1:
+            st.markdown("##### 🎯 Was dieser Monitor leistet")
+            st.markdown(
+                "- **Systematische Früherkennung:** Scannt Aktien kontinuierlich nach 9 objektiven Frühindikatoren (Brodel-Score).\n"
+                "- **Akkumulation & Smart Money:** Erkennt anziehendes Volumen, relative Stärke gegen die Benchmark und Insider-Käufe.\n"
+                "- **Fundamentale Dynamik:** Verbindet Gewinnschätzungen und Analysten-Kursziele mit operativer Ertragskraft (Bruttomarge, EBIT, OpEx)."
             )
-            watchlist_name = st.session_state.get("active_watchlist_name", DEFAULT_WATCHLIST_NAME)
-            st.session_state.signal_monitor_watchlist_name = watchlist_name
-            # Automatisch als Tages-Snapshot abspeichern (idempotent)
-            save_signal_snapshot(watchlist_name, st.session_state.signal_monitor_items)
-            
-            progress_bar.empty()
-            live_table.empty()
+        with ec2:
+            st.markdown("##### ⛔ Was dieser Monitor NICHT ist")
+            st.markdown(
+                "- **Keine Anlageberatung:** Keine Handlungsaufforderungen oder Kauf-/Verkaufsempfehlungen im Sinne des WpHG.\n"
+                "- **Kein Hype-Trading:** Keine spekulativen Social-Media-Gerüchte; rein quantitative Datenbasis.\n"
+                "- **Keine Glaskugel:** Marktentwicklungen unterliegen Risiken; Signale dienen der qualifizierten Vorselektion."
+            )
+
+    active_name = st.session_state.get("active_watchlist_name", DEFAULT_WATCHLIST_NAME)
 
     if "signal_monitor_items" not in st.session_state:
-        current_watchlist = st.session_state.get("active_watchlist_name", DEFAULT_WATCHLIST_NAME)
-        history = load_signal_snapshot_history(current_watchlist)
+        history = load_signal_snapshot_history(active_name)
         if history:
             st.session_state.signal_monitor_items = history[-1].get("items", [])
-            st.session_state.signal_monitor_watchlist_name = current_watchlist
+            st.session_state.signal_monitor_watchlist_name = active_name
 
     signal_items = st.session_state.get("signal_monitor_items", [])
     if not signal_items:
-        st.info("Noch kein Signal Monitor vorhanden. Starte die Analyse mit 'Signale aktualisieren'.")
+        st.info("Noch kein Signal-Snapshot vorhanden. Starte die Berechnung im Tab 'Backtest & ML' unter '⚙️ Datenpflege & Signal-Snapshot erstellen'.")
         return
 
-    st.success(f"{len(signal_items)} Symbole mit V2-Signalprofil berechnet.")
-
-    watchlist_name = st.session_state.get("signal_monitor_watchlist_name", st.session_state.get("active_watchlist_name", DEFAULT_WATCHLIST_NAME))
-    history = load_signal_snapshot_history(watchlist_name)
+    history = load_signal_snapshot_history(active_name)
     score_history = build_score_history_frame(history)
 
-    st.caption(f"Snapshot-Historie: {len(history)} gespeicherte Tages-Snapshots für `{watchlist_name}`")
+    m_stat1, m_stat2, m_stat3 = st.columns(3)
+    m_stat1.caption(f"Watchlist: `{active_name}`")
+    m_stat2.caption(f"Analysierte Werte: **{len(signal_items)} Symbole**")
+    m_stat3.caption(f"Snapshot-Historie: **{len(history)} Tage**")
 
-    st.markdown("**Strategie-Signale & Handlungsempfehlungen**")
-    strategy_rows = []
-    for item in signal_items:
-        best = item.get("best_strategy")
-        if best:
-            strategy_rows.append(
-                {
-                    "Symbol": item["symbol"],
-                    "Name": item["name"],
-                    "Setup": best.get("setup", "-"),
-                    "Strategie": best.get("strategy_name", "-"),
-                    "Richtung": best.get("direction", "-"),
-                    "Konfidenz": f"{best.get('confidence', 0):.0%}",
-                    "Einstieg": best.get("entry_price"),
-                    "Stop-Loss": best.get("stop_loss"),
-                    "Take-Profit": best.get("take_profit"),
-                    "Pos.-Grösse": f"{best.get('position_size_pct', 0):.1%}",
-                    "Begründung": best.get("rationale", "")[:80] + "...",
-                }
-            )
-    if strategy_rows:
-        st.dataframe(pd.DataFrame(strategy_rows), use_container_width=True, hide_index=True)
-    else:
-        st.info("Keine klaren Strategie-Setups in der aktuellen Watchlist erkannt.")
-
-    st.markdown("**Alle Signale in der Uebersicht (detailliert)**")
     table_rows = []
     for item in signal_items:
         peer_context = item.get("peer_context", {})
@@ -248,23 +216,50 @@ def render_watchlist_signal_monitor(mapping_text: str):
             }
         )
 
-    st.dataframe(pd.DataFrame(table_rows), use_container_width=True, hide_index=True)
+    selection = st.dataframe(
+        pd.DataFrame(table_rows),
+        use_container_width=True,
+        hide_index=True,
+        on_select="rerun",
+        selection_mode="single-row",
+        key="main_signals_table",
+    )
+
+    selected_row_idx = 0
+    if selection and selection.get("selection", {}).get("rows"):
+        clicked_idx = selection["selection"]["rows"][0]
+        if 0 <= clicked_idx < len(signal_items):
+            selected_row_idx = clicked_idx
+            st.session_state["active_selected_symbol"] = signal_items[clicked_idx]["symbol"]
+    elif "active_selected_symbol" in st.session_state:
+        stored_sym = st.session_state["active_selected_symbol"]
+        for idx, it in enumerate(signal_items):
+            if it["symbol"] == stored_sym:
+                selected_row_idx = idx
+                break
 
     st.markdown("---")
     st.subheader("🔍 Detail-Analyse")
-    st.write("Waehle eine Aktie aus der Tabelle, um die genauen Fruehsignale und Peer-Vergleiche zu sehen.")
+    st.write("Klicke direkt auf eine Zeile in der Tabelle oben oder wähle eine Aktie aus:")
     
     options = [f"{item['symbol']} - {item['name']} (Score: {item['brodel_score']})" for item in signal_items]
-    selected_option = st.selectbox("Aktie suchen", options=options, index=0 if options else None)
+    selected_option = st.selectbox("Aktie suchen", options=options, index=selected_row_idx if options else None)
     
     if selected_option:
         selected_symbol = selected_option.split(" - ")[0]
+        st.session_state["active_selected_symbol"] = selected_symbol
         item = next((i for i in signal_items if i["symbol"] == selected_symbol), None)
         
         if item:
-            st.markdown(f"### {item['symbol']} - {item['name']} | Brodel-Score: {item['brodel_score']}")
-            if item["resolved"]:
-                st.caption(f"Eingabe: {item['input_name']} | {item['resolution_note']}")
+            head_col1, head_col2 = st.columns([3, 1])
+            with head_col1:
+                st.markdown(f"### {item['symbol']} - {item['name']} | Brodel-Score: {item['brodel_score']}")
+                if item["resolved"]:
+                    st.caption(f"Eingabe: {item['input_name']} | {item['resolution_note']}")
+            with head_col2:
+                if st.button(f"🔄 Daten für {item['symbol']} neu laden", key=f"btn_refresh_{item['symbol']}"):
+                    get_extended_fundamentals.clear(item["symbol"])
+                    st.rerun()
 
             # Extended Fundamentals & Profile
             with st.spinner("Lade Unternehmenszahlen & Profil..."):
@@ -552,10 +547,9 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     st.info("Keine klassischen operativen Kosten (OpEx / F&E) im Geschäftsbericht ausgewiesen (typisch für Banken, Versicherungen oder Finanzdienstleister).")
 
                 st.markdown("#### 📊 KGV-Analyse & Bewertung")
-                k_cols = st.columns(3)
+                k_cols = st.columns(2)
                 curr_pe = ext.get("trailing_pe")
                 fwd_pe = ext.get("forward_pe")
-                peg = ext.get("peg_ratio")
                 k_cols[0].metric(
                     "Aktuelles KGV (Trailing)",
                     f"{curr_pe:.1f}" if curr_pe else "n/a",
@@ -566,23 +560,19 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     f"{fwd_pe:.1f}" if fwd_pe else "n/a",
                     help="Erwartetes KGV auf Basis von Analystenschaetzungen",
                 )
-                k_cols[2].metric(
-                    "PEG-Verhaeltnis",
-                    f"{peg:.2f}" if peg else "n/a",
-                    help="Price/Earnings to Growth Ratio",
-                )
 
                 pe_trend = ext.get("pe_trend", [])
                 if pe_trend:
-                    st.caption("KGV-Trend der letzten Geschaeftsjahre (gepruefte Jahres-EPS und historische Jahresendkurse):")
+                    st.caption("Historischer KGV-Verlauf der letzten Geschäftsjahre:")
                     pe_df = pd.DataFrame(pe_trend)
+                    disp_cols = [c for c in ["Jahr", "Kurs", "KGV"] if c in pe_df.columns]
                     pe_c1, pe_c2 = st.columns([2, 1])
                     with pe_c1:
                         chart_pe = pe_df.dropna(subset=["KGV"]).set_index("Jahr")[["KGV"]]
                         if not chart_pe.empty:
                             st.line_chart(chart_pe)
                     with pe_c2:
-                        st.dataframe(pe_df, use_container_width=True, hide_index=True)
+                        st.dataframe(pe_df[disp_cols] if disp_cols else pe_df, use_container_width=True, hide_index=True)
                 else:
                     st.info("Keine historischen KGV-Jahresabschluesse fuer diesen Titel verfuegbar.")
 
@@ -882,6 +872,15 @@ def render_help_tab():
 
 
 def render_backtest_tab():
+    with st.expander("⚙️ Datenpflege: Signal-Snapshot manuell erstellen", expanded=False):
+        st.write(
+            "Berechnet die aktuellen Frühsignale für alle Aktien der Hintergrund-Watchlist (`watchlists/meine_watchlist.txt`) "
+            "und speichert einen tagesaktuellen Snapshot für den Signal Monitor, Backtests und ML-Training."
+        )
+        if st.button("Signale jetzt neu berechnen & Snapshot speichern", use_container_width=True):
+            execute_signal_calculation()
+            st.rerun()
+
     st.subheader("Event-Backtest: Punktebereich-Eintritt")
     st.write(
         "Kauft alle Aktien genau an dem Tag, an dem sie in einen definierten Punktebereich eintreten, "
@@ -1050,12 +1049,12 @@ def render_backtest_tab():
 
 
 def render_stock_agent():
-    st.title("Aktien-Agent")
-    st.caption("Watchlist-Monitor fuer Marktveraenderungen, Fruehsignale und priorisierte Beobachtung.")
+    st.title("🔥 PCS NEO – StockWatcher")
+    st.caption("Quantitative Marktbeobachtung, Brodel-Frühsignale & fundamentale Unternehmensanalysen")
 
     mapping_text = load_mapping_text()
 
-    stock_tabs = st.tabs(["Signal Monitor V2", "Backtest & ML", "Hilfe & Methodik"])
+    stock_tabs = st.tabs(["🔥 Signal Monitor", "Backtest & ML", "Hilfe & Methodik"])
     with stock_tabs[0]:
         render_watchlist_signal_monitor(mapping_text)
     with stock_tabs[1]:

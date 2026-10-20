@@ -141,6 +141,29 @@ Die Detail-Box für jede Aktie soll strukturiert und aufgeräumt werden, um eine
 
 ---
 
+### 2.11 UI-Veredelung, Tabellen-Klick-Navigation & Trennung von Monitor und Pflege (Sprint 5)
+- **Motivation:** Das Dashboard soll sich wie eine state-of-the-art Investment-Plattform anfühlen. Unnötige Versionsbezeichnungen ("V2"), störende Berechnungs-Buttons im Monitoring-View und statische Auswahllisten behindern den schnellen Workflow.
+- **Interaktive Tabellen-Selektion:**
+  - Die Haupttabelle (`st.dataframe`) unterstützt native Zeilenauswahl (`on_select="rerun"`, `selection_mode="single-row"`).
+  - Ein Klick auf eine beliebige Aktienzeile in der Tabelle aktualisiert sofort die Detail-Box auf dieses Symbol und synchronisiert die Auswahlliste.
+- **Hero-Bereich & klares Mission Statement:**
+  - Aufgepeppter Header mit System-Badges (Snapshots, Symbole, Status).
+  - Einklappbares Onboarding-Banner:
+    - **Was der StockWatcher tut:** Systematische Suche nach positiven Brodel-Veränderungen, Akkumulation, EPS-Revisionen, Insider-Käufen und relativem Momentum.
+    - **Was der StockWatcher NICHT tut:** Keine Anlageberatung, kein Hype-Trading, keine Glaskugel.
+- **Entlastung des Signal Monitors:**
+  - Der manuelle Button *"Signale aktualisieren"* wird aus dem Signal Monitor in den Tab *"Backtest & ML"* verlagert. Der Signal Monitor dient rein der schnellen, verzögerungsfreien Inspektion.
+  - Der vorläufige Block *"Strategie-Signale & Handlungsempfehlungen"* wird aus dem Signal Monitor entfernt.
+  - Tab-Name wird von `"Signal Monitor V2"` in `"🔥 Signal Monitor"` vereinfacht.
+- **Bereinigung von PEG und EPS in Tab 2 (Unternehmenswerte):**
+  - PEG-Ratio und EPS-Historie werden aus Tab 2 entfernt; Fokus liegt rein auf KGV (Trailing & Forward), Bruttomarge, EBIT und OpEx. In Tab 1 bleibt das Fruehsignal für EPS-Revisionen unberührt.
+- **Korrektur Dividenden-Steigerungslogik:**
+  - Die Serie der jährlichen Dividendenerhöhungen (Streak) bezieht das aktuelle Kalenderjahr / TTM mit ein. Liegt die Ausschüttung des laufenden Jahres unter dem Vorjahr, wird der Streak sofort auf `0` gesetzt.
+- **Cache-Refresh:**
+  - Bereitstellung einer Funktion zur gezielten Invalidierung und Neuabfrage von Einzelwerten in der Detailbox.
+
+---
+
 ## 3. Architektur-Entscheidungen (ADR)
 - **ADR-001: Tab-basierte Navigation statt monolithischer Expander:**
   - *Status:* Angenommen.
@@ -167,4 +190,8 @@ Die Detail-Box für jede Aktie soll strukturiert und aufgeräumt werden, um eine
   - *Status:* Angenommen.
   - *Kontext:* Bruttomargen allein verdeutlichen nicht, wie viel Kapital in zukünftiges Wachstum (F&E) investiert wird oder für die Verwaltung aufgewendet werden muss.
   - *Entscheidung:* Extraktion von `Operating Expense`, `Research And Development`, `Selling General And Administration` und `Operating Income` aus `ticker.income_stmt`. Robuste Quotenberechnung relativ zum Umsatz und Visualisierung über gestapelte Säulen-Charts im Unternehmenswerte-Tab.
+- **ADR-008: Read-Only Signal Monitor mit Event-basierter Zeilenselektion & strikter Trennung von Berechnungs-Jobs:**
+  - *Status:* Angenommen.
+  - *Kontext:* Das Triggern manueller Berechnungen direkt im Monitor verlangsamt die Nutzung und erzeugt Fehlbedienungen. Ebenso war die Auswahl von Detailaktien über eine separate Dropdown-Liste unkomfortabel.
+  - *Entscheidung:* Der Signal Monitor lädt standardmäßig direkt den letzten Snapshot im Read-Only-Modus. Zeilenklicks in `st.dataframe` steuern per Session-State direkt die Detail-Box. Manuelle Neuberechnungen werden in den Reiter `Backtest & ML` verschoben.
 

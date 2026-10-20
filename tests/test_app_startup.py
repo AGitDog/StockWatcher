@@ -87,7 +87,7 @@ def test_render_stock_agent_layout():
          patch("app.render_backtest_tab"), \
          patch("app.render_help_tab"):
         app.render_stock_agent()
-        mock_tabs.assert_called_once_with(["Signal Monitor V2", "Backtest & ML", "Hilfe & Methodik"])
+        mock_tabs.assert_called_once_with(["🔥 Signal Monitor", "Backtest & ML", "Hilfe & Methodik"])
 
 
 def test_default_watchlist_contains_new_indices():

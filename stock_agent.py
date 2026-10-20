@@ -2222,11 +2222,6 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
                     })
 
                 completed_years = [y for y in all_years if y < current_year]
-                for j in range(len(completed_years) - 1, 0, -1):
-                    if annual_divs.loc[completed_years[j]] > annual_divs.loc[completed_years[j - 1]]:
-                        streak_years += 1
-                    else:
-                        break
             div_records.sort(key=lambda x: x["Jahr"])
         except Exception:
             pass
@@ -2240,6 +2235,38 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
     div_rate = _safe_float(info.get("dividendRate")) or _safe_float(info.get("trailingAnnualDividendRate"))
     if div_rate is None and div_records:
         div_rate = div_records[-1]["Dividende"]
+
+    # Calculate dividend increase streak (resets to 0 if reduced in current year)
+    streak_years = 0
+    if divs is not None and not divs.empty:
+        try:
+            div_series = divs.iloc[:, 0] if isinstance(divs, pd.DataFrame) else divs
+            annual_divs = div_series.groupby(div_series.index.year).sum()
+            all_years = [int(y) for y in annual_divs.index if int(y) <= current_year]
+            completed_years = [y for y in all_years if y < current_year]
+
+            has_cut_in_current_year = False
+            if completed_years and div_rate is not None:
+                last_completed_year = completed_years[-1]
+                prev_completed_val = float(annual_divs.loc[last_completed_year])
+                if prev_completed_val > 0 and div_rate < prev_completed_val:
+                    has_cut_in_current_year = True
+
+            if not has_cut_in_current_year and completed_years:
+                last_completed_year = completed_years[-1]
+                prev_completed_val = float(annual_divs.loc[last_completed_year])
+                if div_rate is not None and div_rate > prev_completed_val:
+                    streak_years = 1
+                else:
+                    streak_years = 0
+
+                for j in range(len(completed_years) - 1, 0, -1):
+                    if annual_divs.loc[completed_years[j]] > annual_divs.loc[completed_years[j - 1]]:
+                        streak_years += 1
+                    else:
+                        break
+        except Exception:
+            pass
 
     currency = str(info.get("currency") or "EUR")
 
