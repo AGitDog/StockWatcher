@@ -1,4 +1,4 @@
- [PCS NEO – StockWatcher]
+# 🔥 Brodel-Radar – Quantitative Marktbeobachtung
 
 Eine KI-unterstützte Streamlit-App zur Aktienüberwachung mit Signal-Monitor (Brodel-Score), Watchlists, Detail-Analysen und automatisierten täglichen Signal-Snapshots.
 

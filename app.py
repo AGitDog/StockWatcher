@@ -1049,8 +1049,8 @@ def render_backtest_tab():
 
 
 def render_stock_agent():
-    st.title("🔥 PCS NEO – StockWatcher")
-    st.caption("Quantitative Marktbeobachtung, Brodel-Frühsignale & fundamentale Unternehmensanalysen")
+    st.title("🔥 Brodel-Radar – Quantitative Marktbeobachtung")
+    st.caption("Frühwarnsignale, Akkumulation & fundamentale Unternehmensanalysen")
 
     mapping_text = load_mapping_text()
 

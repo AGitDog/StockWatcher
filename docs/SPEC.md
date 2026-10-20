@@ -1,4 +1,4 @@
-# PCS NEO – StockWatcher: System-Spezifikation (SPEC.md)
+# 🔥 Brodel-Radar – Quantitative Marktbeobachtung: System-Spezifikation (SPEC.md)
 
 ## 1. Architektur & Guardrails
 - **Tech-Stack:** Streamlit, Python 3.12, Pandas, yfinance, Plotly / Altair.

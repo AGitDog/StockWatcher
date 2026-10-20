@@ -1,4 +1,4 @@
-# PCS NEO Dashboard
+# 🔥 Brodel-Radar – Quantitative Marktbeobachtung
 
 Dieses Repository enthaelt eine Streamlit-Anwendung fuer einen Aktien-Agenten, der Watchlists aus Textdateien einliest und pro Aktie oder ETF Kurzlagen, Alerts und Fruehsignale erzeugt.
 
