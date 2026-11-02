@@ -8,6 +8,7 @@ from stock_agent import (
     parse_symbol_mappings,
     build_symbol_signal_monitor,
     add_watchlist_peer_context,
+    primary_score,
     save_signal_snapshot,
     DEFAULT_MAPPING_FILE,
     DEFAULT_WATCHLIST_DIR
@@ -70,7 +71,7 @@ def run_update():
             
     print("Applying peer context...", flush=True)
     enriched_results = add_watchlist_peer_context(raw_results)
-    sorted_results = sorted(enriched_results, key=lambda x: x.get("brodel_score", 0), reverse=True)
+    sorted_results = sorted(enriched_results, key=primary_score, reverse=True)
     
     print("Saving snapshot...", flush=True)
     snapshot_path = save_signal_snapshot(watchlist_name, sorted_results)

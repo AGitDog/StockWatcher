@@ -14,6 +14,11 @@ from stock_agent import (
     parse_watchlist_text,
     parse_symbol_mappings,
     add_watchlist_peer_context,
+    BRODEL_V1_MAX_POINTS,
+    BRODEL_V2_MAX_POINTS,
+    BUYBACK_COMPONENT_NAME,
+    ensure_brodel_v2,
+    primary_score,
     summarize_index_entries,
     get_supported_indices,
     list_watchlist_files,
@@ -110,16 +115,79 @@ def build_score_history_frame(history: list[dict[str, object]]) -> pd.DataFrame:
                     "timestamp": timestamp,
                     "symbol": item.get("symbol"),
                     "name": item.get("name"),
+                    "brodel_score_v2": ensure_brodel_v2(dict(item)).get("brodel_score_v2", 0),
                     "brodel_score": item.get("brodel_score", 0),
                 }
             )
 
     if not rows:
-        return pd.DataFrame(columns=["timestamp", "symbol", "name", "brodel_score"])
+        return pd.DataFrame(columns=["timestamp", "symbol", "name", "brodel_score_v2", "brodel_score"])
 
     frame = pd.DataFrame(rows)
     frame["timestamp"] = pd.to_datetime(frame["timestamp"], errors="coerce")
     return frame.sort_values(["timestamp", "symbol"])
+
+
+V2_TABLE_COLUMNS = [
+    ("EPS", "EPS-Revisionen"),
+    ("Kursziel", "Kursziele & Konsens"),
+    ("P/V", "Preis/Volumen"),
+    ("News", "News-Sentiment"),
+    ("Event", "Event-Druck"),
+    ("Insider", "Insider-Aktivitaet"),
+    ("Short", "Short Interest"),
+    ("Rel.St.", "Relative Staerke"),
+    ("Fundam.", "Fundamentale Bewertung"),
+    ("Tech.", "Technische Indikatoren"),
+    ("Rückkauf", BUYBACK_COMPONENT_NAME),
+]
+
+
+def prepare_signal_items(items: list[dict]) -> list[dict]:
+    """Make sure every item carries Brodel 2.0 and sort by it (best first)."""
+    prepared = [ensure_brodel_v2(dict(item)) for item in items if isinstance(item, dict)]
+    return sorted(prepared, key=primary_score, reverse=True)
+
+
+def build_signal_table_rows(signal_items: list[dict]) -> list[dict]:
+    """Rows for the main table: Brodel 2.0 and its points first, Brodel 1.0 as the last column."""
+    rows = []
+    for item in signal_items:
+        peer_context = item.get("peer_context", {})
+        breakdown_v2 = item.get("signal_breakdown_v2", {})
+        row = {
+            "Symbol": item["symbol"],
+            "Name": item["name"],
+            "Sektor": peer_context.get("sector", "Unbekannt"),
+            "Brodel 2.0": primary_score(item),
+            "ML-Score": item.get("ml_score", item.get("brodel_score", 0)),
+        }
+        for label, component_name in V2_TABLE_COLUMNS:
+            row[label] = breakdown_v2.get(component_name, {}).get("score", 0)
+        row["Vs. Sektor"] = peer_context.get("score_vs_sector", 0)
+        row["Rang"] = f"{peer_context.get('sector_rank', 1)}/{peer_context.get('sector_count', 1)}"
+        row["Brodel 1.0"] = item.get("brodel_score", 0)
+        rows.append(row)
+    return rows
+
+
+def build_breakdown_rows(item: dict) -> list[dict]:
+    """Component table of the detail view with the points of both versions."""
+    breakdown_v1 = item.get("signal_breakdown", {}) or {}
+    breakdown_v2 = item.get("signal_breakdown_v2", {}) or {}
+    rows = []
+    for name, max_v2 in BRODEL_V2_MAX_POINTS.items():
+        component_v2 = breakdown_v2.get(name, {})
+        component_v1 = breakdown_v1.get(name, {})
+        rows.append({
+            "Komponente": name,
+            "Punkte 2.0": component_v2.get("score", 0),
+            "Max 2.0": max_v2,
+            "Punkte 1.0": component_v1.get("score", 0) if name in BRODEL_V1_MAX_POINTS else None,
+            "Max 1.0": BRODEL_V1_MAX_POINTS.get(name),
+            "Detail": component_v2.get("summary") or component_v1.get("summary", ""),
+        })
+    return rows
 
 
 def execute_signal_calculation(mapping_text: str = ""):
@@ -165,11 +233,7 @@ def execute_signal_calculation(mapping_text: str = ""):
         for item in strategy_results:
             item["ml_score"] = round(trainer.predict_score(item), 2)
         
-        st.session_state.signal_monitor_items = sorted(
-            strategy_results,
-            key=lambda x: x.get("ml_score", x.get("brodel_score", 0)),
-            reverse=True,
-        )
+        st.session_state.signal_monitor_items = prepare_signal_items(strategy_results)
         watchlist_name = st.session_state.get("active_watchlist_name", DEFAULT_WATCHLIST_NAME)
         st.session_state.signal_monitor_watchlist_name = watchlist_name
         save_signal_snapshot(watchlist_name, st.session_state.signal_monitor_items)
@@ -185,7 +249,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
         with ec1:
             st.markdown("##### 🎯 Was dieser Monitor leistet")
             st.markdown(
-                "- **Systematische Früherkennung:** Scannt Aktien kontinuierlich nach 9 objektiven Frühindikatoren (Brodel-Score).\n"
+                "- **Systematische Früherkennung:** Scannt Aktien kontinuierlich nach 11 objektiven Frühindikatoren (Brodel-Score 2.0).\n"
                 "- **Akkumulation & Smart Money:** Erkennt anziehendes Volumen, relative Stärke gegen die Benchmark und Insider-Käufe.\n"
                 "- **Fundamentale Dynamik:** Verbindet Gewinnschätzungen und Analysten-Kursziele mit operativer Ertragskraft (Bruttomarge, EBIT, OpEx)."
             )
@@ -205,7 +269,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
             st.session_state.signal_monitor_items = history[-1].get("items", [])
             st.session_state.signal_monitor_watchlist_name = active_name
 
-    signal_items = st.session_state.get("signal_monitor_items", [])
+    signal_items = prepare_signal_items(st.session_state.get("signal_monitor_items", []))
     if not signal_items:
         st.info("Noch kein Signal-Snapshot vorhanden. Starte die Berechnung im Tab 'Backtest & ML' unter '⚙️ Datenpflege & Signal-Snapshot erstellen'.")
         return
@@ -218,31 +282,11 @@ def render_watchlist_signal_monitor(mapping_text: str):
     m_stat2.caption(f"Analysierte Werte: **{len(signal_items)} Symbole**")
     m_stat3.caption(f"Snapshot-Historie: **{len(history)} Tage**")
 
-    table_rows = []
-    for item in signal_items:
-        peer_context = item.get("peer_context", {})
-        breakdown = item.get("signal_breakdown", {})
-        table_rows.append(
-            {
-                "Symbol": item["symbol"],
-                "Name": item["name"],
-                "Sektor": peer_context.get("sector", "Unbekannt"),
-                "Brodel": item.get("brodel_score", 0),
-                "ML-Score": item.get("ml_score", item.get("brodel_score", 0)),
-                "EPS": breakdown.get("EPS-Revisionen", {}).get("score", 0),
-                "Kursziel": breakdown.get("Kursziele & Konsens", {}).get("score", 0),
-                "P/V": breakdown.get("Preis/Volumen", {}).get("score", 0),
-                "News": breakdown.get("News-Sentiment", {}).get("score", 0),
-                "Event": breakdown.get("Event-Druck", {}).get("score", 0),
-                "Insider": breakdown.get("Insider-Aktivitaet", {}).get("score", 0),
-                "Short": breakdown.get("Short Interest", {}).get("score", 0),
-                "Rel.St.": breakdown.get("Relative Staerke", {}).get("score", 0),
-                "Fundam.": breakdown.get("Fundamentale Bewertung", {}).get("score", 0),
-                "Tech.": breakdown.get("Technische Indikatoren", {}).get("score", 0),
-                "Vs. Sektor": peer_context.get("score_vs_sector", 0),
-                "Rang": f"{peer_context.get('sector_rank', 1)}/{peer_context.get('sector_count', 1)}",
-            }
-        )
+    st.caption(
+        "Sortiert nach **Brodel 2.0**. Die Punkte der Einzelspalten sind 2.0-Punkte. "
+        "Der alte **Brodel 1.0** steht zum Vergleich in der letzten Spalte."
+    )
+    table_rows = build_signal_table_rows(signal_items)
 
     active_sym = st.session_state.get("active_selected_symbol")
     if not active_sym and signal_items:
@@ -270,7 +314,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
     st.subheader("🔍 Detail-Analyse")
     st.write("Klicke direkt auf eine Zeile in der Tabelle oben oder wähle eine Aktie aus:")
     
-    options = [f"{item['symbol']} - {item['name']} (Score: {item['brodel_score']})" for item in signal_items]
+    options = [f"{item['symbol']} - {item['name']} (Brodel 2.0: {primary_score(item)})" for item in signal_items]
     selected_option = st.selectbox("Aktie suchen", options=options, index=selected_row_idx if options else None)
     
     if selected_option:
@@ -281,7 +325,13 @@ def render_watchlist_signal_monitor(mapping_text: str):
         if item:
             head_col1, head_col2 = st.columns([3, 1])
             with head_col1:
-                st.markdown(f"### {item['symbol']} - {item['name']} | Brodel-Score: {item['brodel_score']}")
+                st.markdown(
+                    f"### {item['symbol']} - {item['name']} | Brodel 2.0: {primary_score(item)}"
+                    f" <span style='font-size:0.6em;color:gray'>(Brodel 1.0: {item.get('brodel_score', 0)})</span>",
+                    unsafe_allow_html=True,
+                )
+                if item.get("brodel_v2_estimated"):
+                    st.caption("Brodel 2.0 aus einem älteren Snapshot nachgerechnet (ohne Rückkauf-Daten und ohne Makro-Overlay).")
                 if item["resolved"]:
                     st.caption(f"Eingabe: {item['input_name']} | {item['resolution_note']}")
             with head_col2:
@@ -306,20 +356,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
                         st.markdown("- Keine aussagekraeftigen Fruehsignale erkannt.")
 
                     st.markdown("**Signal-Breakdown**")
-                    max_scores = {
-                        "EPS-Revisionen": 15, "Kursziele & Konsens": 15, "Preis/Volumen": 10,
-                        "News-Sentiment": 15, "Event-Druck": 5, "Insider-Aktivitaet": 10,
-                        "Short Interest": 5, "Relative Staerke": 5, "Fundamentale Bewertung": 10,
-                        "Technische Indikatoren": 10,
-                    }
-                    breakdown_rows = []
-                    for component in item.get("signal_breakdown", {}).values():
-                        breakdown_rows.append({
-                            "Komponente": component["name"],
-                            "Punkte": component["score"],
-                            "Maximal": max_scores.get(component["name"], 0),
-                            "Detail": component["summary"],
-                        })
+                    breakdown_rows = build_breakdown_rows(item)
                     st.dataframe(pd.DataFrame(breakdown_rows), use_container_width=True, hide_index=True)
 
                 with col2:
@@ -350,7 +387,9 @@ def render_watchlist_signal_monitor(mapping_text: str):
                         symbol_history = symbol_history.sort_values("timestamp")
                         
                         if len(symbol_history) > 1:
-                            chart_data = symbol_history.set_index("timestamp")[["brodel_score"]]
+                            chart_data = symbol_history.set_index("timestamp")[["brodel_score_v2", "brodel_score"]].rename(
+                                columns={"brodel_score_v2": "Brodel 2.0", "brodel_score": "Brodel 1.0"}
+                            )
                             st.line_chart(chart_data)
                         else:
                             st.info("Nicht genuegend Historien-Daten fuer ein Diagramm (mindestens 2 Snapshots benoetigt).")
@@ -887,9 +926,9 @@ def render_truth_machine_help():
 
 def render_help_tab():
     st.subheader("Hilfe & Methodik")
-    st.write("Der **Brodel-Score** (Skala: -30 bis 100) ist ein proprietäres 'Frühwarn-Thermometer' dieses Systems. "
-             "Er aggregiert Signale aus 10 verschiedenen Finanzkategorien und wendet abschließend ein Makro-Overlay an. "
-             "Das Ziel ist es, starke Aktien in schwachen Märkten, ausbrechende Momentum-Titel und Value-Chancen zu identifizieren.")
+    st.write("Der **Brodel-Score** (Skala: -30 bis 100) ist ein 'Frühwarn-Thermometer' dieses Systems. "
+             "Er zählt Punkte aus 11 Bausteinen zusammen und wendet abschließend ein Makro-Overlay an. "
+             "Die App rankt nach **Brodel 2.0**. Der alte **Brodel 1.0** läuft zum Vergleich mit und steht in der Tabelle ganz rechts.")
 
     st.markdown("### Schnellstart: der empfohlene Ablauf")
     st.markdown(
@@ -914,91 +953,117 @@ def render_help_tab():
         st.warning("Ein fehlender Datenpunkt wird nicht automatisch zu einem positiven Signal. Prüfe in der Detailanalyse, ob ein Score durch echte Daten oder durch neutrale Standardwerte zustande kommt.")
     
     st.markdown("---")
-    st.markdown("### Die 10 Signalkomponenten")
-    
-    with st.expander("📊 EPS-Revisionen (Max. 15 Punkte)"):
-        st.write("**Was es misst:** Haben Analysten ihre Gewinnerwartungen (Earnings per Share) in letzter Zeit nach oben oder unten korrigiert?")
-        st.write("**Bewertungslogik:**")
-        st.markdown("- **+3 Punkte** für jede netto-positive Revision (Upgrades minus Downgrades).")
-        st.markdown("- **0 Punkte** bei negativen Netto-Revisionen.")
-        st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
-        st.info("💡 **Warum wichtig:** Steigende Gewinnerwartungen treiben historisch die Aktienkurse am stärksten. Ein 'Upward Earnings Revision' Trend ist ein starkes Kaufsignal.")
+    st.markdown("### Brodel 2.0: was ist neu und warum")
+    with st.expander("Brodel 2.0 gegen Brodel 1.0", expanded=True):
+        st.write(
+            "Brodel 2.0 nutzt dieselben Daten wie 1.0, verteilt die Punkte aber anders. Grundlage ist die Auswertung der "
+            "gespeicherten Snapshots und ein 20-Jahres-Test der Kursregeln (November 2026). Bausteine, die gute Aktien "
+            "nach oben sortiert haben, bekommen mehr Punkte. Bausteine ohne Nutzen oder mit falscher Richtung bekommen weniger."
+        )
+        st.table(pd.DataFrame([
+            {"Baustein": "Fundamentale Bewertung", "Max 1.0": "10", "Max 2.0": "15", "Grund": "in den Snapshots der stärkste Baustein"},
+            {"Baustein": "EPS-Revisionen", "Max 1.0": "15", "Max 2.0": "15", "Grund": "neue Regel: Anteil der Hochstufungen statt Anzahl"},
+            {"Baustein": "Kursziele & Konsens", "Max 1.0": "15", "Max 2.0": "5", "Grund": "hohe Kursziele liefen nach 3 Monaten schlechter"},
+            {"Baustein": "Preis/Volumen", "Max 1.0": "10", "Max 2.0": "5", "Grund": "über 20 Jahre ohne Nutzen"},
+            {"Baustein": "Technische Indikatoren", "Max 1.0": "10", "Max 2.0": "5", "Grund": "über 20 Jahre ohne Nutzen"},
+            {"Baustein": "Aktienrückkauf (neu)", "Max 1.0": "–", "Max 2.0": "5", "Grund": "Firmen, die eigene Aktien zurückkaufen, liefen leicht besser"},
+            {"Baustein": "News, Event, Insider, Short, Rel. Stärke", "Max 1.0": "unverändert", "Max 2.0": "unverändert", "Grund": "noch zu wenig Daten für eine Änderung"},
+        ]))
+        st.write(
+            "Die Punkte von 1.0 werden dafür umgerechnet. Beispiel Kursziele: 1.0 vergibt bis zu 15 Punkte, 2.0 bis zu 5. "
+            "Aus 10 Punkten in 1.0 werden also 10 × 5/15 ≈ 3 Punkte in 2.0."
+        )
+        st.warning(
+            "Ehrlicher Hinweis: Die neuen Gewichte wurden an denselben, noch wenigen Snapshots ausgesucht, an denen sie auch gut aussehen. "
+            "Ob 2.0 wirklich besser ist, zeigt erst die Zukunft. Deshalb läuft 1.0 weiter mit, und der Brodel-Prüfstand in "
+            "**Backtest & ML** misst beide Versionen nebeneinander."
+        )
 
-    with st.expander("🎯 Kursziel & Analystenkonsens (Max. 15 Punkte)"):
-        st.write("**Was es misst:** Wo sehen professionelle Analysten den fairen Wert der Aktie in 12 Monaten?")
-        st.write("**Bewertungslogik:**")
-        st.markdown("- **+1 Punkt** für jede 2% Aufwärtspotenzial (Upside) zum durchschnittlichen Kursziel (max. 10 Punkte).")
-        st.markdown("- **+5 Bonuspunkte**, wenn der Anteil der 'Buy' und 'Strong Buy' Ratings bei über 80% liegt.")
-        st.write("**Datenquelle:** Finnhub (Echtzeit REST-API, 24h gecached)")
-        st.warning("⚠️ **Blind Spot:** Analysten hinken dem Markt oft hinterher. Bei schnell fallenden Kursen wirkt das Upside oft künstlich hoch.")
+    st.markdown("### Die 11 Bausteine")
 
-    with st.expander("📰 News-Sentiment (Max. 15 Punkte)"):
-        st.write("**Was es misst:** Wie ist die aktuelle Nachrichtenlage rund um das Unternehmen in den letzten 7 Tagen?")
-        st.write("**Bewertungslogik:**")
-        st.markdown("- Die Nachrichtenüberschriften werden per LLM (KI) semantisch analysiert.")
-        st.markdown("- **+3 Punkte** für jede klar positive/bullishe Nachricht (z.B. neue Rekordumsätze, FDA-Zulassung).")
-        st.markdown("- **-3 Punkte** für jede stark negative/bearishe Nachricht (z.B. Klagen, Produktionsausfälle).")
-        st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
-
-    with st.expander("📈 Technische Indikatoren (Max. 10 Punkte)"):
-        st.write("**Was es misst:** Ist die Aktie rein mathematisch/technisch überkauft oder überverkauft?")
-        st.write("**Bewertungslogik:**")
-        st.markdown("- **RSI (Relative Strength Index):** Unter 30 (überverkauft) gibt **+4 Punkte**. Über 70 (überkauft) gibt **-4 Punkte**.")
-        st.markdown("- **MACD:** Ein positiver Trend gibt **+3 Punkte**.")
-        st.markdown("- **Bollinger Bänder:** Wenn der aktuelle Kurs unter dem unteren Bollinger Band liegt (Rückschlagspotenzial), gibt das **+3 Punkte**.")
-        st.write("**Datenquelle:** Yahoo Finance (berechnet auf Basis der 1-Jahres-Historie)")
-
-    with st.expander("🏦 Fundamentale Bewertung (Max. 10 Punkte)"):
-        st.write("**Was es misst:** Ist die Aktie basierend auf harten Bilanzen günstig bewertet?")
-        st.write("**Bewertungslogik:**")
-        st.markdown("- **KGV (Forward P/E):** Unter 15 (+2 Punkte), unter 25 (+1 Punkt), über 50 (-2 Punkte Abzug).")
-        st.markdown("- **PEG-Ratio (Wachstums-KGV):** Unter 1.0 (+2 Punkte), unter 1.5 (+1 Punkt).")
-        st.markdown("- **Debt/Equity (Verschuldung):** Unter 50% (+2 Punkte), unter 100% (+1 Punkt).")
-        st.markdown("- **Free Cashflow Yield:** Über 5% (+2 Punkte), über 2% (+1 Punkt).")
-        st.markdown("- **Gewinnmarge:** Über 20% (+2 Punkte), über 10% (+1 Punkt).")
-        st.write("**Datenquelle:** Alpha Vantage (Overview-Endpoint, 30 Tage Rolling-Cache) mit Fallback auf Yahoo Finance.")
-
-    with st.expander("🚀 Preis- & Volumen-Momentum (Max. 10 Punkte)"):
-        st.write("**Was es misst:** Fließt aktuell viel Kapital (Volumen) in die Aktie und stimmt der Trend?")
-        st.write("**Bewertungslogik:**")
-        st.markdown("- **Kurstrend:** Kurs über der 20-Tage-Linie (+3 Punkte), Kurs über der 50-Tage-Linie (+2 Punkte).")
-        st.markdown("- **Volumenspitzen:** Letztes Volumen > 200% des Durchschnitts an einem 'Up-Day' (+3 Punkte).")
-        st.markdown("- **Crash-Penaltie:** Fiel der Kurs in den letzten 5 Tagen um mehr als 10%, gibt das **-5 Punkte** Abzug.")
+    with st.expander("📊 EPS-Revisionen (1.0: max. 15 | 2.0: max. 15)"):
+        st.write("**Was es misst:** Haben Analysten ihre Gewinnschätzungen (Gewinn je Aktie) zuletzt nach oben oder nach unten korrigiert?")
+        st.markdown("- **Brodel 1.0:** Hochstufungen minus Herabstufungen. Ist das Ergebnis positiv, gibt es 6 Punkte plus 3 je Hochstufung Überhang (max. 15). Ist es negativ, gibt es bis zu −5 Punkte.")
+        st.markdown("- **Brodel 2.0:** zählt den **Anteil** der Hochstufungen an allen Revisionen (mindestens 2 Revisionen): ab 80 % **+15**, ab 65 % **+10**, ab 50 % **+5**, höchstens 35 % **−5**.")
+        st.write("**Warum die neue Regel:** Große Firmen haben viele Analysten und damit fast immer einen Überhang von 3 Hochstufungen. Unter 1.0 bekamen sie deshalb fast immer volle Punkte.")
         st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
 
-    with st.expander("👔 Insider-Aktivität (Max. 10 Punkte)"):
-        st.write("**Was es misst:** Kauft das Management (CEOs, Direktoren) mit eigenem Geld Aktien des Unternehmens?")
-        st.write("**Bewertungslogik:**")
-        st.markdown("- Wir werten das 'Insider Sentiment' der letzten 3 Monate aus.")
-        st.markdown("- **+4 bis +10 Punkte** gestaffelt nach Volumen und Anzahl der Käufe.")
-        st.markdown("- Starker Überhang an Verkäufen führt zu Punktabzug (**-3 Punkte**).")
-        st.write("**Datenquelle:** Finnhub (Insider Sentiment API) basierend auf echten SEC Form 4 Filings.")
-        st.info("💡 **Warum wichtig:** Insider verkaufen aus vielen Gründen (Hauskauf, Steuern), aber sie kaufen nur aus einem Grund: Sie glauben, der Kurs wird steigen.")
+    with st.expander("🎯 Kursziele & Konsens (1.0: max. 15 | 2.0: max. 5)"):
+        st.write("**Was es misst:** Wie weit liegt das durchschnittliche Analysten-Kursziel über dem Kurs, und wie viele Analysten raten zum Kauf?")
+        st.markdown("- Kursziel mindestens 20 % über dem Kurs: **+10**, mindestens 10 %: **+5**, darüber: **+2**.")
+        st.markdown("- Bei mindestens 5 Analysten: Kaufempfehlungen ab 80 %: **+5**, ab 60 %: **+3**.")
+        st.markdown("- **Brodel 2.0:** dieselben Regeln, aber nur ein Drittel der Punkte.")
+        st.write("**Datenquelle:** Finnhub mit Fallback auf Yahoo Finance")
+        st.warning("Analysten hinken dem Kurs oft hinterher. Fällt eine Aktie stark, sieht das Kurspotenzial plötzlich groß aus. In den Snapshots liefen Aktien mit hohem Kursziel-Potenzial nach 3 Monaten sogar schlechter.")
 
-    with st.expander("💪 Relative Stärke (Max. 5 Punkte)"):
-        st.write("**Was es misst:** Schlägt die Aktie den allgemeinen Markt?")
-        st.write("**Bewertungslogik:**")
-        st.markdown("- Die Performance der letzten 20 Handelstage wird mit einem regionalen Benchmark-Index (z.B. DAX, S&P 500, SMI, Nikkei 225) verglichen.")
-        st.markdown("- Übertrifft die Aktie den Benchmark, gibt das **+5 Punkte**.")
+    with st.expander("📰 News-Sentiment (1.0: max. 15 | 2.0: max. 15)"):
+        st.write("**Was es misst:** Wie viele Nachrichten gab es in den letzten 7 Tagen, und klingen sie gut oder schlecht?")
+        st.markdown("- **Nachrichtendichte:** ab 2 Meldungen **+3**, ab 4 **+5**, ab 6 **+7**.")
+        st.markdown("- **Stimmung:** Die Überschriften werden per KI (Gemini) oder Stichwortliste bewertet: **−8 bis +8**.")
+        st.markdown("- Summe begrenzt auf −10 bis +15.")
         st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
 
-    with st.expander("📅 Event-Druck (Max. 5 Punkte)"):
-        st.write("**Was es misst:** Stehen kurzfristige Katalysatoren (wie Quartalszahlen) an?")
-        st.write("**Bewertungslogik:**")
-        st.markdown("- Quartalszahlen in < 7 Tagen: **+5 Punkte**")
-        st.markdown("- Quartalszahlen in < 14 Tagen: **+3 Punkte**")
+    with st.expander("🏦 Fundamentale Bewertung (1.0: max. 10 | 2.0: max. 15)"):
+        st.write("**Was es misst:** Ist die Firma solide und günstig bewertet?")
+        st.markdown("- **KGV (Forward P/E):** unter 15 **+2**, unter 25 **+1**, über 50 **−2**.")
+        st.markdown("- **PEG-Ratio:** unter 1,0 **+2**, unter 1,5 **+1**.")
+        st.markdown("- **Verschuldung (Debt/Equity):** unter 50 % **+2**, unter 100 % **+1**.")
+        st.markdown("- **Free-Cashflow-Rendite:** über 5 % **+2**, über 2 % **+1**.")
+        st.markdown("- **Gewinnmarge:** über 20 % **+2**, über 10 % **+1**.")
+        st.markdown("- **Brodel 2.0:** dieselben Regeln, Punkte mal 1,5.")
+        st.write("**Datenquelle:** Alpha Vantage (30 Tage Cache) mit Fallback auf Yahoo Finance")
+
+    with st.expander("🔁 Aktienrückkauf (nur 2.0: max. 5)"):
+        st.write("**Was es misst:** Hat die Firma heute weniger Aktien als vor einem Jahr? Dann kauft sie eigene Aktien zurück. Jedem Aktionär gehört danach ein größeres Stück der Firma.")
+        st.markdown("- Mindestens 3 % weniger Aktien: **+5**, mindestens 1 % weniger: **+3**.")
+        st.markdown("- Mindestens 5 % mehr Aktien (Verwässerung durch neue Aktien): **−2**.")
+        st.write("**Warum:** Im Test 2017 bis 2026 liefen die stärksten Rückkäufer gut 1,8 % pro Jahr besser als der Durchschnitt. Das ist ein kleiner Vorteil und statistisch noch nicht sicher, zeigte aber in die richtige Richtung.")
+        st.write("**Datenquelle:** Yahoo Finance (Aktienanzahl-Historie)")
+
+    with st.expander("🚀 Preis/Volumen (1.0: max. 10 | 2.0: max. 5)"):
+        st.write("**Was es misst:** Läuft der Kurs im Aufwärtstrend, und fließt gerade viel Geld in die Aktie?")
+        st.markdown("- Kurs über der 20-Tage-Linie: **+5**, über der 50-Tage-Linie: **+6**.")
+        st.markdown("- In 5 Tagen mindestens 7 % gestiegen: **+4**, mindestens 7 % gefallen: **−3**.")
+        st.markdown("- Steigender Tag mit mehr als dem 1,5-fachen Durchschnittsvolumen: **+3**.")
+        st.markdown("- Summe begrenzt auf −10 bis +10. **Brodel 2.0:** halbe Punkte.")
+        st.write("**Warum weniger in 2.0:** Über 20 Jahre nachgerechnet halfen diese Regeln nicht. Auf Wochensicht liefen Aktien über der 20-Tage-Linie sogar leicht schlechter.")
         st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
 
-    with st.expander("🔥 Short Interest (Max. 5 Punkte)"):
-        st.write("**Was es misst:** Setzen viele Leerverkäufer (Shorter) auf fallende Kurse?")
-        st.write("**Bewertungslogik:**")
-        st.markdown("- Short Quote über 20%: **+5 Punkte** (Short-Squeeze Potenzial).")
-        st.markdown("- Das Signal entfaltet seine volle positive Punktzahl besonders, wenn der Kurs gleichzeitig über der 50-Tage-Linie notiert (Shorter geraten unter Druck).")
+    with st.expander("📈 Technische Indikatoren (1.0: max. 10 | 2.0: max. 5)"):
+        st.write("**Was es misst:** Ist die Aktie rechnerisch überkauft oder überverkauft?")
+        st.markdown("- **RSI:** unter 30 (überverkauft) **+4**, über 70 (überkauft) **−4**.")
+        st.markdown("- **MACD:** über der Signallinie **+3**, darunter **−1**.")
+        st.markdown("- **Bollinger-Bänder:** Kurs unter dem unteren Band **+3**, über dem oberen Band **−3**.")
+        st.markdown("- Summe begrenzt auf −8 bis +10. **Brodel 2.0:** halbe Punkte.")
+        st.write("**Datenquelle:** Yahoo Finance (6 Monate Kurshistorie)")
+
+    with st.expander("👔 Insider-Aktivität (1.0: max. 10 | 2.0: max. 10)"):
+        st.write("**Was es misst:** Kaufen Vorstände und Direktoren mit eigenem Geld Aktien ihrer Firma?")
+        st.markdown("- Insider-Stimmung der letzten 3 Monate: viele Käufe **+10**, mehrere **+6**, ein Kauf **+4**.")
+        st.markdown("- Mehr als doppelt so viele Verkäufe wie Käufe: **−3** (nicht unter 0).")
+        st.write("**Datenquelle:** Finnhub (Insider Sentiment aus SEC-Form-4-Meldungen) mit Fallback auf Yahoo Finance")
+        st.info("Insider verkaufen aus vielen Gründen (Steuern, Hauskauf), aber sie kaufen meist nur aus einem: Sie glauben an steigende Kurse.")
+
+    with st.expander("💪 Relative Stärke (1.0: max. 5 | 2.0: max. 5)"):
+        st.write("**Was es misst:** Lief die Aktie im letzten Monat besser als ihr Heimatindex (z. B. S&P 500, DAX, Nikkei 225)?")
+        st.markdown("- Mindestens 10 Prozentpunkte besser: **+5**, mindestens 5: **+3**, mindestens 2: **+1**.")
+        st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
+
+    with st.expander("📅 Event-Druck (1.0: max. 5 | 2.0: max. 5)"):
+        st.write("**Was es misst:** Steht bald ein Termin an, zum Beispiel Quartalszahlen?")
+        st.markdown("- Nächster Termin in höchstens 7 Tagen: **+5**, in höchstens 14 Tagen: **+3**, in höchstens 30 Tagen: **+1**.")
+        st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
+
+    with st.expander("🔥 Short Interest (1.0: max. 5 | 2.0: max. 5)"):
+        st.write("**Was es misst:** Wetten viele Leerverkäufer auf fallende Kurse? Steigt der Kurs trotzdem, müssen sie teuer zurückkaufen (Short Squeeze).")
+        st.markdown("- Nur wenn der Kurs über der 50-Tage-Linie liegt: Short-Anteil ab 20 % **+5**, ab 10 % **+3**, ab 5 % **+1**.")
+        st.markdown("- Alternativ nach Tagen zum Eindecken: ab 5 Tagen **+4**, ab 3 Tagen **+2**.")
+        st.markdown("- Unter der 50-Tage-Linie gibt es **0 Punkte**, denn dann haben die Leerverkäufer bisher recht.")
         st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
 
     st.markdown("---")
     st.markdown("### Das Makro-Overlay (Markt-Kontext)")
-    st.write("Nachdem der Basis-Score (Maximal 100 Punkte) berechnet wurde, wird die Großwetterlage geprüft:")
+    st.write("Nachdem der Basis-Score berechnet wurde (Brodel 2.0 maximal 90 Punkte, Brodel 1.0 maximal 100 Punkte), wird die Großwetterlage geprüft. Das Overlay gilt für beide Versionen gleich:")
 
     st.markdown("- **Bullenmarkt-Bonus:** Steht der S&P 500 (SPY) über seiner 200-Tage-Linie, wird der Basis-Score um **10% angehoben (1.1x)**.")
     st.markdown("- **Bärenmarkt-Malus:** Steht der S&P 500 unter der 200-Tage-Linie, wird der Score um **20% gekürzt (0.8x)**.")
@@ -1222,11 +1287,34 @@ def render_truth_machine_section():
             st.markdown(f"- {caveat}")
 
 
+BRODEL_CHECK_VERSIONS = [("Brodel 2.0", "brodel_score_v2"), ("Brodel 1.0", "brodel_score")]
+
+
+def build_brodel_check_rows(results: dict[str, dict]) -> list[dict]:
+    rows = []
+    for label, _ in BRODEL_CHECK_VERSIONS:
+        result = results[label]
+        overall = result["summary"]
+        independent = result["summary_independent"]
+        rows.append({
+            "Score": label,
+            "Mittlerer Rank-IC": f"{overall['mean_ic']:+.3f}" if overall["n"] else "–",
+            "Unabhängige Messpunkte": independent["n"],
+            "t-Wert (unabhängig)": f"{independent['t_stat']:.1f}" if independent["n"] > 1 else "–",
+        })
+    return rows
+
+
 def render_brodel_check_section():
     st.subheader("🔬 Brodel-Score auf dem Prüfstand")
     st.write(
         "Misst, ob ein hoher Brodel-Score in den gespeicherten Snapshots tatsächlich höhere Folgerenditen gebracht hat. "
+        "Gemessen werden **Brodel 2.0** und zum Vergleich **Brodel 1.0** auf denselben Tagen. "
         "Überlappende Zeitfenster werden für den belastbaren t-Wert herausgerechnet."
+    )
+    st.caption(
+        "Für ältere Snapshots wird Brodel 2.0 aus den gespeicherten Einzelpunkten nachgerechnet, ohne Rückkauf-Daten. "
+        "Das Makro-Overlay ändert die Reihenfolge innerhalb eines Tages nicht und spielt für diese Messung keine Rolle."
     )
     horizon = st.select_slider("Horizont (Handelstage)", options=[5, 10, 21, 63], value=21, key="brodel_horizon")
     if st.button("Brodel-Score messen", use_container_width=True):
@@ -1235,25 +1323,29 @@ def render_brodel_check_section():
             if not snapshots:
                 st.info("Keine Snapshots vorhanden.")
                 return
+            snapshots = [(ts, [ensure_brodel_v2(dict(item)) for item in items]) for ts, items in snapshots]
             symbols = sorted({item.get("symbol") for _, items in snapshots for item in items if item.get("symbol")})
             first = min(ts for ts, _ in snapshots).strftime("%Y-%m-%d")
             close = download_close_prices(filter_single_currency(symbols, us_only=False), start=first)
-            result = snapshot_score_ic(snapshots, close, horizon_days=int(horizon))
-        overall = result["summary"]
-        independent = result["summary_independent"]
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Snapshot-Tage", result["n_snapshot_days"])
+            results = {
+                label: snapshot_score_ic(snapshots, close, horizon_days=int(horizon), score_key=key)
+                for label, key in BRODEL_CHECK_VERSIONS
+            }
+        main = results["Brodel 2.0"]
+        independent = main["summary_independent"]
+        c1, c2 = st.columns(2)
+        c1.metric("Snapshot-Tage", main["n_snapshot_days"])
         c2.metric("Unabhängige Messpunkte", independent["n"])
-        c3.metric("Mittlerer Rank-IC", f"{overall['mean_ic']:+.3f}" if overall["n"] else "–")
+        st.table(pd.DataFrame(build_brodel_check_rows(results)))
         if independent["n"] < 24:
             st.warning(
                 f"Nur {independent['n']} unabhängige Messpunkte. Für eine belastbare Aussage braucht es mindestens 24, "
                 "also gut zwei Jahre tägliche Snapshots bei einem Monatshorizont."
             )
         elif independent["t_stat"] >= 2:
-            st.success(f"Der Brodel-Score sortiert signifikant (t = {independent['t_stat']:.1f}).")
+            st.success(f"Brodel 2.0 sortiert signifikant (t = {independent['t_stat']:.1f}).")
         else:
-            st.info(f"Kein signifikanter Effekt (t = {independent['t_stat']:.1f}).")
+            st.info(f"Kein signifikanter Effekt für Brodel 2.0 (t = {independent['t_stat']:.1f}).")
 
 
 def render_backtest_tab():

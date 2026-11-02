@@ -377,7 +377,7 @@ def build_watchlist_signal_monitor(file_text: str, mapping_text: str | None = No
     symbol_mappings = parse_symbol_mappings(mapping_text or "")
     results = [build_symbol_signal_monitor(entry, symbol_mappings) for entry in entries]
     enriched_results = add_watchlist_peer_context(results)
-    return sorted(enriched_results, key=lambda item: item.get("brodel_score", 0), reverse=True)
+    return sorted(enriched_results, key=primary_score, reverse=True)
 
 
 def ensure_signal_history_dir(directory: str = DEFAULT_SIGNAL_HISTORY_DIR) -> Path:
@@ -457,8 +457,8 @@ def build_signal_delta_report(
     for item in current_items:
         symbol = item.get("symbol")
         previous_item = previous_by_symbol.get(symbol)
-        previous_score = int(previous_item.get("brodel_score", 0)) if previous_item else 0
-        current_score = int(item.get("brodel_score", 0))
+        previous_score = primary_score(ensure_brodel_v2(dict(previous_item))) if previous_item else 0
+        current_score = primary_score(ensure_brodel_v2(dict(item)))
         score_delta = current_score - previous_score
 
         current_signals = set(item.get("signal_items", []))
@@ -850,6 +850,174 @@ def _apply_macro_overlay(score: int) -> int:
     return int(round(score / multiplier))
 
 
+# ── Brodel 2.0 ────────────────────────────────────────────────────────────────
+# Brodel 1.0 adds the ten component scores as they are. Brodel 2.0 reweights them
+# based on the snapshot study (Nov 2026): fundamentals up, analyst price targets and
+# the short-term price/technical rules down, EPS revisions as an up/down ratio instead
+# of a net count, plus a share buyback component. 1.0 stays available for comparison.
+BRODEL_V1_MAX_POINTS: dict[str, int] = {
+    "EPS-Revisionen": 15,
+    "Kursziele & Konsens": 15,
+    "Preis/Volumen": 10,
+    "News-Sentiment": 15,
+    "Event-Druck": 5,
+    "Insider-Aktivitaet": 10,
+    "Short Interest": 5,
+    "Relative Staerke": 5,
+    "Fundamentale Bewertung": 10,
+    "Technische Indikatoren": 10,
+}
+BUYBACK_COMPONENT_NAME = "Aktienrueckkauf"
+BRODEL_V2_MAX_POINTS: dict[str, int] = {
+    "EPS-Revisionen": 15,
+    "Kursziele & Konsens": 5,
+    "Preis/Volumen": 5,
+    "News-Sentiment": 15,
+    "Event-Druck": 5,
+    "Insider-Aktivitaet": 10,
+    "Short Interest": 5,
+    "Relative Staerke": 5,
+    "Fundamentale Bewertung": 15,
+    "Technische Indikatoren": 5,
+    BUYBACK_COMPONENT_NAME: 5,
+}
+_EPS_COUNT_PATTERN = re.compile(r"(\d+) hoch, (\d+) runter")
+
+
+def eps_revision_ratio_points(up: int, down: int) -> int:
+    """Brodel 2.0 EPS rule: share of upward revisions instead of the net count.
+
+    The net count gave large companies with many analysts almost always full points.
+    """
+    total = up + down
+    if total < 2:
+        return 0
+    ratio = up / total
+    if ratio >= 0.8:
+        return 15
+    if ratio >= 0.65:
+        return 10
+    if ratio >= 0.5:
+        return 5
+    if ratio <= 0.35:
+        return -5
+    return 0
+
+
+def _eps_counts(component: dict[str, Any]) -> tuple[int, int] | None:
+    if isinstance(component.get("up"), (int, float)) and isinstance(component.get("down"), (int, float)):
+        return int(component["up"]), int(component["down"])
+    match = _EPS_COUNT_PATTERN.search(str(component.get("summary") or ""))
+    if match:
+        return int(match.group(1)), int(match.group(2))
+    return None
+
+
+def buyback_points(share_change: float | None) -> int:
+    """Points for the one-year change of the share count (negative = buyback)."""
+    if share_change is None:
+        return 0
+    if share_change <= -0.03:
+        return 5
+    if share_change <= -0.01:
+        return 3
+    if share_change >= 0.05:
+        return -2
+    return 0
+
+
+def _summarize_share_buyback(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]:
+    """Share count today versus one year ago. Shrinking share counts (buybacks) score high."""
+    name = BUYBACK_COMPONENT_NAME
+    if is_etf:
+        return {"name": name, "score": 0, "summary": "Nicht relevant fuer ETFs."}
+    start = (pd.Timestamp.utcnow().tz_localize(None) - pd.Timedelta(days=430)).strftime("%Y-%m-%d")
+    shares = _safe_get(lambda: ticker.get_shares_full(start=start), None)
+    if shares is None or not isinstance(shares, pd.Series) or shares.empty:
+        return {"name": name, "score": 0, "summary": "Keine Aktienanzahl-Historie verfuegbar."}
+    series = pd.to_numeric(shares, errors="coerce").dropna()
+    series = series[series > 0]
+    if series.empty:
+        return {"name": name, "score": 0, "summary": "Keine Aktienanzahl-Historie verfuegbar."}
+    index = pd.to_datetime(series.index)
+    if getattr(index, "tz", None) is not None:
+        index = index.tz_convert(None)
+    series.index = index
+    series = series.sort_index()
+    latest_day = series.index[-1]
+    recent = series[series.index >= latest_day - pd.Timedelta(days=30)]
+    year_ago = series[(series.index >= latest_day - pd.Timedelta(days=400)) & (series.index <= latest_day - pd.Timedelta(days=330))]
+    if recent.empty or year_ago.empty:
+        return {"name": name, "score": 0, "summary": "Aktienanzahl-Historie zu kurz fuer einen Jahresvergleich."}
+    # Medians smooth out single-day data glitches in the Yahoo share count
+    change = float(recent.median() / year_ago.median() - 1.0)
+    score = buyback_points(change)
+    summary = f"Aktienanzahl 12M: {change * 100:+.1f}%"
+    if score >= 3:
+        summary += " - Rueckkauf (bullisch)"
+    elif score < 0:
+        summary += " - Verwaesserung durch neue Aktien"
+    return {"name": name, "score": score, "summary": summary, "share_change": round(change, 4)}
+
+
+def compute_brodel_v2_breakdown(
+    breakdown: dict[str, Any],
+    buyback: dict[str, Any] | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Translate the Brodel 1.0 component scores into Brodel 2.0 points.
+
+    Works for fresh results and for stored snapshots (EPS counts are parsed from the
+    summary there). Without buyback data the buyback component scores 0.
+    """
+    result: dict[str, dict[str, Any]] = {}
+    for name, max_v2 in BRODEL_V2_MAX_POINTS.items():
+        if name == BUYBACK_COMPONENT_NAME:
+            continue
+        component = breakdown.get(name) if isinstance(breakdown, dict) else None
+        if not isinstance(component, dict):
+            result[name] = {"name": name, "score": 0, "summary": "Keine Daten."}
+            continue
+        raw = component.get("score") or 0
+        if name == "EPS-Revisionen":
+            counts = _eps_counts(component)
+            points = eps_revision_ratio_points(*counts) if counts else 0
+        else:
+            points = int(round(raw * max_v2 / BRODEL_V1_MAX_POINTS[name]))
+        result[name] = {"name": name, "score": points, "summary": component.get("summary", "")}
+    if isinstance(buyback, dict):
+        result[BUYBACK_COMPONENT_NAME] = dict(buyback)
+    else:
+        result[BUYBACK_COMPONENT_NAME] = {"name": BUYBACK_COMPONENT_NAME, "score": 0, "summary": "Keine Rueckkauf-Daten im Snapshot."}
+    return result
+
+
+def ensure_brodel_v2(item: dict[str, Any]) -> dict[str, Any]:
+    """Add Brodel 2.0 to an item from an older snapshot that only has Brodel 1.0.
+
+    The estimate has no buyback data and no macro overlay. The overlay scales all
+    stocks of a day the same way, so the ranking within a day is unaffected.
+    """
+    if not isinstance(item, dict) or "brodel_score_v2" in item:
+        return item
+    if not isinstance(item.get("signal_breakdown"), dict) or not item["signal_breakdown"]:
+        return item  # nothing to recompute from; primary_score falls back to 1.0
+    v2_breakdown = compute_brodel_v2_breakdown(item.get("signal_breakdown") or {})
+    raw = sum(component["score"] for component in v2_breakdown.values())
+    item["signal_breakdown_v2"] = v2_breakdown
+    item["brodel_score_v2"] = max(-30, min(int(raw), 100))
+    item["brodel_v2_estimated"] = True
+    return item
+
+
+def primary_score(item: dict[str, Any]) -> int:
+    """The score used for ranking: Brodel 2.0, falling back to 1.0 for old data."""
+    value = item.get("brodel_score_v2", item.get("brodel_score", 0))
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
 def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, str] | None = None) -> dict[str, Any]:
     resolution = resolve_symbol(symbol_or_name, symbol_mappings)
     symbol = resolution["symbol"]
@@ -862,6 +1030,7 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
             "resolved": False,
             "resolution_note": "Kein passendes Boersensymbol gefunden.",
             "brodel_score": 0,
+            "brodel_score_v2": 0,
             "signal_items": ["Kein gueltiges Symbol verfuegbar."],
             "signal_breakdown": {},
         }
@@ -884,6 +1053,7 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
     relative_strength_signal = _summarize_relative_strength(history, symbol)
     fundamental_signal = _summarize_fundamentals(ticker, info)
     technical_signal = _summarize_technical_indicators(history)
+    buyback_signal = _summarize_share_buyback(ticker, quote_type == "etf")
 
     signal_components = [
         eps_revision_signal,
@@ -901,7 +1071,13 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
     raw_score = sum(component["score"] for component in signal_components)
     macro_adjusted_score = _apply_macro_overlay(raw_score)
     brodel_score = max(-30, min(macro_adjusted_score, 100))
+    signal_breakdown = {component["name"]: component for component in signal_components}
+    v2_breakdown = compute_brodel_v2_breakdown(signal_breakdown, buyback_signal)
+    v2_raw = sum(component["score"] for component in v2_breakdown.values())
+    brodel_score_v2 = max(-30, min(_apply_macro_overlay(v2_raw), 100))
     signal_items = [component["summary"] for component in signal_components if component["summary"]]
+    if buyback_signal.get("summary"):
+        signal_items.append(buyback_signal["summary"])
 
     return {
         "symbol": symbol,
@@ -912,8 +1088,10 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
         "sector": str(info.get("sector") or info.get("category") or "Unbekannt"),
         "industry": str(info.get("industry") or info.get("fundFamily") or "Unbekannt"),
         "brodel_score": brodel_score,
+        "brodel_score_v2": brodel_score_v2,
         "signal_items": signal_items,
-        "signal_breakdown": {component["name"]: component for component in signal_components},
+        "signal_breakdown": signal_breakdown,
+        "signal_breakdown_v2": v2_breakdown,
     }
 
 
@@ -1301,7 +1479,7 @@ def _summarize_eps_revisions(ticker: yf.Ticker) -> dict[str, Any]:
     elif net_revisions < 0:
         summary += " - gemischte bis negative Tendenz"
 
-    return {"name": "EPS-Revisionen", "score": score, "summary": summary}
+    return {"name": "EPS-Revisionen", "score": score, "summary": summary, "up": total_up, "down": total_down}
 
 
 def _summarize_price_targets(ticker: yf.Ticker, info: dict[str, Any], history: pd.DataFrame | None) -> dict[str, Any]:
@@ -1919,29 +2097,29 @@ def add_watchlist_peer_context(signal_items: list[dict[str, Any]]) -> list[dict[
     for item in signal_items:
         sector = str(item.get("sector") or "Unbekannt")
         peers = sector_groups.get(sector, [])
-        peer_scores = [int(peer.get("brodel_score", 0)) for peer in peers if peer.get("symbol") != item.get("symbol")]
-        sector_average = round(sum(int(peer.get("brodel_score", 0)) for peer in peers) / len(peers), 1) if peers else 0
-        rank = 1 + sum(1 for peer in peers if int(peer.get("brodel_score", 0)) > int(item.get("brodel_score", 0)))
+        peer_scores = [primary_score(peer) for peer in peers if peer.get("symbol") != item.get("symbol")]
+        sector_average = round(sum(primary_score(peer) for peer in peers) / len(peers), 1) if peers else 0
+        rank = 1 + sum(1 for peer in peers if primary_score(peer) > primary_score(item))
 
         top_peer = None
         if peer_scores:
             sorted_peers = sorted(
                 (peer for peer in peers if peer.get("symbol") != item.get("symbol")),
-                key=lambda peer: int(peer.get("brodel_score", 0)),
+                key=primary_score,
                 reverse=True,
             )
             if sorted_peers:
                 top_peer = {
                     "symbol": sorted_peers[0].get("symbol"),
                     "name": sorted_peers[0].get("name"),
-                    "score": int(sorted_peers[0].get("brodel_score", 0)),
+                    "score": primary_score(sorted_peers[0]),
                 }
 
         peer_context = {
             "sector": sector,
             "industry": item.get("industry") or "Unbekannt",
             "sector_average": sector_average,
-            "score_vs_sector": round(int(item.get("brodel_score", 0)) - sector_average, 1),
+            "score_vs_sector": round(primary_score(item) - sector_average, 1),
             "sector_rank": rank,
             "sector_count": len(peers),
             "top_peer": top_peer,

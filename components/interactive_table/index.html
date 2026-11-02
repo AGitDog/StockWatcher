@@ -242,14 +242,14 @@
   let rawRows = [];
   let currentFilteredRows = [];
   let selectedSymbol = null;
-  let sortColumn = "Brodel";
+  let sortColumn = "Brodel 2.0";
   let sortAscending = false;
 
   const COLUMNS = [
     { key: "Symbol", label: "Symbol", type: "string", class: "col-symbol" },
     { key: "Name", label: "Name", type: "string", class: "col-name" },
     { key: "Sektor", label: "Sektor", type: "string" },
-    { key: "Brodel", label: "Brodel", type: "number", isScore: true },
+    { key: "Brodel 2.0", label: "Brodel 2.0", type: "number", isScore: true },
     { key: "ML-Score", label: "ML-Score", type: "number", isScore: true },
     { key: "EPS", label: "EPS", type: "number" },
     { key: "Kursziel", label: "Kursziel", type: "number" },
@@ -261,8 +261,10 @@
     { key: "Rel.St.", label: "Rel.St.", type: "number" },
     { key: "Fundam.", label: "Fundam.", type: "number" },
     { key: "Tech.", label: "Tech.", type: "number" },
+    { key: "Rückkauf", label: "Rückkauf", type: "number" },
     { key: "Vs. Sektor", label: "Vs. Sektor", type: "number" },
-    { key: "Rang", label: "Rang", type: "string" }
+    { key: "Rang", label: "Rang", type: "string" },
+    { key: "Brodel 1.0", label: "Brodel 1.0", type: "number", isScore: true }
   ];
 
   function sendValueToStreamlit(value) {
