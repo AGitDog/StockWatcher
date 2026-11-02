@@ -7,7 +7,7 @@
 **Ziel:** Bevor weitere Signale gebaut werden, muss messbar sein, ob das System einen einfachen ETF nach Kosten und deutschen Steuern schlägt. Dazu kommen ein Fix im Makro-Overlay und eine Absicherung der ML-Gewichte gegen Overfitting.
 
 ## Testergebnisse & Verifikation
-- **230 Tests erfolgreich bestanden** (0 Fehler, Ausgangsbasis 177). Stand nach Nachtrag Task 5.
+- **231 Tests erfolgreich bestanden** (0 Fehler, Ausgangsbasis 177). Stand nach Nachtrag Task 6.
 - Neue Testsuiten: `tests/test_factor_lab.py` (35 Tests), `tests/test_truth_machine_app.py` (5 Tests).
 - Erweitert: `tests/test_ml_weights.py` (+8 Tests), `tests/test_stock_agent.py` (+3 Tests).
 - Manuelle Verifikation: Lauf über 503 S&P-500-Titel von 2005 bis 2026 per CLI und per Streamlit-AppTest mit Klick auf „Wahrheitsmaschine starten“.
@@ -56,6 +56,11 @@ Entscheidung: Nur was mit kostenlosen Daten rückwirkend rekonstruierbar ist, wi
 - Korrigiert: Hilfetext zum Makro-Overlay (negative Scores werden geteilt) und zur ML-Gewichtung (Out-of-Sample-Schutz, 60 Snapshot-Tage).
 - Hinweis im Abschnitt Wahrheitsmaschine auf die Hilfe.
 - Tests: 2 neue AppTests in `tests/test_truth_machine_app.py`.
+
+### Task 6 (Nachtrag): Hilfe entschlackt
+- Entfernt: Anleitung zur Watchlist-Datei im Schnellstart und Headless-Hinweis, Abschnitt „Empfohlener Einstiegsplan“, Abschnitt „Der menschliche Faktor“ samt Verhaltensfallen und Regeln, allgemeiner Schlussabsatz.
+- Schnellstart auf vier Schritte gekürzt, mit Verweis auf Wahrheitsmaschine und Brodel-Prüfstand.
+- Test: `test_help_tab_omits_removed_sections`.
 
 ---
 

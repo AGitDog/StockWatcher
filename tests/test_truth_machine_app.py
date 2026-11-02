@@ -95,3 +95,9 @@ def test_help_tab_includes_truth_machine_and_fixed_macro_text():
     assert "Die Wahrheitsmaschine einfach erklärt" in text
     assert "negative Scores dadurch geteilt" in text
     assert "60 Snapshot-Tage" in text
+
+
+def test_help_tab_omits_removed_sections():
+    text = _rendered_help_text("render_help_tab")
+    for removed in ["meine_watchlist.txt", "Der menschliche Faktor", "Empfohlener Einstiegsplan", "headless"]:
+        assert removed not in text, removed

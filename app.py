@@ -893,19 +893,17 @@ def render_help_tab():
 
     st.markdown("### Schnellstart: der empfohlene Ablauf")
     st.markdown(
-        "1. Konfiguriere deine Watchlist im Hintergrund über `watchlists/meine_watchlist.txt` (Symbole oder unterstützte Indexkürzel wie DAX, S&P 500, SOX, NBI, Nikkei 225).\n"
-        "2. Öffne **Signal Monitor** und navigiere bei Bedarf in **Backtest & ML**, um über **⚙️ Datenpflege** die Signale manuell zu aktualisieren. Die App lädt die verfügbaren Marktdaten, berechnet die Komponenten und ordnet die Watchlist nach Priorität.\n"
-        "3. Beim Aktualisieren der Signale wird automatisch ein **Tages-Snapshot** gespeichert. Die so kontinuierlich aufgebaute Historie versorgt den Score-Verlauf, den Backtest und die Trainingsdaten für die ML-Gewichte.\n"
-        "4. Prüfe neben dem Gesamtscore immer die Einzelkomponenten, die fundamentale Verfassung, die Liquidität und den Sektor-Kontext.\n"
-        "5. Nutze **Backtest & ML** zunächst zur Prüfung und danach im Paper-Trading. Ein hoher Score ist ein Recherche-Signal und keine automatische Kaufentscheidung."
+        "1. Öffne **Signal Monitor**. Dort steht die Rangliste aus dem letzten Tages-Snapshot. Die Snapshots werden jeden Tag automatisch erstellt.\n"
+        "2. Bei Bedarf aktualisierst du die Signale in **Backtest & ML** über **⚙️ Datenpflege**. Dabei wird ebenfalls ein Tages-Snapshot gespeichert.\n"
+        "3. Prüfe neben dem Gesamtscore immer die Einzelkomponenten, die fundamentale Verfassung, die Liquidität und den Sektor-Kontext.\n"
+        "4. Prüfe in **Backtest & ML** mit der Wahrheitsmaschine und dem Brodel-Prüfstand, ob eine Strategie den ETF überhaupt schlägt. Ein hoher Score ist ein Recherche-Signal und keine Kaufentscheidung."
     )
 
     with st.expander("Die drei Tabs im Überblick"):
         st.markdown(
             "- **🔥 Signal Monitor:** aktuelle Frühwarnsignale, ML-Score, Detailanalyse und historischer Score-Verlauf.\n"
             "- **Backtest & ML:** Wahrheitsmaschine (Strategie gegen ETF nach Kosten und Steuern), Brodel-Score-Prüfstand, historische Simulation des Top-N-Portfolios, Training der Komponenten-Gewichte sowie manuelle Datenpflege.\n"
-            "- **Hilfe & Methodik:** Definitionen der Signale, Datenquellen, Berechnungen, Grenzen und Bedienhinweise.\n\n"
-            "*Hinweis: Die Watchlist-Verwaltung läuft headless im Hintergrund über `watchlists/meine_watchlist.txt`.*"
+            "- **Hilfe & Methodik:** Definitionen der Signale, Datenquellen, Berechnungen und Grenzen."
         )
 
     with st.expander("Scores richtig interpretieren"):
@@ -1080,73 +1078,8 @@ def render_help_tab():
     )
     st.caption("Lokale Caches sparen API-Aufrufe, können aber veraltete Daten enthalten. Prüfe das Alter der Daten, bevor du eine Entscheidung triffst.")
 
-    st.markdown("### Empfohlener Einstiegsplan")
-    st.write(
-        "Die App ist erst dann wirklich nützlich, wenn genügend Historie vorhanden ist. Bis dahin ist jede Strategie nur eine Hypothese. "
-        "Der folgende Plan ist bewusst defensiv gehalten. Er priorisiert das Sammeln von Beweisen vor dem Einsatz von Kapital."
-    )
-    with st.expander("Schritt 1: Automatische Datensammlung (ab sofort)"):
-        st.markdown(
-            "- Richte `daily_job.py` so ein, dass es täglich nach Börsenschluss läuft. Unter Windows geht das über die Aufgabenplanung, unter Linux über cron.\n"
-            "- Sorge dafür, dass die Watchlists stabil bleiben. Häufiges Hinzufügen und Entfernen von Aktien verwässert die Historie.\n"
-            "- Prüfe regelmäßig, ob Snapshots in `signal_history/` geschrieben werden und ob die Dateien gültiges JSON enthalten.\n"
-            "- Mindestziel: 3 bis 6 Monate täglicher Snapshots, bevor du ernsthafte Rückschlüsse ziehst."
-        )
-    with st.expander("Schritt 2: Paper-Trading (Monat 1 bis 3)"):
-        st.markdown(
-            "- Notiere dir für jedes Signal, das du handeln würdest: Symbol, Einstiegskurs, Stop-Loss, Take-Profit, Positionsgröße und Begründung.\n"
-            "- Führe diese Trades nur auf dem Papier oder in einem separaten Notizblatt durch, nicht mit echtem Geld.\n"
-            "- Vergleiche am Ende jeder Woche die Ergebnisse mit dem Benchmark und mit deinen ursprünglichen Erwartungen.\n"
-            "- Ziel ist nicht Gewinn, sondern zu lernen, wie oft Signale falsch liegen und wie groß typische Drawdowns sind."
-        )
-    with st.expander("Schritt 3: Backtest und ML-Validierung (Monat 3 bis 6)"):
-        st.markdown(
-            "- Nutze den Tab **Backtest & ML**, sobald mindestens 60 bis 90 Snapshots vorhanden sind.\n"
-            "- Teile die Historie in Training und Out-of-sample auf. Trainiere Gewichte nur auf dem älteren Teil und prüfe die Performance auf dem neueren Teil.\n"
-            "- Ein positives Ergebnis ist nur dann relevant, wenn es auf Daten entstanden ist, die während des Trainings noch nicht bekannt waren.\n"
-            "- Wenn der Backtest im Out-of-sample-Bereich schlechter abschneidet als der Benchmark, ist die Strategie noch nicht bereit für echtes Geld."
-        )
-    with st.expander("Schritt 4: Erster Echtgeld-Einsatz (frühestens nach positiver Out-of-sample-Phase)"):
-        st.markdown(
-            "- Starte mit einem Betrag, dessen kompletter Verlust deine Lebensplanung nicht beeinträchtigt.\n"
-            "- Halte dich strikt an die vorgeschlagene Positionsgröße und das Risiko pro Trade (maximal 0,5 bis 1 % des Kapitals).\n"
-            "- Setze niemals das gesamte Vermögen in eine einzelne Aktie oder Strategie.\n"
-            "- Führe ein Trading-Tagebuch: Warum wurde eingestiegen? Was ging anders als erwartet? Wurde der Stop eingehalten?\n"
-            "- Behalte einen Kernbestand in breit gestreuten ETFs. Stock-Picking sollte ein Satellit bleiben, nicht das Fundament."
-        )
-
-    st.markdown("### Der menschliche Faktor")
-    st.write(
-        "Die beste Strategie nützt nichts, wenn sie nicht diszipliniert umgesetzt wird. Die App kann Signale liefern, aber sie kann nicht verhindern, "
-        "dass du aus Angst verkaufst, aus Gier nachkaufst oder einen Verlusttrade emotional in einen größeren verwandelst."
-    )
-    with st.expander("Typische Verhaltensfallen"):
-        st.markdown(
-            "- **Nachkaufen in fallende Kurse:** Wenn der Stop erreicht ist, wird die Position geschlossen – nicht erhöht, um den Einstieg zu „verbilligen“.\n"
-            "- **Zu große Positionen:** Ein einzelner Trade sollte das Depot nicht gefährden können.\n"
-            "- **Bestätigungsfehler:** Nur Signale beachten, die die eigene Meinung bestätigen, und Warnsignale ignorieren.\n"
-            "- **Überoptimierung:** Ständig Parameter ändern, weil der letzte Trade verloren hat. Das zerstört jede statistische Aussagekraft.\n"
-            "- **FOMO:** In einen Trade einsteigen, weil er bereits stark gestiegen ist, statt auf das nächste klare Setup zu warten.\n"
-            "- **Kein Plan:** Ein Trade ohne definierten Ausstieg ist kein Trade, sondern eine Wette."
-        )
-    with st.expander("Regeln, die helfen"):
-        st.markdown(
-            "- Setze vor jedem Trade Stop-Loss und Take-Profit fest und halte dich daran.\n"
-            "- Riskiere pro Trade nur einen kleinen, festen Prozentsatz des Kapitals.\n"
-            "- Wenn du drei Verlusttrades hintereinander hattest, mache eine Pause und prüfe die Strategie, statt das Risiko zu erhöhen.\n"
-            "- Dokumentiere jeden Trade. Auswertung ist wichtiger als das Gefühl, richtig gelegen zu haben.\n"
-            "- Akzeptiere Verluste als Teil des Systems. Ein einzelner Verlust bedeutet nicht, dass die Strategie falsch ist.\n"
-            "- Lass dich nicht von einem einzigen großen Gewinner blenden. Langfristig zählt die Summe aller Trades."
-        )
-
-    st.markdown("### Grenzen und sicherer Arbeitsablauf")
     st.warning(
-        "Die App ist ein Research- und Priorisierungstool. Sie gibt keine Anlageberatung, führt keine Orders aus und kann Verluste nicht verhindern. "
-        "Verwende zunächst historische Out-of-sample-Tests und Paper-Trading. Setze nur Kapital ein, dessen Verlust du finanziell tragen kannst."
-    )
-    st.markdown(
-        "Für eine belastbare Weiterentwicklung sollten Strategien getrennt nach Marktphase, Branche, Marktkapitalisierung und Liquidität ausgewertet werden. "
-        "Ein gutes Ergebnis ist nicht nur eine hohe Rendite, sondern eine nachvollziehbare Rendite bei kontrolliertem Drawdown, realistischen Kosten und genügend Trades."
+        "Die App ist ein Research- und Priorisierungstool. Sie gibt keine Anlageberatung, führt keine Orders aus und kann Verluste nicht verhindern."
     )
 
 
