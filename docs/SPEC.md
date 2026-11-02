@@ -164,6 +164,21 @@ Die Detail-Box für jede Aktie soll strukturiert und aufgeräumt werden, um eine
 
 ---
 
+### 2.13 Wahrheitsmaschine: Faktor-Backtest gegen ETF nach Kosten und Steuern (Sprint 7)
+- **Motivation:** Ohne ehrliche Messung ist jede neue Signalquelle Bauchgefühl. Die Wahrheitsmaschine beantwortet eine Frage: Schlägt das System einen einfachen ETF nach Transaktionskosten und deutschen Steuern?
+- **Paket `factor_lab/`:**
+  - Kursbasierte Faktoren, die für jeden historischen Tag rekonstruierbar sind: `momentum_12_1`, `momentum_6_1`, `low_volatility`, `reversal_1m`, `trend_200d`.
+  - Perzentil-Ränge je Monat über eine gemeinsame Titelmenge statt absoluter Punkte.
+  - Auswertung über Rank-IC mit t-Wert, Quintilsrenditen, Walk-forward-Lernen mit Embargo gegen Gleichgewichtung und Deflated Sharpe Ratio.
+  - Portfolio-Simulation: monatliches Top-N, Ausführung am Folgetag, Transaktionskosten, optionale Sektorgrenze, Trendfilter auf die Investitionsquote.
+  - Steuermodell: 26,375 % Abgeltungssteuer mit Soli auf realisierte Gewinne, Verlusttopf über Jahresgrenzen, Sparerpauschbetrag 1.000 € pro Jahr. ETF-Benchmark mit 30 % Teilfreistellung, Steuer erst beim Verkauf.
+  - Universum in einer Währung, um Wechselkursverzerrung zu vermeiden. Standard ist der S&P 500 gegen SPY.
+- **Brodel-Score-Prüfung:** Rank-IC des gespeicherten Brodel-Scores gegen Folgerenditen, mit Auswertung nur nicht überlappender Zeitfenster.
+- **Zugang:** Reiter „Backtest & ML“ in `app.py` sowie CLI `python -m factor_lab`.
+- **Bekannte Grenze:** Survivorship Bias, weil historische Indexzusammensetzungen und Kurse delisteter Titel nicht frei verfügbar sind. Der Bericht weist das bei jedem Lauf aus.
+
+---
+
 ## 3. Architektur-Entscheidungen (ADR)
 - **ADR-001: Tab-basierte Navigation statt monolithischer Expander:**
   - *Status:* Angenommen.
@@ -205,4 +220,15 @@ Die Detail-Box für jede Aktie soll strukturiert und aufgeräumt werden, um eine
     - Integriertes Live-Filter-/Suchfeld im Tabellenkopf.
     - Graceful Fallback auf `st.dataframe` ohne Selektion, falls die Komponente nicht verfügbar ist.
 
-
+- **ADR-011: Langfristiger Backtest nur auf rekonstruierbaren Daten:**
+  - *Status:* Angenommen.
+  - *Kontext:* Snapshot-Daten aus Yahoo (Kursziele, EPS-Revisionen, Insider, Short Interest, News) sind nicht rückwirkend abrufbar. Ein Training auf wenigen Snapshot-Tagen lernt ein einziges Marktregime.
+  - *Entscheidung:* Der langfristige Backtest verwendet nur Faktoren, die als reine Funktion der Kurse bis zum Signaltag berechenbar sind. Snapshots dienen als Prüfprotokoll für den Brodel-Score, nicht als Trainingsbasis für Langfrist-Aussagen.
+- **ADR-012: Trendfilter auf die Investitionsquote statt Regime-Klassifikator:**
+  - *Status:* Angenommen.
+  - *Kontext:* Ein Klassifikator mit vier Regimen und je zehn Gewichten hätte 40 Parameter bei nur wenigen echten Regimewechseln in 20 Jahren und wäre damit überangepasst.
+  - *Entscheidung:* Liegt der Benchmark-ETF am Signaltag unter seinem 200-Tage-Durchschnitt, sinkt die Investitionsquote auf einen einstellbaren Wert (Standard 50 %). Im Live-Score bleibt das Makro-Overlay, wird aber für negative Scores richtungstreu angewendet.
+- **ADR-013: Gleichgewichtung als Pflicht-Benchmark für gelernte Gewichte:**
+  - *Status:* Angenommen.
+  - *Kontext:* Gelernte Gewichte wurden auf denselben Daten trainiert und angewendet.
+  - *Entscheidung:* Gewichte werden nur angewendet, wenn sie auf einem zeitlich getrennten, durch ein Embargo abgegrenzten Testzeitraum einen höheren Rank-IC als die Gleichgewichtung erreichen. Für Snapshot-Gewichte gilt zusätzlich ein Minimum von 60 Snapshot-Tagen. Steuern, Kosten und der ETF-Vergleich sind fester Bestandteil jeder Auswertung.

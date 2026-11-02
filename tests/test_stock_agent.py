@@ -756,6 +756,24 @@ def test_apply_macro_overlay_bear_market_high_vix(mock_ticker_class):
     stock_agent._macro_multiplier_cache = {}  # Cleanup
 
 
+def test_apply_macro_overlay_bear_market_makes_negative_scores_more_negative():
+    with patch("stock_agent._get_macro_multiplier", return_value=0.8):
+        assert _apply_macro_overlay(-20) == -25
+        assert _apply_macro_overlay(20) == 16
+
+
+def test_apply_macro_overlay_bull_market_softens_negative_scores():
+    with patch("stock_agent._get_macro_multiplier", return_value=1.25):
+        assert _apply_macro_overlay(-20) == -16
+        assert _apply_macro_overlay(20) == 25
+
+
+def test_apply_macro_overlay_is_monotonic_in_bear_market():
+    with patch("stock_agent._get_macro_multiplier", return_value=0.72):
+        scores = [_apply_macro_overlay(value) for value in range(-30, 31)]
+        assert scores == sorted(scores)
+        assert _apply_macro_overlay(0) == 0
+
 # --- Fundamentals ---
 
 def test_fundamentals_empty_info():

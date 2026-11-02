@@ -835,8 +835,19 @@ def _get_macro_multiplier() -> float:
 
 
 def _apply_macro_overlay(score: int) -> int:
+    """Scale a score by the macro regime.
+
+    A favourable regime (multiplier > 1) strengthens positive scores and softens
+    negative ones; an unfavourable regime (multiplier < 1) dampens positive scores
+    and makes negative scores more negative. Dividing negative scores keeps the
+    direction consistent: previously a bear market made negative scores less negative.
+    """
     multiplier = _get_macro_multiplier()
-    return int(round(score * multiplier))
+    if multiplier <= 0:
+        return int(score)
+    if score >= 0:
+        return int(round(score * multiplier))
+    return int(round(score / multiplier))
 
 
 def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, str] | None = None) -> dict[str, Any]:

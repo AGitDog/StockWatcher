@@ -15,6 +15,10 @@ import yfinance as yf
 logger = logging.getLogger(__name__)
 
 WEIGHTS_FILE = Path("ml_weights/optimized_weights.json")
+
+# Trained weights are only applied once they have proven themselves out of sample.
+MIN_DISTINCT_DATES = 60
+TRAIN_FRACTION = 0.7
 COMPONENT_NAMES = [
     "EPS-Revisionen",
     "Kursziele & Konsens",
@@ -100,14 +104,99 @@ def build_training_data(
     return pd.DataFrame(rows)
 
 
+def _mean_rank_ic(df: pd.DataFrame, scores: np.ndarray) -> float:
+    """Average per-date Spearman correlation between scores and forward returns."""
+    frame = pd.DataFrame({
+        "date": df["snapshot_date"].values,
+        "score": scores,
+        "fwd": df["forward_return"].values,
+    })
+    ics: list[float] = []
+    for _, group in frame.groupby("date"):
+        if len(group) < 3 or group["score"].nunique() < 2 or group["fwd"].nunique() < 2:
+            continue
+        ic = group["score"].rank().corr(group["fwd"].rank())
+        if pd.notna(ic):
+            ics.append(float(ic))
+    return float(np.mean(ics)) if ics else float("nan")
+
+
+def validate_out_of_sample(
+    df: pd.DataFrame,
+    component_names: list[str] | None = None,
+    forward_days: int = 30,
+    min_dates: int = MIN_DISTINCT_DATES,
+    train_fraction: float = TRAIN_FRACTION,
+) -> dict[str, Any]:
+    """Compare trained weights against equal weights on a purged, embargoed hold-out period.
+
+    Training uses the earliest dates. Every test date lies more than ``forward_days``
+    after the last training date, so no training label overlaps the test window.
+    The trained weights are only accepted if they beat equal weighting out of sample.
+    """
+    names = component_names or COMPONENT_NAMES
+    result: dict[str, Any] = {
+        "validated": False,
+        "n_dates": 0,
+        "oos_ic_trained": None,
+        "oos_ic_equal": None,
+        "reason": "",
+    }
+    if df.empty or "snapshot_date" not in df.columns:
+        result["reason"] = "Keine Trainingsdaten."
+        return result
+
+    snapshot_days = pd.to_datetime(df["snapshot_date"]).dt.normalize()
+    dates = sorted(snapshot_days.unique())
+    result["n_dates"] = len(dates)
+    if len(dates) < min_dates:
+        result["reason"] = f"Nur {len(dates)} Snapshot-Tage, mindestens {min_dates} noetig."
+        return result
+
+    split = int(len(dates) * train_fraction)
+    last_train = pd.Timestamp(dates[split - 1])
+    embargo_end = last_train + pd.Timedelta(days=forward_days)
+    train = df[snapshot_days <= last_train]
+    test = df[snapshot_days > embargo_end]
+    if train.empty or test["snapshot_date"].nunique() < 5:
+        result["reason"] = "Zu wenige Test-Tage nach dem Embargo."
+        return result
+
+    candidate = ScoreWeightTrainer(names)
+    candidate.fit(train)
+    x_test = test[names].fillna(0).values
+    trained_scores = x_test @ np.array([candidate.weights[n] for n in names])
+    equal_scores = x_test.sum(axis=1)
+
+    ic_trained = _mean_rank_ic(test, trained_scores)
+    ic_equal = _mean_rank_ic(test, equal_scores)
+    result["oos_ic_trained"] = ic_trained
+    result["oos_ic_equal"] = ic_equal
+
+    if np.isnan(ic_trained) or np.isnan(ic_equal):
+        result["reason"] = "Information Coefficient nicht berechenbar."
+    elif ic_trained > ic_equal and ic_trained > 0:
+        result["validated"] = True
+        result["reason"] = "Trainierte Gewichte schlagen Gleichgewichtung out of sample."
+    else:
+        result["reason"] = "Trainierte Gewichte schlagen Gleichgewichtung out of sample nicht."
+    return result
+
+
 class ScoreWeightTrainer:
-    """Train and apply optimized score weights."""
+    """Train and apply optimized score weights.
+
+    Weights are only used for scoring when ``validated`` is True. Otherwise the
+    trainer falls back to equal weighting, which is the benchmark any learned
+    weighting has to beat.
+    """
 
     def __init__(self, component_names: list[str] | None = None) -> None:
         self.component_names = component_names or COMPONENT_NAMES
         self.weights: dict[str, float] = {name: 1.0 for name in self.component_names}
         self.intercept: float = 0.0
-        self.performance: dict[str, float] = {}
+        self.performance: dict[str, Any] = {}
+        self.validated: bool = False
 
     def fit(self, df: pd.DataFrame) -> dict[str, float]:
         """Fit weights using linear regression with non-negative coefficients."""
@@ -136,7 +225,7 @@ class ScoreWeightTrainer:
         self.weights = {name: float(normalized[i]) for i, name in enumerate(self.component_names)}
         self.intercept = 0.0
 
-        # Evaluate: correlation of weighted score with forward return
+        # In-sample evaluation only; the out-of-sample check lives in validate_out_of_sample.
         weighted_score = df[self.component_names].fillna(0).values @ normalized
         self.performance["correlation"] = float(np.corrcoef(weighted_score, y)[0, 1]) if len(y) > 1 else 0.0
         self.performance["mean_forward_return_top_quintile"] = float(
@@ -147,8 +236,10 @@ class ScoreWeightTrainer:
         return self.weights
 
     def predict_score(self, item: dict[str, Any]) -> float:
-        """Apply trained weights to a signal item."""
+        """Apply trained weights to a signal item, or equal weights if not validated."""
         scores = _extract_component_scores(item)
+        if not self.validated:
+            return float(sum(scores[name] for name in self.component_names))
         weighted = sum(scores[name] * self.weights.get(name, 1.0) for name in self.component_names)
         return weighted + self.intercept
 
@@ -159,6 +250,7 @@ class ScoreWeightTrainer:
             "weights": self.weights,
             "intercept": self.intercept,
             "performance": self.performance,
+            "validated": self.validated,
             "trained_at": datetime.utcnow().isoformat(),
         }
         path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -172,6 +264,8 @@ class ScoreWeightTrainer:
             self.weights = data.get("weights", self.weights)
             self.intercept = data.get("intercept", 0.0)
             self.performance = data.get("performance", {})
+            # Files written before the out-of-sample guard count as not validated.
+            self.validated = bool(data.get("validated", False))
             return True
         except Exception as e:
             logger.warning(f"Konnte Gewichte nicht laden: {e}")
@@ -189,7 +283,16 @@ def train_on_snapshots(
     if df.empty:
         logger.warning("Keine Trainingsdaten verfügbar.")
         return trainer
+    validation = validate_out_of_sample(df, trainer.component_names, forward_days=forward_days)
     trainer.fit(df)
+    trainer.validated = bool(validation["validated"])
+    trainer.performance.update({
+        "oos_validated": validation["validated"],
+        "oos_n_dates": validation["n_dates"],
+        "oos_ic_trained": validation["oos_ic_trained"],
+        "oos_ic_equal": validation["oos_ic_equal"],
+        "oos_reason": validation["reason"],
+    })
     trainer.save(save_path)
     return trainer
 

@@ -127,3 +127,24 @@ Die Seite `Hilfe & Methodik` enthaelt eine eingebaute Hilfe-Sektion, die erklaer
 # Hinweise
 
 Die Daten fuer den Aktien-Agenten kommen aus frei verfuegbaren Yahoo-Finance-Endpunkten via `yfinance`. Nicht jeder Datenpunkt ist fuer jeden Ticker verfuegbar. Fuer ETFs sind Insiderdaten in der Regel nicht relevant.
+
+## Wahrheitsmaschine: Schlägt das System einen ETF?
+
+Das Paket `factor_lab/` testet kursbasierte Faktoren über bis zu 20 Jahre gegen einen ETF. Es rechnet mit Transaktionskosten, deutscher Abgeltungssteuer samt Verlusttopf und Sparerpauschbetrag sowie einem Trendfilter für die Investitionsquote. Der ETF wird mit 30 Prozent Teilfreistellung erst beim Verkauf besteuert.
+
+Zugang über den Reiter **Backtest & ML** in der App oder per Kommandozeile:
+
+```powershell
+# Momentum und Low-Volatility, Top 20, S&P 500 gegen SPY ab 2005
+.\.venv\Scripts\python.exe -m factor_lab --universe "S&P 500" --benchmark SPY --start 2004-01-01
+
+# Andere Faktoren; jede getestete Variante in --n-trials mitzählen
+.\.venv\Scripts\python.exe -m factor_lab --factors momentum_12_1 --n-trials 3
+
+# Gespeicherte Brodel-Scores gegen die Folgerenditen messen
+.\.venv\Scripts\python.exe -m factor_lab --brodel --horizon-days 21
+```
+
+Berichte und Kurs-Cache landen in `cache/factor_lab/`. Wichtigste Grenze: Das Universum besteht aus heutigen Indexmitgliedern, was rückblickend die Gewinner bevorzugt.
+
+ML-Gewichte für den Brodel-Score werden nur noch angewendet, wenn sie auf einem zeitlich getrennten Testzeitraum die Gleichgewichtung schlagen. Dafür sind mindestens 60 Snapshot-Tage nötig.

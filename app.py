@@ -31,6 +31,9 @@ from backtest_engine import (
 )
 from ml_weights import load_trained_weights, train_on_snapshots
 from backtest_engine.engine import load_snapshots
+from factor_lab import BacktestConfig, build_truth_report, snapshot_score_ic
+from factor_lab.data import download_close_prices, filter_single_currency, load_universe
+from factor_lab.factors import FACTOR_DESCRIPTIONS
 import streamlit.components.v1 as components
 
 
@@ -896,6 +899,178 @@ def render_help_tab():
     )
 
 
+TRUTH_UNIVERSES = ["S&P 500", "Nasdaq-100", "Dow Jones"]
+TRUTH_BENCHMARKS = ["SPY", "QQQ", "URTH", "DIA"]
+
+
+def _is_number(value) -> bool:
+    return isinstance(value, (int, float)) and value == value
+
+
+@st.cache_data(show_spinner=False, ttl=60 * 60 * 12)
+def _truth_price_panel(universe: str, benchmark: str, start: str):
+    symbols = load_universe(universe)
+    return download_close_prices(symbols + [benchmark], start=start)
+
+
+def build_truth_metrics_rows(report: dict) -> list[dict]:
+    """Side-by-side comparison of strategy and benchmark for display."""
+    m = report["backtest"]["metrics"]
+    b = report["backtest"]["benchmark_metrics"]
+
+    def pct(value):
+        return f"{value * 100:.1f} %" if _is_number(value) else "–"
+
+    def money(value):
+        return f"{value:,.0f}".replace(",", ".") if _is_number(value) else "–"
+
+    def ratio(value):
+        return f"{value:.2f}" if _is_number(value) else "–"
+
+    return [
+        {"Kennzahl": "Rendite p. a. (Depotwert)", "Strategie": pct(m["cagr"]), "ETF": pct(b["cagr"])},
+        {"Kennzahl": "Rendite p. a. nach Endverkauf und Steuer", "Strategie": pct(m["cagr_after_tax"]), "ETF": pct(b["cagr_after_tax"])},
+        {"Kennzahl": "Volatilität p. a.", "Strategie": pct(m["volatility"]), "ETF": pct(b["volatility"])},
+        {"Kennzahl": "Maximaler Verlust", "Strategie": pct(m["max_drawdown"]), "ETF": pct(b["max_drawdown"])},
+        {"Kennzahl": "Sharpe Ratio", "Strategie": ratio(m["sharpe"]), "ETF": ratio(b["sharpe"])},
+        {"Kennzahl": "Endvermögen nach Steuern", "Strategie": money(m["final_value_after_tax"]), "ETF": money(b["final_value_after_tax"])},
+        {"Kennzahl": "Gezahlte Steuern", "Strategie": money(m["taxes_paid"]), "ETF": money(b["taxes_paid"])},
+        {"Kennzahl": "Transaktionskosten", "Strategie": money(m["costs_paid"]), "ETF": "–"},
+    ]
+
+
+def build_factor_ic_rows(report: dict) -> list[dict]:
+    rows = []
+    for name, values in report["factor_ic"].items():
+        rows.append({
+            "Faktor": name,
+            "Mittlerer Rank-IC": round(values["mean_ic"], 3) if _is_number(values["mean_ic"]) else None,
+            "t-Wert": round(values["t_stat"], 2) if _is_number(values["t_stat"]) else None,
+            "Trefferquote": f"{values['hit_rate'] * 100:.0f} %" if _is_number(values["hit_rate"]) else "–",
+            "Monate": values["n"],
+        })
+    return rows
+
+
+def render_truth_machine_section():
+    st.subheader("🧪 Wahrheitsmaschine: Schlägt das System einen ETF?")
+    st.write(
+        "Testet kursbasierte Faktoren über bis zu 20 Jahre gegen einen ETF, mit Transaktionskosten, "
+        "deutscher Abgeltungssteuer samt Verlusttopf und Sparerpauschbetrag sowie Trendfilter für die Investitionsquote. "
+        "Signale entstehen zum Monatsende und werden erst am nächsten Handelstag ausgeführt."
+    )
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        universe = st.selectbox("Universum", TRUTH_UNIVERSES, index=0, key="truth_universe")
+        benchmark = st.selectbox("Benchmark-ETF", TRUTH_BENCHMARKS, index=0, key="truth_benchmark")
+    with c2:
+        start_year = st.number_input("Startjahr", min_value=1995, max_value=2023, value=2005, step=1, key="truth_start")
+        top_n = st.slider("Anzahl Aktien", min_value=5, max_value=100, value=20, key="truth_top_n")
+    with c3:
+        factors = st.multiselect(
+            "Faktoren (gleich gewichtet)",
+            options=list(FACTOR_DESCRIPTIONS),
+            default=["momentum_12_1", "low_volatility"],
+            help="\n".join(f"{k}: {v}" for k, v in FACTOR_DESCRIPTIONS.items()),
+            key="truth_factors",
+        )
+        n_trials = st.number_input(
+            "Bisher getestete Varianten",
+            min_value=1, max_value=1000, value=1, step=1,
+            help="Jede ausprobierte Einstellung erhöht die Chance auf einen Zufallstreffer. Diese Zahl fließt in die Deflated Sharpe Ratio ein.",
+            key="truth_trials",
+        )
+    c4, c5, c6 = st.columns(3)
+    with c4:
+        trend_filter = st.checkbox("Trendfilter (ETF unter 200-Tage-Linie)", value=True, key="truth_trend")
+    with c5:
+        risk_off = st.slider("Investitionsquote im Abwärtstrend", 0.0, 1.0, 0.5, 0.1, disabled=not trend_filter, key="truth_risk_off")
+    with c6:
+        apply_tax = st.checkbox("Deutsche Steuer berücksichtigen", value=True, key="truth_tax")
+
+    if st.button("Wahrheitsmaschine starten", use_container_width=True, disabled=not factors):
+        with st.spinner("Lade Kurshistorie und rechne... (beim ersten Lauf 1–2 Minuten)"):
+            try:
+                close = _truth_price_panel(universe, benchmark, f"{int(start_year) - 1}-01-01").copy()
+                if benchmark not in close.columns:
+                    st.error(f"Benchmark {benchmark} konnte nicht geladen werden.")
+                    return
+                bench = close.pop(benchmark)
+                config = BacktestConfig(
+                    factor_weights={name: 1.0 for name in factors},
+                    top_n=int(top_n),
+                    trend_filter=trend_filter,
+                    risk_off_exposure=float(risk_off),
+                    apply_tax=apply_tax,
+                    n_trials=int(n_trials),
+                )
+                st.session_state["truth_report"] = build_truth_report(close, bench, config)
+            except Exception as exc:
+                st.error(f"Wahrheitsmaschine fehlgeschlagen: {exc}")
+                return
+
+    report = st.session_state.get("truth_report")
+    if not report:
+        return
+    st.markdown(f"**Zeitraum:** {report['period']['start']} bis {report['period']['end']} · **Universum:** {report['universe_size']} Titel")
+    st.markdown("##### Urteil")
+    for line in report["verdict"]:
+        st.markdown(f"- {line}")
+    st.dataframe(pd.DataFrame(build_truth_metrics_rows(report)), use_container_width=True, hide_index=True)
+    equity = report["backtest_result"].equity[["strategy", "benchmark"]].rename(columns={"strategy": "Strategie", "benchmark": "ETF"})
+    st.line_chart(equity)
+
+    with st.expander("Statistik der Faktoren und Walk-forward-Test"):
+        st.caption("Rank-IC: Rangkorrelation zwischen Score und Rendite des Folgemonats. Ab einem t-Wert von 2 gilt ein Effekt als signifikant.")
+        st.dataframe(pd.DataFrame(build_factor_ic_rows(report)), use_container_width=True, hide_index=True)
+        dsr = report["backtest"]["metrics"].get("deflated_sharpe_excess")
+        if _is_number(dsr):
+            st.write(f"Deflated Sharpe Ratio der Überrendite: **{dsr:.2f}** (ab 0,95 belastbar)")
+        wf = report.get("walk_forward")
+        if wf and _is_number(wf["summary_learned"]["mean_ic"]):
+            st.write(
+                f"Gelernte Gewichte, Rank-IC out of sample: {wf['summary_learned']['mean_ic']:+.3f} · "
+                f"Gleichgewichtung: {wf['summary_equal']['mean_ic']:+.3f}"
+            )
+    with st.expander("Grenzen dieses Tests"):
+        for caveat in report["caveats"]:
+            st.markdown(f"- {caveat}")
+
+
+def render_brodel_check_section():
+    st.subheader("🔬 Brodel-Score auf dem Prüfstand")
+    st.write(
+        "Misst, ob ein hoher Brodel-Score in den gespeicherten Snapshots tatsächlich höhere Folgerenditen gebracht hat. "
+        "Überlappende Zeitfenster werden für den belastbaren t-Wert herausgerechnet."
+    )
+    horizon = st.select_slider("Horizont (Handelstage)", options=[5, 10, 21, 63], value=21, key="brodel_horizon")
+    if st.button("Brodel-Score messen", use_container_width=True):
+        with st.spinner("Lade Kurse für alle Snapshot-Titel..."):
+            snapshots = load_snapshots()
+            if not snapshots:
+                st.info("Keine Snapshots vorhanden.")
+                return
+            symbols = sorted({item.get("symbol") for _, items in snapshots for item in items if item.get("symbol")})
+            first = min(ts for ts, _ in snapshots).strftime("%Y-%m-%d")
+            close = download_close_prices(filter_single_currency(symbols, us_only=False), start=first)
+            result = snapshot_score_ic(snapshots, close, horizon_days=int(horizon))
+        overall = result["summary"]
+        independent = result["summary_independent"]
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Snapshot-Tage", result["n_snapshot_days"])
+        c2.metric("Unabhängige Messpunkte", independent["n"])
+        c3.metric("Mittlerer Rank-IC", f"{overall['mean_ic']:+.3f}" if overall["n"] else "–")
+        if independent["n"] < 24:
+            st.warning(
+                f"Nur {independent['n']} unabhängige Messpunkte. Für eine belastbare Aussage braucht es mindestens 24, "
+                "also gut zwei Jahre tägliche Snapshots bei einem Monatshorizont."
+            )
+        elif independent["t_stat"] >= 2:
+            st.success(f"Der Brodel-Score sortiert signifikant (t = {independent['t_stat']:.1f}).")
+        else:
+            st.info(f"Kein signifikanter Effekt (t = {independent['t_stat']:.1f}).")
+
+
 def render_backtest_tab():
     with st.expander("⚙️ Datenpflege: Signal-Snapshot manuell erstellen", expanded=False):
         st.write(
@@ -905,6 +1080,11 @@ def render_backtest_tab():
         if st.button("Signale jetzt neu berechnen & Snapshot speichern", use_container_width=True):
             execute_signal_calculation()
             st.rerun()
+
+    render_truth_machine_section()
+    st.markdown("---")
+    render_brodel_check_section()
+    st.markdown("---")
 
     st.subheader("Event-Backtest: Punktebereich-Eintritt")
     st.write(
@@ -1060,13 +1240,20 @@ def render_backtest_tab():
         st.subheader("ML-Gewichtung trainieren")
         st.write(
             "Trainiere die Score-Gewichtung auf Basis historischer Snapshots und Forward-Renditen. "
-            "Die optimierten Gewichte werden automatisch im Signal Monitor angewendet."
+            "Die Gewichte werden nur angewendet, wenn sie auf einem zeitlich getrennten Testzeitraum "
+            "die einfache Gleichgewichtung schlagen. Sonst bleibt es bei der Gleichgewichtung."
         )
         if st.button("ML-Gewichtung trainieren", use_container_width=True):
             with st.spinner("Trainiere Gewichte... (kann einige Minuten dauern)"):
                 snapshots = load_snapshots()
                 trainer = train_on_snapshots(snapshots, forward_days=30)
+                if trainer.validated:
+                    st.success("Gewichte bestehen den Out-of-Sample-Test und werden angewendet.")
+                else:
+                    reason = trainer.performance.get("oos_reason") or "Keine Trainingsdaten."
+                    st.warning(f"Gewichte werden nicht angewendet: {reason}")
                 st.json({
+                    "validated": trainer.validated,
                     "weights": trainer.weights,
                     "performance": trainer.performance,
                     "trained_at": datetime.now(timezone.utc).isoformat(),
