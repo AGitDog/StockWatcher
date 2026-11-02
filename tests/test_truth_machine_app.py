@@ -71,3 +71,27 @@ def test_truth_machine_section_renders_without_report():
     labels = [button.label for button in at.button]
     assert "Wahrheitsmaschine starten" in labels
     assert "Brodel-Score messen" in labels
+
+
+def _rendered_help_text(render_name: str) -> str:
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_string(f"import app\napp.{render_name}()\n")
+    at.run(timeout=60)
+    assert not at.exception
+    parts = [m.value for m in at.markdown] + [c.value for c in at.caption] + [i.value for i in at.info]
+    parts += [str(t.value) for t in at.table] + [c.value for c in at.code]
+    return "\n".join(parts)
+
+
+def test_truth_machine_help_explains_etf_benchmark():
+    text = _rendered_help_text("render_truth_machine_help")
+    for term in ["Teilfreistellung", "Sparerpauschbetrag", "26,375", "SPY", "QQQ", "URTH", "DIA", "Survivorship", "Trendfilter", "Deflated Sharpe"]:
+        assert term in text, term
+
+
+def test_help_tab_includes_truth_machine_and_fixed_macro_text():
+    text = _rendered_help_text("render_help_tab")
+    assert "Die Wahrheitsmaschine einfach erklärt" in text
+    assert "negative Scores dadurch geteilt" in text
+    assert "60 Snapshot-Tage" in text

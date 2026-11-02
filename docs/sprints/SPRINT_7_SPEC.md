@@ -7,7 +7,7 @@
 **Ziel:** Bevor weitere Signale gebaut werden, muss messbar sein, ob das System einen einfachen ETF nach Kosten und deutschen Steuern schlägt. Dazu kommen ein Fix im Makro-Overlay und eine Absicherung der ML-Gewichte gegen Overfitting.
 
 ## Testergebnisse & Verifikation
-- **228 Tests erfolgreich bestanden** (0 Fehler, Ausgangsbasis 177).
+- **230 Tests erfolgreich bestanden** (0 Fehler, Ausgangsbasis 177). Stand nach Nachtrag Task 5.
 - Neue Testsuiten: `tests/test_factor_lab.py` (35 Tests), `tests/test_truth_machine_app.py` (5 Tests).
 - Erweitert: `tests/test_ml_weights.py` (+8 Tests), `tests/test_stock_agent.py` (+3 Tests).
 - Manuelle Verifikation: Lauf über 503 S&P-500-Titel von 2005 bis 2026 per CLI und per Streamlit-AppTest mit Klick auf „Wahrheitsmaschine starten“.
@@ -50,6 +50,12 @@ Entscheidung: Nur was mit kostenlosen Daten rückwirkend rekonstruierbar ist, wi
 - Abschnitt „🧪 Wahrheitsmaschine“ mit Universum, Benchmark, Startjahr, Faktoren, Anzahl Aktien, Trendfilter, Steuer und Anzahl getesteter Varianten.
 - Ausgabe: Urteil, Vergleichstabelle Strategie gegen ETF, Vermögenskurve, Faktorstatistik, Walk-forward-Ergebnis und Grenzen.
 - Abschnitt „🔬 Brodel-Score auf dem Prüfstand“ mit Rank-IC und Zahl unabhängiger Messpunkte.
+
+### Task 5 (Nachtrag): Ausführliche Hilfe im Reiter „Hilfe & Methodik“
+- Neue Funktion `render_truth_machine_help()` in `app.py` mit elf Abschnitten in einfacher Sprache: Grundidee, ETF-Auswahl, genaue Behandlung des ETF inklusive Steuerformel und Rechenbeispiel, Strategie-Ablauf, Faktoren, alle Einstellungen, Ergebnistabelle, Statistik, Grenzen, Brodel-Prüfstand und Bedeutung für Anleger.
+- Korrigiert: Hilfetext zum Makro-Overlay (negative Scores werden geteilt) und zur ML-Gewichtung (Out-of-Sample-Schutz, 60 Snapshot-Tage).
+- Hinweis im Abschnitt Wahrheitsmaschine auf die Hilfe.
+- Tests: 2 neue AppTests in `tests/test_truth_machine_app.py`.
 
 ---
 

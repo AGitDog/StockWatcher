@@ -644,6 +644,247 @@ def render_watchlist_signal_monitor(mapping_text: str):
                 else:
                     st.info("Keine Dividenden-Historie fuer diesen Titel vorhanden.")
 
+def render_truth_machine_help():
+    """Plain-language help for the truth machine and its ETF benchmark."""
+    st.markdown("### 🧪 Die Wahrheitsmaschine einfach erklärt")
+    st.write(
+        "Die Wahrheitsmaschine beantwortet eine einzige Frage: Hätte man mit dieser Aktien-Strategie in den letzten 20 Jahren "
+        "mehr Geld verdient als mit einem ganz normalen ETF? Gezählt wird erst, nachdem Gebühren und deutsche Steuern bezahlt sind. "
+        "Du findest sie im Reiter **Backtest & ML** ganz oben."
+    )
+
+    with st.expander("1. Die Grundidee: faul gegen fleißig"):
+        st.markdown(
+            "Stell dir vor, du bekommst **100.000 € Spielgeld** und hast zwei Möglichkeiten:\n\n"
+            "- **Faul:** Du kaufst am ersten Tag einen ETF und machst 20 Jahre lang gar nichts.\n"
+            "- **Fleißig:** Jeden Monat suchst du nach festen Regeln die 20 „besten“ Aktien aus und tauschst dein Depot um.\n\n"
+            "Die Wahrheitsmaschine spielt beide Wege mit den echten Kursen der Vergangenheit durch. Am Ende vergleicht sie, wer mehr Geld auf dem Konto hat."
+        )
+        st.markdown(
+            "**Warum heißt sie Wahrheitsmaschine?** Weil sie nicht schummeln darf. An jedem Tag kennt sie nur die Kurse bis zu diesem Tag. "
+            "Sie weiß im Jahr 2008 also nicht, dass Apple später riesig wird. Und sie zieht jede Gebühr und jeden Euro Steuer ab, so wie es im echten Leben passiert."
+        )
+        st.info("Wenn der fleißige Weg nicht gewinnt, lohnt sich die viele Arbeit nicht. Dann ist der ETF die bessere Wahl. Genau das soll die Maschine herausfinden, bevor echtes Geld im Spiel ist.")
+
+    with st.expander("2. Was ist ein ETF, und welche ETFs stehen zur Auswahl?"):
+        st.markdown(
+            "Ein **ETF** ist wie eine Tüte gemischter Süßigkeiten. Statt eine einzelne Sorte zu kaufen, bekommst du mit einem Griff alle Sorten auf einmal. "
+            "Ein S&P-500-ETF enthält zum Beispiel die 500 größten Firmen der USA.\n\n"
+            "- Geht eine Firma pleite, merkst du das kaum, weil die anderen 499 noch da sind.\n"
+            "- Ein ETF kostet sehr wenig Gebühren, und du musst nichts tun.\n"
+            "- Darum ist er der Gegner, den jede Strategie schlagen muss. Profis nennen so einen Gegner **Benchmark**, auf Deutsch **Messlatte**."
+        )
+        st.markdown("**Die vier ETFs in der App:**")
+        st.table(pd.DataFrame([
+            {"Kürzel": "SPY", "Was steckt drin": "die 500 größten US-Firmen (S&P 500)", "Passendes Universum": "S&P 500"},
+            {"Kürzel": "QQQ", "Was steckt drin": "die 100 größten Firmen der Technologiebörse Nasdaq, ohne Banken, sehr viel Technik", "Passendes Universum": "Nasdaq-100"},
+            {"Kürzel": "DIA", "Was steckt drin": "30 bekannte US-Großkonzerne aus dem Dow Jones", "Passendes Universum": "Dow Jones"},
+            {"Kürzel": "URTH", "Was steckt drin": "rund 1.400 Firmen aus 23 Industrieländern (MSCI World)", "Passendes Universum": "keins direkt, dient als Vergleich mit dem „Welt-ETF“"},
+        ]))
+        st.markdown(
+            "**Tipp:** Nimm den ETF, der zum Universum passt. Wer Aktien aus dem S&P 500 auswählt, sollte gegen SPY antreten. "
+            "Sonst vergleichst du Äpfel mit Birnen.\n\n"
+            "**Gut zu wissen:** SPY, QQQ, DIA und URTH sind amerikanische ETFs. In Deutschland kauft man meist eine europäische Version, "
+            "zum Beispiel einen S&P-500-ETF mit „UCITS“ im Namen. Der verläuft fast genauso. Deshalb taugt SPY trotzdem als Messlatte."
+        )
+
+    with st.expander("3. So wird der ETF im Test genau behandelt"):
+        st.markdown(
+            "Der ETF spielt den faulen Anleger. Er bekommt genau diese Regeln:\n\n"
+            "1. **Kauf am Start:** Am ersten Handelstag des Tests wird das ganze Startkapital von 100.000 in den ETF gesteckt. Dafür fallen 0,1 % Gebühr an.\n"
+            "2. **Nichts tun:** Danach wird nichts mehr verändert. Kein Umschichten und kein Trendfilter. Der ETF bleibt immer zu 100 % investiert, auch mitten im Börsencrash.\n"
+            "3. **Dividenden:** Ausschüttungen werden automatisch wieder angelegt. Sie stecken schon in den bereinigten Kursen von Yahoo Finance.\n"
+            "4. **Verkauf am Ende:** Am letzten Tag wird alles verkauft. Dafür fallen noch einmal 0,1 % Gebühr an.\n"
+            "5. **Steuer nur einmal, ganz am Ende.** Gerechnet wird so:"
+        )
+        st.code(
+            "Gewinn           = Verkaufserlös - 100.000\n"
+            "steuerpflichtig  = Gewinn x 70 %             (30 % Teilfreistellung)\n"
+            "nach Freibetrag  = steuerpflichtig - 1.000   (Sparerpauschbetrag)\n"
+            "Steuer           = nach Freibetrag x 26,375 %",
+            language=None,
+        )
+        st.markdown(
+            "**Rechenbeispiel, vereinfacht ohne Gebühren:** Aus 100.000 € werden in 20 Jahren 400.000 €.\n\n"
+            "- Der Gewinn beträgt 300.000 €.\n"
+            "- 30 % davon sind steuerfrei. Steuerpflichtig bleiben 210.000 €.\n"
+            "- Nach Abzug des Freibetrags bleiben 209.000 €.\n"
+            "- Die Steuer darauf beträgt rund 55.124 €.\n"
+            "- Am Ende hast du also rund **344.876 €** auf dem Konto."
+        )
+        st.markdown(
+            "**Was ist die Teilfreistellung?** Ein Aktienfonds zahlt intern schon Steuern auf Dividenden, bevor du etwas davon siehst. "
+            "Damit nicht doppelt kassiert wird, lässt der deutsche Staat 30 % deines Gewinns aus Aktien-ETFs steuerfrei. "
+            "Für einzelne Aktien gibt es das nicht.\n\n"
+            "**Der versteckte Vorteil des ETF:** Weil er erst am Ende Steuern zahlt, bleibt das Steuergeld 20 Jahre lang im Depot und arbeitet mit. "
+            "Das ist wie ein Schneeball, der beim Rollen immer größer wird. Wer jeden Monat verkauft und Steuer zahlt, nimmt dem Schneeball ständig etwas weg."
+        )
+        st.markdown(
+            "**Was beim ETF vereinfacht ist:**\n\n"
+            "- **Vorabpauschale:** In echt zahlt man beim ETF jedes Jahr eine kleine Steuer-Vorauszahlung. Die fehlt im Test. Das lässt den ETF etwas besser aussehen.\n"
+            "- **Freibetrag:** Der ETF nutzt den Sparerpauschbetrag nur einmal am Ende. Die Strategie darf ihn jedes Jahr nutzen. Das hilft der Strategie etwas.\n"
+            "- **Laufende Kosten:** Die jährliche Fondsgebühr steckt bei SPY schon im Kurs.\n"
+            "- **Kirchensteuer** wird nicht berechnet.\n"
+            "- **Währung:** Alles wird in Dollar gerechnet, ohne Umtausch in Euro. Das gilt für beide Seiten gleich, der Vergleich bleibt also fair."
+        )
+
+    with st.expander("4. So funktioniert die Aktien-Strategie"):
+        st.markdown(
+            "Die Strategie spielt den fleißigen Anleger. Jeden Monat läuft dasselbe ab:\n\n"
+            "1. **Zeugnistag am Monatsende:** Jede Aktie im Universum bekommt Noten. Diese Noten heißen **Faktoren**, sie werden im nächsten Abschnitt erklärt.\n"
+            "2. **Rangliste:** Aus den Noten wird eine Rangliste wie in der Klasse. Die beste Aktie bekommt fast 100 %, die schlechteste fast 0 %. "
+            "Bei mehreren Faktoren zählt der Durchschnitt der Ränge.\n"
+            "3. **Auswahl:** Die besten 20 Aktien werden gekauft, jede mit gleich viel Geld, also je 5 %.\n"
+            "4. **Ein Tag Abstand:** Gekauft wird erst am nächsten Handelstag. So kann die Maschine nicht mit dem Wissen von heute zum Preis von heute handeln.\n"
+            "5. **Umtausch nach einem Monat:** Wer aus den Top 20 fällt, wird verkauft. Neue Aufsteiger werden gekauft.\n"
+            "6. **Am Ende** wird alles verkauft, und die letzte Steuer wird fällig."
+        )
+        st.markdown(
+            "**Gebühren und Steuern bei der Strategie:**\n\n"
+            "- Jeder Kauf und jeder Verkauf kostet 0,1 % Gebühr.\n"
+            "- Bei jedem Verkauf mit Gewinn behält die Bank sofort 26,375 % Steuer ein, so wie ein deutscher Broker. Dieses Geld fehlt dann für die nächsten Käufe.\n"
+            "- Verluste wandern in den **Verlusttopf**. Sie werden mit späteren Gewinnen verrechnet, auch über Jahre hinweg.\n"
+            "- Pro Jahr sind 1.000 € Gewinn steuerfrei, das ist der **Sparerpauschbetrag**."
+        )
+        st.warning("Monatliches Umschichten ist teuer. Im ersten Testlauf hat die laufende Steuer etwa ein Viertel der Rendite aufgefressen. Je seltener verkauft wird, desto besser für den Schneeball.")
+
+    with st.expander("5. Die Faktoren: nach welchen Noten wird sortiert?"):
+        st.table(pd.DataFrame([
+            {"Faktor": "momentum_12_1", "Einfach erklärt": "Wie stark ist die Aktie in den letzten 12 Monaten gestiegen? Der jüngste Monat wird weggelassen.",
+             "Idee dahinter": "Gewinner bleiben oft eine Weile Gewinner. Der letzte Monat zählt nicht, weil Aktien nach einem starken Monat oft kurz zurückfallen."},
+            {"Faktor": "momentum_6_1", "Einfach erklärt": "Dasselbe, aber nur über 6 Monate.", "Idee dahinter": "Eine kürzere, schnellere Version von Momentum."},
+            {"Faktor": "low_volatility", "Einfach erklärt": "Wie ruhig ist die Aktie? Wenig Schwankung im letzten Jahr gibt eine gute Note.",
+             "Idee dahinter": "Ruhige Aktien bringen erstaunlich oft ähnliche Renditen mit weniger Stress."},
+            {"Faktor": "reversal_1m", "Einfach erklärt": "Wer im letzten Monat am stärksten gefallen ist, bekommt die beste Note.",
+             "Idee dahinter": "Kurze Übertreibungen drehen oft wieder. Achtung: sehr viel Umschichten, also viel Gebühren und Steuer."},
+            {"Faktor": "trend_200d", "Einfach erklärt": "Wie weit liegt der Kurs über seinem Durchschnitt der letzten 200 Handelstage?",
+             "Idee dahinter": "Wer über seinem Durchschnitt liegt, steckt in einem Aufwärtstrend."},
+        ]))
+        st.write(
+            "Alle Faktoren werden nur aus Kursen berechnet. Der Grund: Nur Kurse gibt es kostenlos für 20 Jahre rückwirkend. "
+            "Was Analysten 2008 über eine Aktie dachten, lässt sich heute nicht mehr abrufen. Deshalb kann die Wahrheitsmaschine den Brodel-Score selbst nicht über 20 Jahre testen."
+        )
+
+    with st.expander("6. Alle Einstellungen erklärt"):
+        st.table(pd.DataFrame([
+            {"Einstellung": "Universum", "Was sie macht": "Aus welchem Topf die Aktien ausgewählt werden.", "Standard": "S&P 500"},
+            {"Einstellung": "Benchmark-ETF", "Was sie macht": "Der Gegner, gegen den die Strategie antritt.", "Standard": "SPY"},
+            {"Einstellung": "Startjahr", "Was sie macht": "Ab wann gerechnet wird. Die Kurse werden ein Jahr früher geladen, damit der 12-Monats-Faktor schon am Start eine Note hat.", "Standard": "2005"},
+            {"Einstellung": "Anzahl Aktien", "Was sie macht": "Wie viele Aktien gleichzeitig im Depot sind. Wenige Aktien bedeuten mehr Chance, aber auch mehr Risiko.", "Standard": "20"},
+            {"Einstellung": "Faktoren", "Was sie macht": "Welche Noten zählen. Alle gewählten Faktoren zählen gleich viel.", "Standard": "momentum_12_1 und low_volatility"},
+            {"Einstellung": "Bisher getestete Varianten", "Was sie macht": "Wie oft du schon verschiedene Einstellungen ausprobiert hast. Bitte ehrlich eintragen.", "Standard": "1"},
+            {"Einstellung": "Trendfilter", "Was sie macht": "Liegt der ETF unter seiner 200-Tage-Linie, investiert die Strategie weniger.", "Standard": "an"},
+            {"Einstellung": "Investitionsquote im Abwärtstrend", "Was sie macht": "Wie viel bei aktivem Trendfilter noch in Aktien steckt. Der Rest liegt als Bargeld ohne Zinsen.", "Standard": "50 %"},
+            {"Einstellung": "Deutsche Steuer berücksichtigen", "Was sie macht": "Schaltet die Steuer für beide Seiten ein oder aus. Ausgeschaltet dient nur zum Vergleich.", "Standard": "an"},
+        ]))
+        st.markdown(
+            "**Der Trendfilter einfach erklärt:** Die 200-Tage-Linie ist der Durchschnittskurs der letzten 200 Handelstage, also etwa der letzten zehn Monate. "
+            "Sie ist wie eine Wetterfahne. Liegt der Kurs des ETF darunter, herrscht an der Börse eher Regenwetter. Dann hält die Strategie nur noch die Hälfte in Aktien. "
+            "Geprüft wird jeweils am Monatsende. Der Trendfilter gilt nur für die Strategie, der ETF bleibt immer voll investiert."
+        )
+        st.markdown(
+            "**Warum „Bisher getestete Varianten“ so wichtig ist:** Lass 100 Leute je zehnmal eine Münze werfen. Einer davon wirft wahrscheinlich neunmal Kopf. "
+            "Ist er ein Münzwurf-Genie? Nein, das ist Zufall. Genauso findet man durch Herumprobieren irgendwann zufällig eine Einstellung, die in der Vergangenheit toll aussah. "
+            "Je mehr Varianten du einträgst, desto strenger wird die Prüfung in der Deflated Sharpe Ratio."
+        )
+        st.markdown(
+            "**Fest eingestellt und in der App nicht änderbar:**\n\n"
+            "- Startkapital 100.000\n"
+            "- Gebühr 0,1 % pro Kauf und Verkauf\n"
+            "- Umschichten einmal im Monat\n"
+            "- Gleiche Gewichtung aller ausgewählten Aktien\n"
+            "- Steuersatz 26,375 %, das sind 25 % Abgeltungssteuer plus Solidaritätszuschlag, ohne Kirchensteuer\n"
+            "- Sparerpauschbetrag 1.000 € pro Jahr\n"
+            "- Teilfreistellung 30 % für den ETF\n\n"
+            "Über die Kommandozeile mit `python -m factor_lab --help` lassen sich einige davon ändern, zum Beispiel Gebühr, Umschicht-Rhythmus und Sektorgrenze."
+        )
+
+    with st.expander("7. Die Ergebnisse lesen"):
+        st.markdown(
+            "**Zeitraum und Universum** zeigen, von wann bis wann gerechnet wurde und wie viele Aktien im Topf waren.\n\n"
+            "**Das Urteil** wird automatisch aus den Zahlen geschrieben. Niemand hat es schöngeredet."
+        )
+        st.table(pd.DataFrame([
+            {"Zeile": "Rendite p. a. (Depotwert)", "Bedeutung": "Um wie viel Prozent der Depotwert im Schnitt pro Jahr gewachsen ist. Bei der Strategie ist die laufende Steuer schon abgezogen, beim ETF noch nicht."},
+            {"Zeile": "Rendite p. a. nach Endverkauf und Steuer", "Bedeutung": "Die wichtigste Zeile. Beide Seiten verkaufen am Ende alles und haben alle Steuern bezahlt. Erst das ist ein fairer Vergleich."},
+            {"Zeile": "Volatilität p. a.", "Bedeutung": "Wie stark der Wert schwankt. Wie bei einer Achterbahn: Ein hoher Wert bedeutet eine wilde Fahrt."},
+            {"Zeile": "Maximaler Verlust", "Bedeutung": "Der größte Absturz vom bisherigen Höchststand. −24 % heißt: Aus 100 € wurden zwischendurch 76 €."},
+            {"Zeile": "Sharpe Ratio", "Bedeutung": "Rendite pro Schwankung, ähnlich wie Tore pro Spielminute. Bei Aktien ist 0,5 normal und über 1 sehr gut."},
+            {"Zeile": "Endvermögen nach Steuern", "Bedeutung": "Was am Ende wirklich auf dem Konto bleibt, ausgehend von 100.000."},
+            {"Zeile": "Gezahlte Steuern", "Bedeutung": "Alle Steuern zusammen, die über den ganzen Zeitraum ans Finanzamt gingen."},
+            {"Zeile": "Transaktionskosten", "Bedeutung": "Alle Gebühren für Käufe und Verkäufe der Strategie."},
+        ]))
+        st.markdown(
+            "**Die Vermögenskurve** zeigt beide Wege als Linien über die Zeit. Die ETF-Linie ist vor Steuer gezeichnet, weil der ETF erst am Ende zahlt. "
+            "Deshalb ist sein Endvermögen in der Tabelle etwas niedriger als das Ende der Linie.\n\n"
+            "**Warum wenige Prozentpunkte so viel ausmachen:** 7,5 % gegen 10 % pro Jahr klingt nach wenig. Über 20 Jahre wird daraus aber ein riesiger Unterschied:"
+        )
+        st.code(
+            "100.000 mit  7,5 % pro Jahr über 20 Jahre = rund 425.000\n"
+            "100.000 mit 10,0 % pro Jahr über 20 Jahre = rund 673.000",
+            language=None,
+        )
+
+    with st.expander("8. Die Statistik: Rank-IC, t-Wert, Deflated Sharpe und Walk-forward"):
+        st.markdown(
+            "**Rank-IC:** Jeden Monat wird geprüft, ob die Rangliste der Noten zur Rangliste der späteren Renditen passt. "
+            "+1 heißt perfekt vorhergesagt, 0 heißt reiner Zufall, −1 heißt genau falsch herum. "
+            "In der Praxis sind schon 0,03 bis 0,05 gut. Das ist wie eine Wettervorhersage, die nur etwas besser als Raten ist, dafür aber jeden Tag.\n\n"
+            "**t-Wert:** Er sagt, wie sicher es ist, dass der Rank-IC kein Zufall ist. Ab 2 gilt ein Effekt als **signifikant**, also wahrscheinlich echt.\n\n"
+            "**Trefferquote:** In wie viel Prozent der Monate die Noten in die richtige Richtung gezeigt haben. 50 % ist so gut wie ein Münzwurf.\n\n"
+            "**Monate:** Wie viele Messungen es gab. Mehr Messungen machen das Ergebnis verlässlicher.\n\n"
+            "**composite:** Die gemeinsame Note aus allen gewählten Faktoren. Nach ihr wird tatsächlich gekauft."
+        )
+        st.markdown(
+            "**Deflated Sharpe Ratio:** Eine Zahl zwischen 0 und 1. Sie schätzt, wie wahrscheinlich der Vorsprung gegenüber dem ETF echt ist. "
+            "Glück und die Zahl deiner ausprobierten Varianten werden dabei herausgerechnet. Erst ab 0,95 gilt das Ergebnis als belastbar."
+        )
+        st.markdown(
+            "**Walk-forward-Test:** Hier prüft die Maschine, ob sie selbst eine bessere Mischung der Faktoren lernen kann. "
+            "Das funktioniert wie beim Vokabellernen: Du übst mit alten Tests und wirst dann mit einem neuen Test geprüft, den du noch nie gesehen hast. "
+            "Die Maschine lernt nur aus mindestens 36 vergangenen Monaten. Getestet wird mit einem Monat Abstand auf dem nächsten, noch unbekannten Monat. "
+            "Schlägt die gelernte Mischung die gleiche Verteilung nicht, bleibt es bei der gleichen Verteilung."
+        )
+
+    with st.expander("9. Die Grenzen: wo sich die Maschine irren kann"):
+        st.markdown(
+            "- **Survivorship Bias, der wichtigste Punkt:** Stell dir vor, du willst wissen, wie gut eine Schule vor 20 Jahren war. Du fragst aber nur die Schüler, die heute ihr Abitur in der Hand haben. "
+            "Wer sitzengeblieben ist oder die Schule verlassen hat, fehlt. So sieht alles besser aus, als es war. "
+            "Genauso besteht das Universum aus den **heutigen** Indexmitgliedern. Firmen, die pleitegingen oder aus dem Index flogen, fehlen. Besonders Momentum sieht dadurch zu gut aus.\n"
+            "- **Dividenden** werden auf beiden Seiten steuerfrei wieder angelegt. In echt würde darauf Steuer anfallen.\n"
+            "- **Vorabpauschale** des ETF fehlt, das hilft dem ETF etwas.\n"
+            "- **Bargeld** bringt keine Zinsen. In echt gäbe es Tagesgeldzinsen, das würde dem Trendfilter etwas helfen.\n"
+            "- **Währung:** Alles in Dollar. Für einen Euro-Anleger kommt der Wechselkurs dazu.\n"
+            "- **Vergangenheit ist nicht Zukunft.** Auch ein ehrlicher Test zeigt nur, was früher funktioniert hätte."
+        )
+
+    with st.expander("10. Brodel-Score auf dem Prüfstand"):
+        st.markdown(
+            "Jeden Tag speichert die App einen **Snapshot**, also ein Foto aller Brodel-Scores. Der Prüfstand schaut nach: "
+            "Hatten Aktien mit hohem Score danach wirklich bessere Renditen als Aktien mit niedrigem Score?\n\n"
+            "- **Horizont:** Nach wie vielen Handelstagen die Rendite gemessen wird. 5 Tage sind etwa eine Woche, 21 Tage ein Monat und 63 Tage ein Quartal.\n"
+            "- **Snapshot-Tage:** Wie viele Tage mit gespeicherten Scores es gibt.\n"
+            "- **Unabhängige Messpunkte:** Wie viele Messungen sich zeitlich nicht überschneiden.\n"
+            "- **Mittlerer Rank-IC:** Wie gut der Score die Reihenfolge der späteren Renditen getroffen hat, wie in Abschnitt 8 erklärt."
+        )
+        st.markdown(
+            "**Warum nur unabhängige Messpunkte zählen:** Misst du jeden Tag die Rendite des nächsten Monats, überlappen sich die Zeiträume fast vollständig. "
+            "Das ist, als würdest du dasselbe Fußballspiel 20-mal anschauen und behaupten, du hättest 20 Spiele gesehen. "
+            "Darum zählt der Prüfstand für den t-Wert nur Zeiträume ohne Überschneidung."
+        )
+        st.info("Für eine belastbare Aussage braucht es mindestens 24 unabhängige Messpunkte. Beim Monatshorizont sind das gut zwei Jahre tägliche Snapshots. Bis dahin ist jedes Ergebnis nur ein erster Hinweis.")
+
+    with st.expander("11. Was das Ergebnis für dich bedeutet"):
+        st.markdown(
+            "- **Schlägt die Strategie den ETF nach Steuern nicht,** ist der ETF für den Großteil des Geldes die vernünftigere Wahl.\n"
+            "- **Schlägt sie ihn, aber nicht belastbar,** kann es Glück gewesen sein. Dann lieber erst mit wenig Geld oder auf dem Papier weiter beobachten.\n"
+            "- **Schlägt sie ihn belastbar,** solltest du trotzdem den Survivorship Bias bedenken und mit einem kleinen Teil des Geldes starten.\n\n"
+            "Der erste Lauf mit den Standardeinstellungen auf dem S&P 500 ergab 7,5 % pro Jahr nach Steuern. Der ETF schaffte 10,0 %. "
+            "Die Strategie hatte dafür nur etwa halb so große Abstürze."
+        )
+        st.caption("Die Wahrheitsmaschine ist ein Lern- und Prüfwerkzeug und keine Anlageberatung.")
+
+
 def render_help_tab():
     st.subheader("Hilfe & Methodik")
     st.write("Der **Brodel-Score** (Skala: -30 bis 100) ist ein proprietäres 'Frühwarn-Thermometer' dieses Systems. "
@@ -662,7 +903,7 @@ def render_help_tab():
     with st.expander("Die drei Tabs im Überblick"):
         st.markdown(
             "- **🔥 Signal Monitor:** aktuelle Frühwarnsignale, ML-Score, Detailanalyse und historischer Score-Verlauf.\n"
-            "- **Backtest & ML:** historische Simulation des Top-N-Portfolios, Equity-Kurve, Trade-Liste, Training der Komponenten-Gewichte sowie manuelle Datenpflege.\n"
+            "- **Backtest & ML:** Wahrheitsmaschine (Strategie gegen ETF nach Kosten und Steuern), Brodel-Score-Prüfstand, historische Simulation des Top-N-Portfolios, Training der Komponenten-Gewichte sowie manuelle Datenpflege.\n"
             "- **Hilfe & Methodik:** Definitionen der Signale, Datenquellen, Berechnungen, Grenzen und Bedienhinweise.\n\n"
             "*Hinweis: Die Watchlist-Verwaltung läuft headless im Hintergrund über `watchlists/meine_watchlist.txt`.*"
         )
@@ -765,6 +1006,10 @@ def render_help_tab():
     st.markdown("- **Bärenmarkt-Malus:** Steht der S&P 500 unter der 200-Tage-Linie, wird der Score um **20% gekürzt (0.8x)**.")
     st.markdown("- **Volatilitäts-Bremse:** Liegt der Angstindex (VIX) über 25 Punkten, wird der Score pauschal um **10% reduziert (0.9x)**.")
     st.markdown("- **Rezessions-Indikator (FRED):** Wenn die US-Zinsstrukturkurve invertiert ist (10Y Rendite minus 2Y Rendite < 0), wird der Score aus Risiko-Erwägungen um weitere **5% (0.95x)** reduziert.")
+    st.info(
+        "Alle Faktoren werden zu einem Gesamt-Multiplikator verrechnet. Positive Scores werden damit multipliziert, negative Scores dadurch geteilt. "
+        "So wird ein schlechter Score in einem schwachen Markt schlechter und nicht besser. Beispiel: Bei 0,8x wird aus +20 ein +16 und aus −20 ein −25."
+    )
 
     st.markdown("---")
     st.markdown("### Strategie-Setups")
@@ -807,15 +1052,21 @@ def render_help_tab():
         st.code("Risiko je Trade = Startkapital * 0,0075\nAktienanzahl = Risiko je Trade / abs(Einstieg - Stop-Loss)")
         st.write("Das ist eine Risikobegrenzung, keine Garantie gegen Verluste. Bei Kurslücken kann der tatsächliche Verlust über dem geplanten Risiko liegen.")
 
+    st.markdown("---")
+    render_truth_machine_help()
+    st.markdown("---")
+
     st.markdown("### ML-Gewichtung")
     st.write(
         "Mit **ML-Gewichtung trainieren** werden historische Snapshots mit der späteren 30-Tage-Forward-Rendite verbunden. Ein Ridge-Regressionsmodell schätzt, welche der zehn Komponenten im vorhandenen Datenbestand stärker oder schwächer gewichtet werden sollten. Negative Gewichte werden ausgeschlossen und die Gewichte anschließend zur besseren Lesbarkeit normiert."
     )
     st.markdown(
-        "- Es werden mindestens fünf Snapshots benötigt. Mehrere Monate mit regelmäßig gespeicherten Snapshots sind deutlich aussagekräftiger.\n"
-        "- Die Gewichte werden in `ml_weights/optimized_weights.json` gespeichert.\n"
-        "- Der Signal Monitor lädt vorhandene Gewichte und zeigt zusätzlich zum Brodel-Score einen ML-Score.\n"
-        "- Die angezeigte Trainingskorrelation ist keine Garantie für zukünftige Rendite. Ohne getrennte Out-of-sample-Prüfung kann ein Modell überangepasst sein."
+        "- Es werden mindestens fünf Snapshots für ein Training benötigt.\n"
+        "- **Out-of-Sample-Schutz:** Die gelernten Gewichte werden nur angewendet, wenn sie auf einem zeitlich getrennten Testzeitraum besser sortieren als die einfache Gleichgewichtung. "
+        "Dafür werden die ältesten 70 % der Snapshot-Tage zum Lernen genutzt, die jüngsten zum Prüfen, mit einem Abstand von 30 Tagen dazwischen. "
+        "Diese Prüfung braucht mindestens 60 Snapshot-Tage. Bis dahin bleibt der ML-Score gleich dem einfachen Brodel-Score.\n"
+        "- Die Gewichte werden in `ml_weights/optimized_weights.json` gespeichert, zusammen mit dem Ergebnis der Prüfung.\n"
+        "- Nach dem Training zeigt die App an, ob die Gewichte angewendet werden und warum."
     )
 
     st.markdown("### Datenquellen und Caching")
@@ -959,6 +1210,7 @@ def render_truth_machine_section():
         "deutscher Abgeltungssteuer samt Verlusttopf und Sparerpauschbetrag sowie Trendfilter für die Investitionsquote. "
         "Signale entstehen zum Monatsende und werden erst am nächsten Handelstag ausgeführt."
     )
+    st.caption("Eine ausführliche, einfache Erklärung aller Einstellungen und des ETF-Vergleichs steht im Reiter **Hilfe & Methodik** unter „Die Wahrheitsmaschine einfach erklärt“.")
     c1, c2, c3 = st.columns(3)
     with c1:
         universe = st.selectbox("Universum", TRUTH_UNIVERSES, index=0, key="truth_universe")
