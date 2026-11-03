@@ -321,8 +321,10 @@ def test_save_signal_snapshot_produces_valid_json(tmp_path):
     snapshot_path = save_signal_snapshot("test_watchlist.txt", test_data, directory=str(tmp_path))
 
     assert snapshot_path.exists(), "Snapshot-Datei wurde nicht erstellt"
-    content = snapshot_path.read_text(encoding="utf-8")
-    parsed = json.loads(content)
+    assert snapshot_path.name.endswith(".json.gz"), "Snapshots werden als Tagesdatei gespeichert"
+    import gzip
+    with gzip.open(snapshot_path, "rt", encoding="utf-8") as handle:
+        parsed = json.load(handle)
     assert isinstance(parsed, list), "Snapshot muss eine JSON-Liste sein"
     assert len(parsed) >= 1, "Mindestens ein Snapshot-Eintrag erwartet"
     latest = parsed[-1]

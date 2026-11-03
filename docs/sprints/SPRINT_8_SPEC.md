@@ -7,8 +7,8 @@
 **Ziel:** Die App rankt nach einem neu gewichteten Brodel-Score 2.0. Brodel 1.0 läuft unverändert mit, damit der Prüfstand beide Versionen vergleichen kann.
 
 ## Testergebnisse & Verifikation
-- **252 Tests erfolgreich bestanden** (0 Fehler, Ausgangsbasis 231).
-- Neue Testsuite: `tests/test_brodel_v2.py` (21 Tests).
+- **264 Tests erfolgreich bestanden** (0 Fehler, Ausgangsbasis 231). Stand nach Nachtrag Task 5.
+- Neue Testsuiten: `tests/test_brodel_v2.py` (21 Tests), `tests/test_snapshot_store.py` (12 Tests).
 - Manuelle Verifikation per Streamlit-AppTest mit den echten Snapshots: Signal Monitor (1376 Titel, 29 Snapshot-Tage), Brodel-Prüfstand und Hilfe rendern ohne Fehler.
 
 ---
@@ -64,6 +64,13 @@ Rückwirkend auf den Snapshots (ohne Rückkauf-Daten) sortiert Brodel 2.0 besser
 - Neuer Baustein Aktienrückkauf erklärt.
 
 ---
+
+### Task 5 (Nachtrag, Bugfix 03.11.2026): Snapshot-Speicherung pro Tag
+- **Fehler:** Der nächtliche Lauf „Update Stock Signals“ vom 03.11.2026 scheiterte beim Push. Die Datei `signal_history/meine_watchlist.json` hatte das GitHub-Limit von 100 MB pro Datei erreicht. Sie wuchs um rund 4 MB pro Snapshot, und die 2.0-Daten machten jeden Snapshot zusätzlich größer.
+- **Lösung:** Neues Modul `snapshot_store.py`. Jeder Tag wird als eigene gzip-komprimierte Datei `signal_history/<watchlist>/<YYYY-MM-DD>.json.gz` gespeichert, im selben Listenformat wie bisher. Ein zweiter Lauf am selben Tag ersetzt die Tagesdatei. Dateien früherer Tage werden nie wieder geschrieben, daher wächst die Git-Historie nur um rund 90 KB pro Tag.
+- Die alte Einzeldatei wird beim ersten Speichern automatisch in Tagesdateien aufgeteilt und entfernt. 29 Einträge ergaben 23 Tage (106 MB → 2,5 MB). Gelesen werden weiterhin alte Einzeldateien und Tagesdateien.
+- Angepasste Leser: `load_signal_snapshot_history`, `backtest_engine.engine.load_snapshots` (neu: `snapshots_with_datetimes`), `factor_lab.data.load_sector_map` und die Quellenauswahl im Event-Backtest.
+- `signal_breakdown_v2` speichert für umgerechnete Bausteine nur Name und Punkte. Die Texte stehen bereits im 1.0-Breakdown.
 
 ## 3. Bewusst nicht umgesetzt
 - Insider-Clusterkäufe aus SEC EDGAR (mehrere Insider kaufen kurz hintereinander) und eine stärkere Gewichtung solcher Doppelkäufe.

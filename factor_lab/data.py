@@ -149,12 +149,10 @@ def load_sector_map(history_dir: Path = Path("signal_history")) -> dict[str, str
     sectors: dict[str, str] = {}
     if not history_dir.exists():
         return sectors
-    for file_path in sorted(history_dir.glob("*.json")):
-        try:
-            data = json.loads(file_path.read_text(encoding="utf-8"))
-        except Exception:
-            continue
-        for snapshot in data if isinstance(data, list) else []:
+    import snapshot_store
+
+    for _, data in sorted(snapshot_store.load_all(history_dir).items()):
+        for snapshot in data:
             for item in snapshot.get("items", []) if isinstance(snapshot, dict) else []:
                 symbol = item.get("symbol")
                 sector = item.get("sector")

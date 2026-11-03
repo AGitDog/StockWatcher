@@ -35,7 +35,8 @@ from backtest_engine import (
     run_score_range_backtest,
 )
 from ml_weights import load_trained_weights, train_on_snapshots
-from backtest_engine.engine import load_snapshots
+from backtest_engine.engine import load_snapshots, snapshots_with_datetimes
+import snapshot_store
 from factor_lab import BacktestConfig, build_truth_report, snapshot_score_ic
 from factor_lab.data import download_close_prices, filter_single_currency, load_universe
 from factor_lab.factors import FACTOR_DESCRIPTIONS
@@ -1372,7 +1373,7 @@ def render_backtest_tab():
     history_dir = Path("signal_history")
     available_files: list[str] = []
     if history_dir.exists():
-        available_files = sorted([f.name for f in history_dir.glob("*.json")])
+        available_files = snapshot_store.list_sources(history_dir)
 
     col_src, col_mode = st.columns([1, 1])
     with col_src:
@@ -1430,21 +1431,11 @@ def render_backtest_tab():
         with st.spinner("Analysiere Snapshots, identifiziere Eintrittszeitpunkte und lade aktuelle Kurse..."):
             snapshots = []
             if chosen_source != "Alle Snapshots zusammen":
-                target_file = history_dir / chosen_source
-                if target_file.exists():
-                    import json
-                    try:
-                        with open(target_file, "r", encoding="utf-8") as f:
-                            raw_data = json.load(f)
-                        mtime = target_file.stat().st_mtime
-                        for s in raw_data:
-                            if isinstance(s, dict) and "items" in s:
-                                ts_raw = s.get("timestamp")
-                                p_ts = pd.to_datetime(ts_raw, errors="coerce", utc=True)
-                                dt = datetime.fromtimestamp(mtime) if pd.isna(p_ts) else p_ts.to_pydatetime().replace(tzinfo=None)
-                                snapshots.append((dt, s["items"]))
-                    except Exception as e:
-                        st.error(f"Fehler beim Laden von {chosen_source}: {e}")
+                try:
+                    history = snapshot_store.load_history(history_dir, chosen_source)
+                    snapshots = snapshots_with_datetimes(history, datetime.now())
+                except Exception as e:
+                    st.error(f"Fehler beim Laden von {chosen_source}: {e}")
             else:
                 snapshots = load_snapshots(history_dir)
 

@@ -17,6 +17,7 @@ import pandas as pd
 import requests
 import yfinance as yf
 import fred_cache
+import snapshot_store
 
 try:
     from google import genai
@@ -389,39 +390,30 @@ def ensure_signal_history_dir(directory: str = DEFAULT_SIGNAL_HISTORY_DIR) -> Pa
 MAX_SIGNAL_HISTORY_SNAPSHOTS = 3665
 
 
+def _snapshot_key(watchlist_name: str) -> str:
+    return _sanitize_watchlist_name(watchlist_name).removesuffix(".txt")
+
+
 def save_signal_snapshot(
     watchlist_name: str,
     signal_items: list[dict[str, Any]],
     directory: str = DEFAULT_SIGNAL_HISTORY_DIR,
     max_history: int = MAX_SIGNAL_HISTORY_SNAPSHOTS,
 ) -> Path:
+    """Store today's snapshot as its own compressed daily file (replaces an earlier run of the same day).
+
+    A legacy single-file history is split into daily files on the first save.
+    """
     history_dir = ensure_signal_history_dir(directory)
-    snapshot_path = history_dir / f"{_sanitize_watchlist_name(watchlist_name).removesuffix('.txt')}.json"
-    existing = load_signal_snapshot_history(watchlist_name, directory)
-
-    current_timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    today_date_str = current_timestamp[:10]
-
+    key = _snapshot_key(watchlist_name)
+    snapshot_store.migrate_legacy_file(history_dir, key)
     snapshot = {
-        "timestamp": current_timestamp,
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "items": signal_items,
     }
-
-    updated_today = False
-    for i, snap in enumerate(existing):
-        snap_ts = snap.get("timestamp", "")
-        if isinstance(snap_ts, str) and snap_ts[:10] == today_date_str:
-            existing[i] = snapshot
-            updated_today = True
-            break
-
-    if not updated_today:
-        existing.append(snapshot)
-
-    if max_history > 0 and len(existing) > max_history:
-        existing = existing[-max_history:]
-    snapshot_path.write_text(json.dumps(existing, ensure_ascii=True, indent=2), encoding="utf-8")
-    return snapshot_path
+    path = snapshot_store.write_daily_snapshot(history_dir, key, snapshot)
+    snapshot_store.prune_daily_files(history_dir, key, max_history)
+    return path
 
 
 def load_signal_snapshot_history(
@@ -429,14 +421,7 @@ def load_signal_snapshot_history(
     directory: str = DEFAULT_SIGNAL_HISTORY_DIR,
 ) -> list[dict[str, Any]]:
     history_dir = ensure_signal_history_dir(directory)
-    snapshot_path = history_dir / f"{_sanitize_watchlist_name(watchlist_name).removesuffix('.txt')}.json"
-    if not snapshot_path.exists():
-        return []
-    try:
-        loaded = json.loads(snapshot_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return []
-    return loaded if isinstance(loaded, list) else []
+    return snapshot_store.load_history(history_dir, _snapshot_key(watchlist_name))
 
 
 def build_signal_delta_report(
@@ -975,7 +960,7 @@ def compute_brodel_v2_breakdown(
             continue
         component = breakdown.get(name) if isinstance(breakdown, dict) else None
         if not isinstance(component, dict):
-            result[name] = {"name": name, "score": 0, "summary": "Keine Daten."}
+            result[name] = {"name": name, "score": 0}
             continue
         raw = component.get("score") or 0
         if name == "EPS-Revisionen":
@@ -983,7 +968,7 @@ def compute_brodel_v2_breakdown(
             points = eps_revision_ratio_points(*counts) if counts else 0
         else:
             points = int(round(raw * max_v2 / BRODEL_V1_MAX_POINTS[name]))
-        result[name] = {"name": name, "score": points, "summary": component.get("summary", "")}
+        result[name] = {"name": name, "score": points}
     if isinstance(buyback, dict):
         result[BUYBACK_COMPONENT_NAME] = dict(buyback)
     else:

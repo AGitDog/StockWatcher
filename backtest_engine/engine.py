@@ -13,6 +13,8 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
+import snapshot_store
+
 from .portfolio import Portfolio, Trade
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -59,30 +61,30 @@ class BacktestResult:
         return "\n".join(lines)
 
 
+def snapshots_with_datetimes(
+    history: list[dict[str, Any]], fallback: datetime
+) -> list[tuple[datetime, list[dict[str, Any]]]]:
+    """Convert stored snapshot dicts to (datetime, items); undated snapshots get ``fallback``."""
+    result: list[tuple[datetime, list[dict[str, Any]]]] = []
+    for snapshot in history:
+        if not isinstance(snapshot, dict) or "items" not in snapshot:
+            continue
+        parsed_timestamp = pd.to_datetime(snapshot.get("timestamp"), errors="coerce", utc=True)
+        dt = fallback if pd.isna(parsed_timestamp) else parsed_timestamp.to_pydatetime().replace(tzinfo=None)
+        result.append((dt, snapshot["items"]))
+    return result
+
+
 def load_snapshots(history_dir: Path = HISTORY_DIR) -> list[tuple[datetime, list[dict[str, Any]]]]:
     """Load all signal snapshots from disk."""
     snapshots: list[tuple[datetime, list[dict[str, Any]]]] = []
     if not history_dir.exists():
         return snapshots
 
-    for file_path in history_dir.glob("*.json"):
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            mtime = file_path.stat().st_mtime
-            if isinstance(data, list) and data:
-                for snapshot in data:
-                    if not isinstance(snapshot, dict) or "items" not in snapshot:
-                        continue
-                    timestamp = snapshot.get("timestamp")
-                    parsed_timestamp = pd.to_datetime(timestamp, errors="coerce", utc=True)
-                    if pd.isna(parsed_timestamp):
-                        dt = datetime.fromtimestamp(mtime)
-                    else:
-                        dt = parsed_timestamp.to_pydatetime().replace(tzinfo=None)
-                    snapshots.append((dt, snapshot["items"]))
-        except Exception as e:
-            logger.error(f"Fehler beim Laden von {file_path}: {e}")
+    for key, history in snapshot_store.load_all(history_dir).items():
+        legacy = history_dir / f"{key}.json"
+        fallback = datetime.fromtimestamp(legacy.stat().st_mtime) if legacy.exists() else datetime.now()
+        snapshots.extend(snapshots_with_datetimes(history, fallback))
 
     snapshots.sort(key=lambda x: x[0])
     return snapshots
