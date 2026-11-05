@@ -195,6 +195,7 @@ def test_table_rows_put_brodel_v2_first_and_v1_last():
     assert rows[0]["Brodel 1.0"] == 80
     assert rows[0]["Kursziel"] == 5  # 2.0 points
     assert rows[0]["Rückkauf"] == 3
+    assert "ML-Score" not in rows[0]
 
 
 def test_prepare_signal_items_sorts_by_v2_and_backfills():
@@ -247,7 +248,8 @@ def test_interactive_table_shows_v2_first_and_v1_last():
     html = (Path(__file__).parent.parent / "components" / "interactive_table" / "index.html").read_text(encoding="utf-8")
     assert 'let sortColumn = "Brodel 2.0";' in html
     columns = html[html.index("const COLUMNS = ["):html.index("];", html.index("const COLUMNS = ["))]
-    assert columns.index('"Brodel 2.0"') < columns.index('"ML-Score"')
+    assert columns.index('"Brodel 2.0"') < columns.index('"EPS"')
+    assert '"ML-Score"' not in columns  # hidden until a model passes the out-of-sample test
     assert columns.rstrip().rstrip("}").rstrip().endswith("isScore: true")
     assert columns.rindex('"Brodel 1.0"') > columns.rindex('"Rang"')
     assert '"Rückkauf"' in columns

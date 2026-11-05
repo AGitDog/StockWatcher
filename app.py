@@ -161,7 +161,6 @@ def build_signal_table_rows(signal_items: list[dict]) -> list[dict]:
             "Name": item["name"],
             "Sektor": peer_context.get("sector", "Unbekannt"),
             "Brodel 2.0": primary_score(item),
-            "ML-Score": item.get("ml_score", item.get("brodel_score", 0)),
         }
         for label, component_name in V2_TABLE_COLUMNS:
             row[label] = breakdown_v2.get(component_name, {}).get("score", 0)
@@ -956,7 +955,7 @@ def render_help_tab():
 
     with st.expander("Die drei Tabs im Überblick"):
         st.markdown(
-            "- **🔥 Signal Monitor:** aktuelle Frühwarnsignale, ML-Score, Detailanalyse und historischer Score-Verlauf.\n"
+            "- **🔥 Signal Monitor:** aktuelle Frühwarnsignale, Detailanalyse und historischer Score-Verlauf.\n"
             "- **Backtest & ML:** Wahrheitsmaschine (Strategie gegen ETF nach Kosten und Steuern), Brodel-Score-Prüfstand, historische Simulation des Top-N-Portfolios, Training der Komponenten-Gewichte sowie manuelle Datenpflege.\n"
             "- **Hilfe & Methodik:** Definitionen der Signale, Datenquellen, Berechnungen und Grenzen."
         )
@@ -1143,7 +1142,7 @@ def render_help_tab():
         "- Es werden mindestens fünf Snapshots für ein Training benötigt.\n"
         "- **Out-of-Sample-Schutz:** Die gelernten Gewichte werden nur angewendet, wenn sie auf einem zeitlich getrennten Testzeitraum besser sortieren als die einfache Gleichgewichtung. "
         "Dafür werden die ältesten 70 % der Snapshot-Tage zum Lernen genutzt, die jüngsten zum Prüfen, mit einem Abstand von 30 Tagen dazwischen. "
-        "Diese Prüfung braucht mindestens 60 Snapshot-Tage. Bis dahin bleibt der ML-Score gleich dem einfachen Brodel-Score.\n"
+        "Diese Prüfung braucht mindestens 60 Snapshot-Tage. Bis ein Modell diese Prüfung bestanden hat, wird in der Haupttabelle kein ML-Score angezeigt.\n"
         "- Die Gewichte werden in `ml_weights/optimized_weights.json` gespeichert, zusammen mit dem Ergebnis der Prüfung.\n"
         "- Nach dem Training zeigt die App an, ob die Gewichte angewendet werden und warum."
     )
