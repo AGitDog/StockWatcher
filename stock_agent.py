@@ -735,6 +735,7 @@ def build_symbol_summary(symbol_or_name: str, symbol_mappings: dict[str, str] | 
 
 
 def _summarize_technical_indicators(history: pd.DataFrame | None) -> dict[str, Any]:
+    history = clean_price_history(history)
     if history is None or history.empty or len(history) < 26:
         return {"name": "Technische Indikatoren", "score": 0, "summary": "Nicht genug Kursdaten fuer Technische Indikatoren."}
 
@@ -2179,9 +2180,9 @@ def _get_cached_benchmark_history(benchmark_symbol: str) -> pd.DataFrame | None:
     with _benchmark_cache_lock:
         if benchmark_symbol in _benchmark_cache:
             return _benchmark_cache[benchmark_symbol]
-    result = _safe_dataframe(
+    result = clean_price_history(_safe_dataframe(
         lambda sym=benchmark_symbol: yf.Ticker(sym).history(period="1mo", auto_adjust=False)
-    )
+    ))
     with _benchmark_cache_lock:
         _benchmark_cache[benchmark_symbol] = result
     return result
@@ -2189,6 +2190,7 @@ def _get_cached_benchmark_history(benchmark_symbol: str) -> pd.DataFrame | None:
 
 def _summarize_relative_strength(history: pd.DataFrame | None, symbol: str = "") -> dict[str, Any]:
     """Compare stock performance vs. regional benchmark over last month."""
+    history = clean_price_history(history)
     if history is None or history.empty or len(history) < 20:
         return {"name": "Relative Staerke", "score": 0, "summary": "Nicht genug Kursdaten fuer Relative-Staerke-Berechnung."}
 

@@ -132,3 +132,30 @@ def test_trailing_row_without_close_is_ignored():
     assert result["summary"].startswith("Kurs 130.00")
     assert result["score"] == 10  # above MA20 and MA50 (capped at the 1.0 maximum)
     assert clean_price_history(None) is None
+
+
+def test_relative_strength_ignores_rows_without_close():
+    import numpy as np
+    import pandas as pd
+
+    import stock_agent
+
+    index = pd.date_range("2026-09-01", periods=41, freq="B")
+    stock = pd.DataFrame({"Close": list(np.linspace(100, 110, 40)) + [np.nan], "Volume": [1000] * 41}, index=index)
+    bench = pd.DataFrame({"Close": [100.0] * 21 + [np.nan], "Volume": [1] * 22}, index=index[-22:])
+    stock_agent._benchmark_cache.clear()
+    try:
+        with patch_benchmark(bench):
+            result = stock_agent._summarize_relative_strength(stock, "DHL.DE")
+    finally:
+        stock_agent._benchmark_cache.clear()
+    assert "nan" not in result["summary"]
+    assert "^GDAXI 0.0%" in result["summary"]
+
+
+def patch_benchmark(frame):
+    from unittest.mock import patch
+
+    import stock_agent
+
+    return patch.object(stock_agent, "_safe_dataframe", return_value=frame)
