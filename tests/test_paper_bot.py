@@ -82,6 +82,9 @@ def test_buy_next_open_then_trailing_stop_sells():
     assert sale["shares"] == shares
     assert pf["cash"] == pytest.approx(100_000 - (shares * 100 + 1) + shares * fill - 1)
 
+    twin = state["portfolios"]["no_stop"]
+    assert len(twin["positions"]) == 1 and twin["positions"][0]["last_price"] == 95
+
 
 def test_slippage_never_below_day_low():
     state = _state()
@@ -91,9 +94,6 @@ def test_slippage_never_below_day_low():
     bot.step(state, None, bars, {}, _at("2026-11-04"))
     sale = [t for t in state["portfolios"]["bot"]["trades"] if t["side"] == "Verkauf"][0]
     assert sale["price"] == pytest.approx(84.9)
-
-    twin = state["portfolios"]["no_stop"]
-    assert len(twin["positions"]) == 1 and twin["positions"][0]["last_price"] == 95
 
 
 def test_gap_below_stop_sells_at_open():
