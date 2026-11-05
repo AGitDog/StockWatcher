@@ -9,6 +9,8 @@ from stock_agent import (
     build_symbol_signal_monitor,
     add_watchlist_peer_context,
     primary_score,
+    retry_missing_price_items,
+    rotate_entries,
     save_signal_snapshot,
     load_signal_snapshot_history,
     build_signal_delta_report,
@@ -36,7 +38,7 @@ def main():
         with open(MAPPINGS_PATH, "r", encoding="utf-8") as f:
             mapping_text = f.read()
 
-    entries = parse_watchlist_text(watchlist_text)
+    entries = rotate_entries(parse_watchlist_text(watchlist_text))
     symbol_mappings = parse_symbol_mappings(mapping_text)
 
     if not entries:
@@ -72,6 +74,9 @@ def main():
         sys.exit(1)
 
     print("Berechne Sektor- und Peer-Kontext...", flush=True)
+    raw_results, retried, recovered = retry_missing_price_items(raw_results, symbol_mappings)
+    if retried:
+        print(f"Wiederholung: {recovered}/{retried} Titel ohne Kursdaten nachgeladen.", flush=True)
     enriched_results = add_watchlist_peer_context(raw_results)
     
     # Sort results

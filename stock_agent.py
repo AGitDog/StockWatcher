@@ -411,6 +411,7 @@ def save_signal_snapshot(
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "items": signal_items,
     }
+    snapshot, _ = snapshot_store.fill_missing_from_same_day(history_dir, key, snapshot)
     path = snapshot_store.write_daily_snapshot(history_dir, key, snapshot)
     snapshot_store.prune_daily_files(history_dir, key, max_history)
     return path
@@ -442,6 +443,10 @@ def build_signal_delta_report(
     for item in current_items:
         symbol = item.get("symbol")
         previous_item = previous_by_symbol.get(symbol)
+        if not snapshot_store.item_has_price_data(item) or (
+            previous_item is not None and not snapshot_store.item_has_price_data(previous_item)
+        ):
+            continue  # a failed data fetch on either day is no score change
         previous_score = primary_score(ensure_brodel_v2(dict(previous_item))) if previous_item else 0
         current_score = primary_score(ensure_brodel_v2(dict(item)))
         score_delta = current_score - previous_score
@@ -1080,6 +1085,72 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
     }
 
 
+RUN_ROTATION_STRIDE = 350
+
+
+def rotate_entries(entries: list[str], now: datetime | None = None, stride: int = RUN_ROTATION_STRIDE) -> list[str]:
+    """Start every run at a different point of the watchlist.
+
+    Yahoo blocks a run after roughly 350 symbols. With a fixed order the same back part of the
+    list never got data. Two runs per day (morning, afternoon) each move the start by ``stride``,
+    so every symbol is near the front at least every two days.
+    """
+    if not entries:
+        return entries
+    now = now or datetime.now(timezone.utc)
+    run_index = now.toordinal() * 2 + (1 if now.hour >= 12 else 0)
+    offset = (run_index * stride) % len(entries)
+    return entries[offset:] + entries[:offset]
+
+
+def retry_missing_price_items(
+    results: list[dict[str, Any]],
+    symbol_mappings: dict[str, str] | None = None,
+    max_workers: int = 2,
+    pause_seconds: float = 30.0,
+    time_budget_seconds: float = 480.0,
+    builder: Any = None,
+    sleep: Any = time.sleep,
+    clock: Any = time.monotonic,
+) -> tuple[list[dict[str, Any]], int, int]:
+    """Fetch entries again whose price history came back empty (Yahoo throttling).
+
+    Runs once after a pause with fewer threads and a time budget, so the nightly job stays within
+    its timeout. Entries still without data get ``data_missing=True``.
+    Returns (results, number retried, number recovered).
+    """
+    builder = builder or build_symbol_signal_monitor
+    missing = [
+        index for index, item in enumerate(results)
+        if item.get("signal_breakdown") and not snapshot_store.item_has_price_data(item)
+    ]
+    if not missing:
+        return results, 0, 0
+    sleep(pause_seconds)
+    deadline = clock() + time_budget_seconds
+    output = list(results)
+
+    def _refetch(index: int) -> tuple[int, dict[str, Any] | None]:
+        if clock() > deadline:
+            return index, None
+        entry = results[index].get("input_name") or results[index].get("symbol")
+        try:
+            return index, builder(entry, symbol_mappings)
+        except Exception:
+            return index, None
+
+    recovered = 0
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for index, fresh in executor.map(_refetch, missing):
+            if fresh is not None and snapshot_store.item_has_price_data(fresh):
+                output[index] = fresh
+                recovered += 1
+    for index in missing:
+        if not snapshot_store.item_has_price_data(output[index]):
+            output[index] = {**output[index], "data_missing": True}
+    return output, len(missing), recovered
+
+
 def load_symbol_mappings(file_path: str = DEFAULT_MAPPING_FILE) -> dict[str, str]:
     path = Path(file_path)
     if not path.exists():
@@ -1553,7 +1624,7 @@ def _summarize_price_targets(ticker: yf.Ticker, info: dict[str, Any], history: p
 
 def _summarize_price_volume(history: pd.DataFrame | None) -> dict[str, Any]:
     if history is None or history.empty or len(history) < 25:
-        return {"name": "Preis/Volumen", "score": 0, "summary": "Nicht genug Kursdaten fuer Preis/Volumen-Signal."}
+        return {"name": "Preis/Volumen", "score": 0, "summary": snapshot_store.MISSING_PRICE_SUMMARY}
 
     frame = history.copy().sort_index()
     close_series = pd.to_numeric(frame.get("Close"), errors="coerce")

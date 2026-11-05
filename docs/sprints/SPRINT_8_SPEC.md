@@ -72,6 +72,16 @@ Rückwirkend auf den Snapshots (ohne Rückkauf-Daten) sortiert Brodel 2.0 besser
 - Angepasste Leser: `load_signal_snapshot_history`, `backtest_engine.engine.load_snapshots` (neu: `snapshots_with_datetimes`), `factor_lab.data.load_sector_map` und die Quellenauswahl im Event-Backtest.
 - `signal_breakdown_v2` speichert für umgerechnete Bausteine nur Name und Punkte. Die Texte stehen bereits im 1.0-Breakdown.
 
+### Task 6 (Nachtrag, Bugfix 05.11.2026): Verlaufskurve fällt auf 0, Yahoo blockiert
+- **Fehler:** Der Score-Verlauf vieler Aktien sprang immer wieder auf 0. Yahoo blockiert einen Lauf nach rund 350 Titeln. Für alle weiteren Titel kamen keine Daten, also weder Kurse noch Fundamentaldaten, EPS, Insider oder Sektor. Gespeichert wurde trotzdem ein Score, nur aus News und Terminen. Seit dem 19.10. betraf das jeden Tag rund 75 % der Watchlist, und zwar immer denselben hinteren Teil der Liste.
+- **Lösung:**
+  - `snapshot_store.item_has_price_data` erkennt Einträge ohne Kursdaten am Preis/Volumen-Text oder an `data_missing`. Score-Verlauf, Prüfstand, Backtests und ML-Training (`snapshots_with_datetimes`) sowie Delta-Alerts lassen diese Einträge aus. Das gilt rückwirkend auch für alte Snapshots.
+  - `rotate_entries` sorgt dafür, dass jeder Lauf an einer anderen Stelle der Watchlist beginnt. Die Startstelle rückt pro Lauf um 350 Einträge weiter, jeweils morgens und nachmittags.
+  - `fill_missing_from_same_day`: Ein späterer Lauf am selben Tag ersetzt gute Daten des früheren Laufs nicht mehr durch leere.
+  - `retry_missing_price_items`: Titel ohne Kursdaten werden nach 30 s Pause mit 2 Threads noch einmal geladen, höchstens 8 Minuten lang. Danach erhalten sie `data_missing`.
+- Detailansicht: Die Tabelle „Signal-Breakdown“ nutzt die volle Breite und ist so hoch, dass alle Zeilen ohne Scrollen sichtbar sind.
+- **Offen:** Rund 10 Yahoo-Abfragen pro Titel sind für 1376 Titel zu viele. Die eigentliche Lösung wäre, Kurse gesammelt zu laden und langsame Daten wie Fundamentaldaten seltener abzurufen.
+
 ## 3. Bewusst nicht umgesetzt
 - Insider-Clusterkäufe aus SEC EDGAR (mehrere Insider kaufen kurz hintereinander) und eine stärkere Gewichtung solcher Doppelkäufe.
 - Erweiterung auf kleinere Firmen, bei denen die Drift nach Quartalszahlen laut Forschung noch wirkt.

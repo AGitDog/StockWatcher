@@ -109,8 +109,8 @@ def build_score_history_frame(history: list[dict[str, object]]) -> pd.DataFrame:
         timestamp = snapshot.get("timestamp")
         items = snapshot.get("items", []) if isinstance(snapshot, dict) else []
         for item in items:
-            if not isinstance(item, dict):
-                continue
+            if not snapshot_store.item_has_price_data(item):
+                continue  # failed data fetch, no real score of 0
             rows.append(
                 {
                     "timestamp": timestamp,
@@ -170,6 +170,11 @@ def build_signal_table_rows(signal_items: list[dict]) -> list[dict]:
         row["Brodel 1.0"] = item.get("brodel_score", 0)
         rows.append(row)
     return rows
+
+
+def breakdown_table_height(row_count: int) -> int:
+    """Pixel height that shows every row of st.dataframe without an inner scrollbar."""
+    return 38 + 35 * max(row_count, 1)
 
 
 def build_breakdown_rows(item: dict) -> list[dict]:
@@ -356,10 +361,6 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     else:
                         st.markdown("- Keine aussagekraeftigen Fruehsignale erkannt.")
 
-                    st.markdown("**Signal-Breakdown**")
-                    breakdown_rows = build_breakdown_rows(item)
-                    st.dataframe(pd.DataFrame(breakdown_rows), use_container_width=True, hide_index=True)
-
                 with col2:
                     peer_context = item.get("peer_context", {})
                     st.markdown("**Peer- und Sektor-Kontext**")
@@ -376,6 +377,16 @@ def render_watchlist_signal_monitor(mapping_text: str):
                         )
                     else:
                         st.markdown("- Kein weiterer Peer im gleichen Sektor innerhalb der Watchlist.")
+
+                st.markdown("**Signal-Breakdown**")
+                breakdown_rows = build_breakdown_rows(item)
+                st.dataframe(
+                    pd.DataFrame(breakdown_rows),
+                    use_container_width=True,
+                    hide_index=True,
+                    height=breakdown_table_height(len(breakdown_rows)),
+                    column_config={"Detail": st.column_config.TextColumn("Detail", width="large")},
+                )
 
                 st.markdown("---")
                 st.markdown("**Score-Verlauf (letzte 100 Tage)**")

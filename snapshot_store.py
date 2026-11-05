@@ -19,6 +19,23 @@ from typing import Any
 
 DAILY_SUFFIX = ".json.gz"
 
+# Summary written by the Preis/Volumen component when Yahoo returned (almost) no price history.
+# On some nights Yahoo blocked most requests; those entries then carried a score of 0 for every
+# component. They are no measurement and must not enter charts, the Pruefstand or ML training.
+MISSING_PRICE_SUMMARY = "Nicht genug Kursdaten fuer Preis/Volumen-Signal."
+
+
+def item_has_price_data(item: Any) -> bool:
+    """False for entries whose data fetch failed (flag ``data_missing`` or no price history)."""
+    if not isinstance(item, dict) or item.get("data_missing"):
+        return False
+    component = (item.get("signal_breakdown") or {}).get("Preis/Volumen")
+    return not (isinstance(component, dict) and component.get("summary") == MISSING_PRICE_SUMMARY)
+
+
+def items_with_price_data(items: Any) -> list[dict[str, Any]]:
+    return [item for item in items or [] if item_has_price_data(item)]
+
 
 def read_snapshot_file(path: Path) -> list[dict[str, Any]]:
     """Read a legacy ``.json`` or a daily ``.json.gz`` file. Broken files yield an empty list."""
@@ -82,6 +99,33 @@ def write_daily_snapshot(directory: str | Path, key: str, snapshot: dict[str, An
         handle.write(payload)
     temp.replace(path)
     return path
+
+
+def fill_missing_from_same_day(directory: str | Path, key: str, snapshot: dict[str, Any]) -> tuple[dict[str, Any], int]:
+    """Replace entries without price data by the same symbol's valid entry of an earlier run that day.
+
+    Two workflows write the same daily file; a later run hit by Yahoo blocks must not wipe out
+    the good data of the earlier one. Returns the merged snapshot and the number of filled entries.
+    """
+    day = _day_of(snapshot)
+    path = Path(directory) / key / f"{day}{DAILY_SUFFIX}"
+    if not day or not path.exists():
+        return snapshot, 0
+    earlier = {
+        str(item.get("symbol")): item
+        for stored in read_snapshot_file(path)
+        for item in stored.get("items", []) or []
+        if isinstance(item, dict) and item.get("symbol") and item_has_price_data(item)
+    }
+    filled = 0
+    items = []
+    for item in snapshot.get("items", []) or []:
+        if isinstance(item, dict) and not item_has_price_data(item) and str(item.get("symbol")) in earlier:
+            items.append(earlier[str(item.get("symbol"))])
+            filled += 1
+        else:
+            items.append(item)
+    return {**snapshot, "items": items}, filled
 
 
 def migrate_legacy_file(directory: str | Path, key: str) -> int:
