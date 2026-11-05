@@ -79,15 +79,17 @@ def test_render_stock_agent_layout():
     tab_mock_1 = MagicMock()
     tab_mock_2 = MagicMock()
     tab_mock_3 = MagicMock()
+    tab_mock_4 = MagicMock()
 
-    with patch("streamlit.tabs", return_value=[tab_mock_1, tab_mock_2, tab_mock_3]) as mock_tabs, \
+    with patch("streamlit.tabs", return_value=[tab_mock_1, tab_mock_2, tab_mock_3, tab_mock_4]) as mock_tabs, \
          patch("streamlit.title"), \
          patch("streamlit.caption"), \
          patch("app.render_watchlist_signal_monitor"), \
+         patch("app.render_bot_tab"), \
          patch("app.render_backtest_tab"), \
          patch("app.render_help_tab"):
         app.render_stock_agent()
-        mock_tabs.assert_called_once_with(["🔥 Signal Monitor", "Backtest & ML", "Hilfe & Methodik"])
+        mock_tabs.assert_called_once_with(["🔥 Signal Monitor", "🤖 Bot-Depot", "Backtest & ML", "Hilfe & Methodik"])
 
 
 def test_default_watchlist_contains_new_indices():

@@ -37,6 +37,7 @@ from backtest_engine import (
 from ml_weights import load_trained_weights, train_on_snapshots
 from backtest_engine.engine import load_snapshots, snapshots_with_datetimes
 import snapshot_store
+import paper_bot
 from factor_lab import BacktestConfig, build_truth_report, snapshot_score_ic
 from factor_lab.data import download_close_prices, filter_single_currency, load_universe
 from factor_lab.factors import FACTOR_DESCRIPTIONS
@@ -1549,18 +1550,126 @@ def render_backtest_tab():
                 })
 
 
+def build_bot_equity_frame(state: dict) -> pd.DataFrame:
+    rows = state.get("equity", []) if state else []
+    if not rows:
+        return pd.DataFrame(columns=["Bot mit Stop-Loss", "Ohne Stop-Loss", "MSCI World ETF"])
+    frame = pd.DataFrame(rows)
+    frame["day"] = pd.to_datetime(frame["day"])
+    return frame.set_index("day").rename(
+        columns={"bot": "Bot mit Stop-Loss", "no_stop": "Ohne Stop-Loss", "etf": "MSCI World ETF"}
+    )[["Bot mit Stop-Loss", "Ohne Stop-Loss", "MSCI World ETF"]]
+
+
+def build_bot_position_rows(portfolio: dict, config: dict) -> list[dict]:
+    rows = []
+    for position in portfolio.get("positions", []):
+        entry, last, stop = position["entry_price"], position["last_price"], position["stop"]
+        row = {
+            "Symbol": position["symbol"],
+            "Name": position.get("name", ""),
+            "Gekauft am": position["entry_day"],
+            "Brodel beim Kauf": position.get("score_at_buy"),
+            "Kaufkurs": round(entry, 2),
+            "Aktuell": round(last, 2),
+            "Plus/Minus %": round((last / entry - 1) * 100, 1),
+            "Wert €": position.get("last_value_eur", position["cost_eur"]),
+            "Währung": position.get("currency", ""),
+        }
+        if portfolio.get("use_stop", True):
+            row["Stop-Loss"] = round(stop, 2)
+            row["Abstand zum Stop %"] = round((last / stop - 1) * 100, 1) if stop else None
+            row["Stop-Abstand"] = f"{paper_bot.stop_distance(position, config) * 100:.0f} %"
+        rows.append(row)
+    return sorted(rows, key=lambda r: r["Plus/Minus %"], reverse=True)
+
+
+def build_bot_trade_rows(portfolio: dict) -> list[dict]:
+    rows = []
+    for trade in reversed(portfolio.get("trades", [])):
+        rows.append({
+            "Datum": trade.get("day"),
+            "Art": trade.get("side"),
+            "Symbol": trade.get("symbol"),
+            "Name": trade.get("name", ""),
+            "Kurs": trade.get("price"),
+            "Stück": trade.get("shares"),
+            "Betrag €": trade.get("value_eur"),
+            "Gewinn/Verlust €": trade.get("pnl_eur"),
+            "Gewinn/Verlust %": trade.get("pnl_pct"),
+            "Grund": trade.get("reason", ""),
+        })
+    return rows
+
+
+def render_bot_tab():
+    st.subheader("🤖 Bot-Depot: Brodel 2.0 mit Trailing-Stop")
+    state = paper_bot.load_state()
+    cfg = (state or {}).get("config", paper_bot.DEFAULT_CONFIG)
+    with st.expander("Regeln des Bots", expanded=state is None):
+        st.markdown(
+            f"- Läuft einmal täglich nach dem letzten US-Lauf und nutzt nur den Snapshot dieses Tages.\n"
+            f"- **Kauf:** jede Aktie mit Brodel 2.0 ab **{cfg['buy_threshold']}**, die höchsten zuerst, "
+            f"je **{cfg['position_budget']:,.0f} €**, höchstens **{cfg['max_positions']} Aktien**. "
+            "Gekauft wird zum Eröffnungskurs am nächsten Handelstag (1 € Gebühr).\n"
+            f"- **Stop-Loss:** {cfg['initial_stop'] * 100:.0f} % unter dem Kaufkurs. Er wird jeden Tag zum höchsten Schlusskurs nachgezogen "
+            f"und sinkt nie. Ab **+{cfg['tighten_after_gain'] * 100:.0f} %** Gewinn rückt er auf **{cfg['tight_stop'] * 100:.0f} %** heran.\n"
+            "- **Verkauf:** sobald der Tiefstkurs den Stop berührt. Eröffnet die Aktie schon darunter, wird zur Eröffnung verkauft.\n"
+            f"- **Sperre:** Eine verkaufte Aktie wird frühestens nach {cfg['cooldown_days']} Tagen wieder gekauft.\n"
+            "- **Vergleich:** Dieselben Käufe ohne Stop-Loss und ein MSCI-World-ETF mit demselben Startkapital. "
+            "So zeigt sich, ob der Stop-Loss und die Aktienauswahl etwas bringen."
+        )
+    if not state:
+        st.info("Das Bot-Depot wird mit dem nächsten nächtlichen US-Lauf angelegt.")
+        return
+
+    last = state["equity"][-1] if state["equity"] else {}
+    capital = cfg["capital"]
+    cols = st.columns(3)
+    for col, (key, label) in zip(cols, [("bot", "Bot mit Stop-Loss"), ("no_stop", "Ohne Stop-Loss"), ("etf", "MSCI World ETF")]):
+        value = last.get(key, capital)
+        col.metric(label, f"{value:,.0f} €", f"{(value / capital - 1) * 100:+.2f} %")
+    st.caption(f"Gestartet am {state['started']}, letzter Lauf {state['last_run']}, bewertet mit Schlusskursen bis {last.get('day', '-')}.")
+
+    equity = build_bot_equity_frame(state)
+    if len(equity) > 1:
+        st.line_chart(equity)
+
+    choice = st.radio("Depot", ["Bot mit Stop-Loss", "Ohne Stop-Loss"], horizontal=True, key="bot_depot_choice")
+    portfolio = state["portfolios"]["bot" if choice == "Bot mit Stop-Loss" else "no_stop"]
+    st.markdown(f"**Bestand** ({len(portfolio['positions'])} von {cfg['max_positions']} Plätzen, Cash {portfolio['cash']:,.0f} €)")
+    position_rows = build_bot_position_rows(portfolio, cfg)
+    if position_rows:
+        st.dataframe(pd.DataFrame(position_rows), use_container_width=True, hide_index=True,
+                     height=breakdown_table_height(len(position_rows)))
+    else:
+        st.caption("Noch keine Aktien im Depot.")
+    if portfolio["pending"]:
+        st.markdown("**Offene Kauforders** (werden zur nächsten Eröffnung ausgeführt)")
+        st.dataframe(pd.DataFrame([
+            {"Symbol": o["symbol"], "Name": o.get("name", ""), "Brodel 2.0": o["score"], "Entschieden am": o["order_day"]}
+            for o in portfolio["pending"]
+        ]), use_container_width=True, hide_index=True)
+    trades = build_bot_trade_rows(portfolio)
+    if trades:
+        st.markdown("**Käufe und Verkäufe**")
+        st.dataframe(pd.DataFrame(trades), use_container_width=True, hide_index=True)
+
+
 def render_stock_agent():
     st.title("🔥 Brodel-Radar – Quantitative Marktbeobachtung")
     st.caption("Frühwarnsignale, Akkumulation & fundamentale Unternehmensanalysen")
 
     mapping_text = load_mapping_text()
 
-    stock_tabs = st.tabs(["🔥 Signal Monitor", "Backtest & ML", "Hilfe & Methodik"])
+    stock_tabs = st.tabs(["🔥 Signal Monitor", "🤖 Bot-Depot", "Backtest & ML", "Hilfe & Methodik"])
     with stock_tabs[0]:
         render_watchlist_signal_monitor(mapping_text)
     with stock_tabs[1]:
-        render_backtest_tab()
+        render_bot_tab()
     with stock_tabs[2]:
+        render_backtest_tab()
+    with stock_tabs[3]:
         render_help_tab()
 
 

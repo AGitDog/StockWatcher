@@ -1,0 +1,230 @@
+"""Paper bot: buy >= 60 at the next open, trailing stop 15 % (10 % after +25 %), cooldown, no-stop twin, ETF."""
+from datetime import date, datetime, timezone
+
+import pandas as pd
+import pytest
+
+import paper_bot as bot
+import snapshot_store
+
+PV_OK = {"Preis/Volumen": {"name": "Preis/Volumen", "score": 5, "summary": "Kurs ueber MA20."}}
+
+
+def _item(symbol, score, **extra):
+    return {"symbol": symbol, "name": symbol, "brodel_score": score, "brodel_score_v2": score,
+            "signal_breakdown": PV_OK, **extra}
+
+
+def _snapshot(day, items):
+    return {"timestamp": f"{day}T22:40:00Z", "items": items}
+
+
+def _bars(rows):
+    """rows: list of (day, open, low, close)."""
+    index = pd.to_datetime([r[0] for r in rows])
+    return pd.DataFrame({"Open": [r[1] for r in rows], "High": [max(r[1], r[3]) for r in rows],
+                         "Low": [r[2] for r in rows], "Close": [r[3] for r in rows]}, index=index)
+
+
+def _at(day, hour=22):
+    return datetime.fromisoformat(f"{day}T{hour:02d}:45:00").replace(tzinfo=timezone.utc)
+
+
+def _state(**cfg):
+    return bot.new_state(_at("2026-11-02"), cfg)
+
+
+def test_currency_and_eur_conversion():
+    assert bot.currency_of("AAPL") == ("USD", 1)
+    assert bot.currency_of("SAP.DE") == ("EUR", 1)
+    assert bot.currency_of("BRBY.L") == ("GBP", 100)
+    assert bot.currency_of("7203.T") == ("JPY", 1)
+    fx = {"EURUSD=X": _bars([("2026-11-02", 1.1, 1.1, 1.1)]), "EURGBP=X": _bars([("2026-11-02", 0.85, 0.85, 0.85)])}
+    day = date(2026, 11, 3)
+    assert bot.to_eur(110.0, "AAPL", day, fx) == pytest.approx(100.0)
+    assert bot.to_eur(8500.0, "BRBY.L", day, fx) == pytest.approx(100.0)  # pence
+    assert bot.to_eur(50.0, "SAP.DE", day, fx) == 50.0
+    assert bot.to_eur(1000.0, "7203.T", day, fx) is None  # no rate -> no guess
+
+
+def test_decision_cutoff_skips_incomplete_us_bars():
+    assert bot.decision_cutoff(_at("2026-11-05", 22)) == date(2026, 11, 5)
+    assert bot.decision_cutoff(_at("2026-11-06", 3)) == date(2026, 11, 5)  # delayed US run
+    assert bot.decision_cutoff(_at("2026-11-05", 14)) == date(2026, 11, 4)  # US still trading
+
+
+def test_candidates_only_fresh_entries_at_threshold_best_first():
+    stale = _item("OLD", 70, stale_from="2026-11-01")
+    missing = _item("NODATA", 70)
+    missing["signal_breakdown"] = {"Preis/Volumen": {"name": "Preis/Volumen", "score": 0, "summary": snapshot_store.MISSING_PRICE_SUMMARY}}
+    snap = _snapshot("2026-11-02", [_item("B", 61), _item("A", 65), _item("C", 59), stale, missing])
+    assert [c["symbol"] for c in bot.buy_candidates(snap, 60)] == ["A", "B"]
+
+
+def test_buy_next_open_then_trailing_stop_sells():
+    state = _state()
+    snap = _snapshot("2026-11-02", [_item("SAP.DE", 62)])
+    bot.step(state, snap, {}, {}, _at("2026-11-02"))
+    pf = state["portfolios"]["bot"]
+    assert pf["pending"][0]["symbol"] == "SAP.DE" and pf["cash"] == 95_000
+
+    bars = {"SAP.DE": _bars([
+        ("2026-11-03", 100, 98, 104),   # filled at the open 100, stop 85 -> trails to 104*0.85
+        ("2026-11-04", 104, 101, 110),  # stop 93.5
+        ("2026-11-05", 109, 92, 95),    # low touches 93.5 -> sold at 93.5
+    ])}
+    bot.step(state, None, bars, {}, _at("2026-11-05"))
+    assert pf["positions"] == [] and pf["pending"] == []
+    sale = [t for t in pf["trades"] if t["side"] == "Verkauf"][0]
+    assert sale["price"] == pytest.approx(93.5) and sale["day"] == "2026-11-05"
+    shares = (5000 - 1) // 100
+    assert sale["shares"] == shares
+    assert pf["cash"] == pytest.approx(100_000 - (shares * 100 + 1) + shares * 93.5 - 1)
+
+    twin = state["portfolios"]["no_stop"]
+    assert len(twin["positions"]) == 1 and twin["positions"][0]["last_price"] == 95
+
+
+def test_gap_below_stop_sells_at_open():
+    state = _state()
+    bot.step(state, _snapshot("2026-11-02", [_item("SAP.DE", 62)]), {}, {}, _at("2026-11-02"))
+    bars = {"SAP.DE": _bars([("2026-11-03", 100, 99, 100), ("2026-11-04", 70, 60, 65)])}
+    bot.step(state, None, bars, {}, _at("2026-11-04"))
+    sale = [t for t in state["portfolios"]["bot"]["trades"] if t["side"] == "Verkauf"][0]
+    assert sale["price"] == 70 and "Kurslücke" in sale["reason"]
+
+
+def test_stop_tightens_to_ten_percent_after_25_percent_gain_and_never_drops():
+    cfg = bot.DEFAULT_CONFIG
+    pf = {"use_stop": True, "cash": 0.0, "trades": [], "cooldown": {}}
+    position = {"symbol": "SAP.DE", "entry_price": 100.0, "high_close": 100.0, "stop": 85.0, "shares": 10,
+                "cost_eur": 1001.0, "last_price": 100.0, "last_day": "2026-11-03", "entry_day": "2026-11-03"}
+    bars = bot._bars_after(_bars([("2026-11-04", 110, 109, 124), ("2026-11-05", 124, 120, 130), ("2026-11-06", 129, 118, 120)]),
+                           date(2026, 11, 3), date(2026, 11, 6))
+    assert bot.process_position(pf, position, bars, {}, cfg)
+    assert position["high_close"] == 130
+    assert position["stop"] == pytest.approx(117.0)  # 130 * 0.90, not lowered by the 120 close
+
+
+def test_cooldown_blocks_rebuy_for_28_days():
+    state = _state()
+    pf = state["portfolios"]["bot"]
+    pf["cooldown"]["SAP.DE"] = "2026-11-05"
+    cands = [{"symbol": "SAP.DE", "name": "SAP", "score": 65}]
+    assert bot.place_orders(pf, cands, date(2026, 11, 20), state["config"]) == []
+    assert [o["symbol"] for o in bot.place_orders(pf, cands, date(2026, 12, 3), state["config"])] == ["SAP.DE"]
+
+
+def test_max_twenty_positions_and_budget():
+    state = _state()
+    items = [_item(f"S{i:02d}.DE", 60 + i % 5) for i in range(30)]
+    bot.step(state, _snapshot("2026-11-02", items), {}, {}, _at("2026-11-02"))
+    pf = state["portfolios"]["bot"]
+    assert len(pf["pending"]) == 20 and pf["cash"] == 0
+    # second run on the same day places nothing new
+    bot.step(state, _snapshot("2026-11-02", items), {}, {}, _at("2026-11-02", 23))
+    assert len(pf["pending"]) == 20
+
+
+def test_order_expires_without_prices():
+    state = _state()
+    bot.step(state, _snapshot("2026-11-02", [_item("GONE.DE", 70)]), {}, {}, _at("2026-11-02"))
+    bot.step(state, None, {}, {}, _at("2026-11-12"))
+    pf = state["portfolios"]["bot"]
+    assert pf["pending"] == [] and pf["cash"] == 100_000
+    assert pf["trades"][-1]["side"] == "Storniert"
+
+
+def test_etf_benchmark_and_equity_curve():
+    state = _state()
+    bars = {bot.ETF_SYMBOL: _bars([("2026-11-02", 99, 98, 99), ("2026-11-03", 100, 99, 101), ("2026-11-04", 101, 100, 105)])}
+    bot.step(state, None, bars, {}, _at("2026-11-04"))
+    assert state["etf"]["bought_on"] == "2026-11-03"  # first open after the start day
+    assert state["etf"]["last_value"] == pytest.approx((100_000 - 1) / 100 * 105)
+    assert state["equity"][-1]["bot"] == 100_000
+
+
+def test_run_end_to_end_with_state_file(tmp_path):
+    path = tmp_path / "state.json"
+    calls = []
+
+    def loader(symbols, start):
+        calls.append(sorted(symbols))
+        return {"AAPL": _bars([("2026-11-03", 110, 108, 112)]), "EURUSD=X": _bars([("2026-11-03", 1.1, 1.1, 1.1)])}
+
+    bot.run(_at("2026-11-02"), path, loader, snapshot=_snapshot("2026-11-02", [_item("AAPL", 63)]))
+    summary = bot.run(_at("2026-11-03"), path, loader, snapshot=_snapshot("2026-11-03", []))
+    state = bot.load_state(path)
+    position = state["portfolios"]["bot"]["positions"][0]
+    assert position["symbol"] == "AAPL" and position["entry_price"] == 110
+    assert position["shares"] == int((5000 - 1) // 100)  # 110 USD = 100 EUR
+    assert "AAPL" in calls[-1] and "EURUSD=X" in calls[-1]
+    assert summary["equity"]["bot"] == pytest.approx(100_000 - 1 + (112 - 110) / 1.1 * position["shares"], abs=0.02)
+    assert "AAPL" in bot.status_text(state)
+
+
+def test_workflow_runs_bot_after_last_group_and_commits_state():
+    from pathlib import Path
+
+    content = (Path(__file__).resolve().parent.parent / ".github/workflows/update_signals.yml").read_text(encoding="utf-8")
+    assert "python paper_bot.py run" in content
+    assert "env.GROUP == 'america-2'" in content
+    assert "continue-on-error: true" in content
+    assert "git add -A signal_history/ bot_depot/" in content
+
+
+def _sample_state():
+    state = _state()
+    bot.step(state, _snapshot("2026-11-02", [_item("SAP.DE", 62), _item("ALV.DE", 61)]), {}, {}, _at("2026-11-02"))
+    bars = {"SAP.DE": _bars([("2026-11-03", 100, 99, 104), ("2026-11-04", 104, 103, 131)]),
+            "ALV.DE": _bars([("2026-11-03", 50, 40, 41)]),
+            bot.ETF_SYMBOL: _bars([("2026-11-03", 100, 99, 100), ("2026-11-04", 100, 99, 101)])}
+    bot.step(state, None, bars, {}, _at("2026-11-04"))
+    return state
+
+
+def test_app_bot_rows():
+    import app
+
+    state = _sample_state()
+    rows = app.build_bot_position_rows(state["portfolios"]["bot"], state["config"])
+    assert [r["Symbol"] for r in rows] == ["SAP.DE"]
+    assert rows[0]["Plus/Minus %"] == 31.0
+    assert rows[0]["Stop-Abstand"] == "10 %"  # +31 % > +25 %
+    assert rows[0]["Stop-Loss"] == pytest.approx(117.9)
+    trades = app.build_bot_trade_rows(state["portfolios"]["bot"])
+    assert trades[0]["Art"] == "Verkauf" and trades[0]["Symbol"] == "ALV.DE"  # newest first
+    no_stop = app.build_bot_position_rows(state["portfolios"]["no_stop"], state["config"])
+    assert "Stop-Loss" not in no_stop[0] and len(no_stop) == 2
+    frame = app.build_bot_equity_frame(state)
+    assert list(frame.columns) == ["Bot mit Stop-Loss", "Ohne Stop-Loss", "MSCI World ETF"]
+
+
+def test_bot_tab_renders(tmp_path, monkeypatch):
+    from streamlit.testing.v1 import AppTest
+
+    path = tmp_path / "state.json"
+    bot.save_state(_sample_state(), path)
+    monkeypatch.setenv("BOT_TEST_STATE", str(path))
+
+    def script():
+        import json
+        import os
+        from pathlib import Path
+
+        import app
+        import paper_bot
+
+        state_path = Path(os.environ["BOT_TEST_STATE"])
+        original = paper_bot.load_state
+        paper_bot.load_state = lambda *a, **k: json.loads(state_path.read_text(encoding="utf-8"))
+        try:
+            app.render_bot_tab()
+        finally:
+            paper_bot.load_state = original
+
+    at = AppTest.from_function(script, default_timeout=60)
+    at.run()
+    assert not at.exception
+    assert any("Bot-Depot" in s.value for s in at.subheader)
+    assert len(at.metric) == 3

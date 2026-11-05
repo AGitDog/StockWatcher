@@ -17,6 +17,11 @@ on:
         default: 'asia'
         type: choice
         options: [asia, europe, america-1, america-2, all]
+      run_bot:
+        description: 'Paper-Bot danach ausfuehren (laeuft sonst nur nach america-2)'
+        required: false
+        default: false
+        type: boolean
 
 # Runs never overlap: each one starts from the snapshot the previous run pushed.
 concurrency:
@@ -66,14 +71,20 @@ jobs:
           *)             GROUP="${INPUT_GROUP:-all}" ;;
         esac
         echo "Gruppe: $GROUP"
+        echo "GROUP=$GROUP" >> "$GITHUB_ENV"
         python update_signals.py --group "$GROUP"
+
+    - name: Run paper bot (after the last group of the day)
+      if: env.GROUP == 'america-2' || inputs.run_bot
+      continue-on-error: true  # a bot problem must never block saving the snapshot
+      run: python paper_bot.py run
 
     - name: Commit and Push changes
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
-        git add -A signal_history/
+        git add -A signal_history/ bot_depot/
         git status
         if ! git diff --staged --quiet; then
           git commit -m "Auto-update signal snapshots"
