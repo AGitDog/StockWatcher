@@ -1,10 +1,27 @@
 name: Update Stock Signals
 
+# Yahoo blocks a run after roughly 350 symbols, so the watchlist runs in four region groups,
+# each after its exchanges closed (times in UTC; German time is UTC+1 in winter, UTC+2 in summer).
+# Every run merges its group into the same daily snapshot.
 on:
   schedule:
-    # Run once every 24 hours at 00:00 UTC
-    - cron: '0 0 * * *'
-  workflow_dispatch: # Allow manual triggering from GitHub UI
+    - cron: '0 8 * * *'     # asia      (Tokyo/Mumbai closed)
+    - cron: '30 17 * * *'   # europe    (Xetra/London closed)
+    - cron: '30 21 * * *'   # america-1 (New York closed)
+    - cron: '30 22 * * *'   # america-2
+  workflow_dispatch:
+    inputs:
+      group:
+        description: 'Gruppe (all laedt alles auf einmal und wird von Yahoo nach ~350 Titeln gebremst)'
+        required: true
+        default: 'asia'
+        type: choice
+        options: [asia, europe, america-1, america-2, all]
+
+# Runs never overlap: each one starts from the snapshot the previous run pushed.
+concurrency:
+  group: signal-snapshots
+  cancel-in-progress: false
 
 jobs:
   update-signals:
@@ -38,7 +55,18 @@ jobs:
         ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
         FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-      run: python update_signals.py
+        SCHEDULE: ${{ github.event.schedule }}
+        INPUT_GROUP: ${{ inputs.group }}
+      run: |
+        case "$SCHEDULE" in
+          "0 8 * * *")   GROUP=asia ;;
+          "30 17 * * *") GROUP=europe ;;
+          "30 21 * * *") GROUP=america-1 ;;
+          "30 22 * * *") GROUP=america-2 ;;
+          *)             GROUP="${INPUT_GROUP:-all}" ;;
+        esac
+        echo "Gruppe: $GROUP"
+        python update_signals.py --group "$GROUP"
 
     - name: Commit and Push changes
       run: |

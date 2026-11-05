@@ -82,6 +82,30 @@ Rückwirkend auf den Snapshots (ohne Rückkauf-Daten) sortiert Brodel 2.0 besser
 - Detailansicht: Die Tabelle „Signal-Breakdown“ nutzt die volle Breite und ist so hoch, dass alle Zeilen ohne Scrollen sichtbar sind.
 - **Offen:** Rund 10 Yahoo-Abfragen pro Titel sind für 1376 Titel zu viele. Die eigentliche Lösung wäre, Kurse gesammelt zu laden und langsame Daten wie Fundamentaldaten seltener abzurufen.
 
+### Task 7 (05.11.2026): Nachtlauf in vier Regionsgruppen
+- **Freigabe:** Im Chat („OK dann beginne mit dem Umbau“) auf den Vorschlag, statt zwei Hälften vier Gruppen mit höchstens rund 400 Titeln zu bilden.
+- **Gruppen** (`symbol_region` und `run_group` in `stock_agent.py`). Die Zuordnung ergibt sich offline aus dem Symbol-Suffix, ohne Yahoo-Abfrage:
+
+  | Gruppe | Titel | Lauf (UTC) |
+  |---|---|---|
+  | asia (.T, .NS, …) | 275 | 08:00 |
+  | europe (.DE, .L, .PA, .SW, …) | 279 | 17:30 |
+  | america-1 (USA und Kanada, Hälfte 1) | 417 | 21:30 |
+  | america-2 (Hälfte 2) | 404 | 22:30 |
+
+  USA und Kanada werden über einen Hash des Symbols stabil halbiert.
+- **Workflow `update_signals.yml`:** Vier Cron-Einträge legen die Gruppe fest. Bei manuellem Start wird die Gruppe ausgewählt. `concurrency` sorgt dafür, dass sich Läufe nicht überschneiden. `daily_run.yml` startet nur noch von Hand, ein zweiter Volllauf pro Tag entfällt.
+- **Tagessnapshot** (`merge_group_run` und `snapshot_store.merge_into_day`):
+  - Jeder Lauf ergänzt seine Gruppe im letzten Snapshot.
+  - Einträge desselben Tages bleiben frisch.
+  - Einträge vom Vortag (höchstens 7 Tage alt) werden mit `stale_from` markiert. Sie erscheinen nur zur Anzeige und fließen nicht in Verlauf, Prüfstand, Backtests, ML und Alerts ein (`is_fresh_measurement`).
+  - Ein neuer Eintrag ohne Kursdaten ersetzt nie einen alten Eintrag mit Kursdaten.
+  - Titel, die aus der Watchlist entfernt wurden, entfallen.
+  - Sektor-Rang und Peer-Kontext werden über die ganze Liste neu berechnet.
+- **Tageszuordnung** (`snapshot_day`): Läufe bis 07:00 UTC zählen zum Vortag, damit verspätete US-Läufe im richtigen Tagessnapshot landen. Der Zeitstempel lautet dann `<Vortag>T23:59:59Z`.
+- Detailansicht: Hinweis „Stand vom …“ bei übernommenen Einträgen und Hinweis bei fehlenden Kursdaten.
+- **Tests:** `tests/test_run_groups.py` mit 24 Tests, die Workflow-Tests sind angepasst. Insgesamt 299 Tests grün.
+
 ## 3. Bewusst nicht umgesetzt
 - Insider-Clusterkäufe aus SEC EDGAR (mehrere Insider kaufen kurz hintereinander) und eine stärkere Gewichtung solcher Doppelkäufe.
 - Erweiterung auf kleinere Firmen, bei denen die Drift nach Quartalszahlen laut Forschung noch wirkt.

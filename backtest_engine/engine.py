@@ -71,7 +71,7 @@ def snapshots_with_datetimes(
             continue
         parsed_timestamp = pd.to_datetime(snapshot.get("timestamp"), errors="coerce", utc=True)
         dt = fallback if pd.isna(parsed_timestamp) else parsed_timestamp.to_pydatetime().replace(tzinfo=None)
-        result.append((dt, snapshot_store.items_with_price_data(snapshot["items"])))
+        result.append((dt, snapshot_store.fresh_items(snapshot["items"])))
     return result
 
 

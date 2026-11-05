@@ -278,12 +278,26 @@ def test_workflow_update_signals_has_valid_cron():
     assert "schedule:" in content, "Kein schedule-Trigger in update_signals.yml"
 
 
-def test_workflow_daily_run_has_valid_cron():
-    """daily_run.yml muss einen gueltigen Cron-Ausdruck haben."""
+def test_workflow_daily_run_is_manual_only():
+    """daily_run.yml laeuft nur noch von Hand; die Nacht laeuft in Gruppen ueber update_signals.yml."""
     workflow_path = BASE_DIR / ".github/workflows/daily_run.yml"
     content = workflow_path.read_text(encoding="utf-8")
-    assert "cron:" in content, "Kein Cron-Schedule in daily_run.yml gefunden"
-    assert "schedule:" in content, "Kein schedule-Trigger in daily_run.yml"
+    assert "workflow_dispatch:" in content
+    assert "schedule:" not in content, "Ein zweiter Volllauf pro Tag wuerde von Yahoo gebremst"
+
+
+def test_workflow_update_signals_runs_each_group_once():
+    """Jede Regionsgruppe hat genau einen Cron-Eintrag und wird dem Skript uebergeben."""
+    import re
+    from stock_agent import RUN_GROUPS
+
+    content = (BASE_DIR / ".github/workflows/update_signals.yml").read_text(encoding="utf-8")
+    crons = re.findall(r"cron: '([^']+)'", content)
+    assert len(crons) == len(RUN_GROUPS) == len(set(crons))
+    for cron, group in zip(crons, RUN_GROUPS):
+        assert re.search(rf'"{re.escape(cron)}"\)\s+GROUP={group} ;;', content), (cron, group)
+    assert 'python update_signals.py --group "$GROUP"' in content
+    assert "concurrency:" in content
 
 
 def test_workflows_install_requirements():

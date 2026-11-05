@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import time
 import threading
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from functools import lru_cache
 from io import StringIO
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import re
 from typing import Any
@@ -390,6 +391,33 @@ def ensure_signal_history_dir(directory: str = DEFAULT_SIGNAL_HISTORY_DIR) -> Pa
 MAX_SIGNAL_HISTORY_SNAPSHOTS = 3665
 
 
+# Runs shortly after midnight UTC (delayed US runs) still belong to the previous trading day.
+SNAPSHOT_DAY_SHIFT_HOURS = 7
+
+
+def snapshot_day(now: datetime | None = None) -> str:
+    now = now or datetime.now(timezone.utc)
+    return (now - timedelta(hours=SNAPSHOT_DAY_SHIFT_HOURS)).date().isoformat()
+
+
+def snapshot_timestamp(now: datetime | None = None) -> str:
+    now = now or datetime.now(timezone.utc)
+    day = snapshot_day(now)
+    return now.strftime("%Y-%m-%dT%H:%M:%SZ") if now.date().isoformat() == day else f"{day}T23:59:59Z"
+
+
+def merge_group_run(
+    watchlist_name: str,
+    new_items: list[dict[str, Any]],
+    allowed_symbols: set[str] | None = None,
+    now: datetime | None = None,
+    directory: str = DEFAULT_SIGNAL_HISTORY_DIR,
+) -> list[dict[str, Any]]:
+    """Full item list for today's snapshot: this group's results plus the other groups' latest entries."""
+    history = load_signal_snapshot_history(watchlist_name, directory)
+    return snapshot_store.merge_into_day(history[-1] if history else None, snapshot_day(now), new_items, allowed_symbols)
+
+
 def _snapshot_key(watchlist_name: str) -> str:
     return _sanitize_watchlist_name(watchlist_name).removesuffix(".txt")
 
@@ -399,6 +427,7 @@ def save_signal_snapshot(
     signal_items: list[dict[str, Any]],
     directory: str = DEFAULT_SIGNAL_HISTORY_DIR,
     max_history: int = MAX_SIGNAL_HISTORY_SNAPSHOTS,
+    now: datetime | None = None,
 ) -> Path:
     """Store today's snapshot as its own compressed daily file (replaces an earlier run of the same day).
 
@@ -407,10 +436,7 @@ def save_signal_snapshot(
     history_dir = ensure_signal_history_dir(directory)
     key = _snapshot_key(watchlist_name)
     snapshot_store.migrate_legacy_file(history_dir, key)
-    snapshot = {
-        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "items": signal_items,
-    }
+    snapshot = {"timestamp": snapshot_timestamp(now), "items": signal_items}
     snapshot, _ = snapshot_store.fill_missing_from_same_day(history_dir, key, snapshot)
     path = snapshot_store.write_daily_snapshot(history_dir, key, snapshot)
     snapshot_store.prune_daily_files(history_dir, key, max_history)
@@ -443,10 +469,10 @@ def build_signal_delta_report(
     for item in current_items:
         symbol = item.get("symbol")
         previous_item = previous_by_symbol.get(symbol)
-        if not snapshot_store.item_has_price_data(item) or (
-            previous_item is not None and not snapshot_store.item_has_price_data(previous_item)
+        if not snapshot_store.is_fresh_measurement(item) or (
+            previous_item is not None and not snapshot_store.is_fresh_measurement(previous_item)
         ):
-            continue  # a failed data fetch on either day is no score change
+            continue  # a failed or carried-over entry on either day is no score change
         previous_score = primary_score(ensure_brodel_v2(dict(previous_item))) if previous_item else 0
         current_score = primary_score(ensure_brodel_v2(dict(item)))
         score_delta = current_score - previous_score
@@ -1086,6 +1112,52 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
 
 
 RUN_ROTATION_STRIDE = 350
+
+# Nightly update in four groups of at most ~400 symbols, each after its exchanges closed
+# (Yahoo blocks a run after roughly 350 symbols).
+RUN_GROUPS = ("asia", "europe", "america-1", "america-2")
+ASIA_SUFFIXES = {"T", "NS", "BO", "HK", "AX", "KS", "KQ", "SS", "SZ", "TW", "TWO", "SI", "JK", "KL", "BK", "NZ"}
+EUROPE_SUFFIXES = {
+    "DE", "F", "MU", "DU", "HM", "BE", "HA", "SG", "XC", "L", "IL", "PA", "SW", "VX", "AS", "MI", "MC",
+    "HE", "BR", "VI", "ST", "CO", "OL", "LS", "IR", "WA", "AT", "PR", "BD", "IS", "LU",
+}
+INDEX_REGIONS = {"^N225": "asia", "^NSEI": "asia", "^HSI": "asia", "^GDAXI": "europe", "^STOXX50E": "europe", "^FTSE": "europe"}
+
+
+def symbol_region(symbol: str | None) -> str:
+    """asia, europe or america (also the default for US symbols, indices and unknown suffixes)."""
+    value = str(symbol or "").upper()
+    if value in INDEX_REGIONS:
+        return INDEX_REGIONS[value]
+    if "." not in value:
+        return "america"
+    suffix = value.rsplit(".", 1)[1]
+    if suffix in ASIA_SUFFIXES:
+        return "asia"
+    if suffix in EUROPE_SUFFIXES:
+        return "europe"
+    return "america"
+
+
+def run_group(symbol: str | None) -> str:
+    """Stable run group; American symbols are split into two halves by a hash of the symbol."""
+    region = symbol_region(symbol)
+    if region != "america":
+        return region
+    part = int(hashlib.md5(str(symbol or "").upper().encode("utf-8")).hexdigest(), 16) % 2
+    return f"america-{part + 1}"
+
+
+def entry_symbol(entry: str, symbol_mappings: dict[str, str] | None = None) -> str:
+    return resolve_symbol(entry, symbol_mappings)["symbol"] or entry
+
+
+def select_group_entries(entries: list[str], group: str, symbol_mappings: dict[str, str] | None = None) -> list[str]:
+    if group == "all":
+        return list(entries)
+    if group not in RUN_GROUPS:
+        raise ValueError(f"Unbekannte Gruppe {group!r}, erlaubt: all, {', '.join(RUN_GROUPS)}")
+    return [entry for entry in entries if run_group(entry_symbol(entry, symbol_mappings)) == group]
 
 
 def rotate_entries(entries: list[str], now: datetime | None = None, stride: int = RUN_ROTATION_STRIDE) -> list[str]:

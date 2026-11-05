@@ -109,8 +109,8 @@ def build_score_history_frame(history: list[dict[str, object]]) -> pd.DataFrame:
         timestamp = snapshot.get("timestamp")
         items = snapshot.get("items", []) if isinstance(snapshot, dict) else []
         for item in items:
-            if not snapshot_store.item_has_price_data(item):
-                continue  # failed data fetch, no real score of 0
+            if not snapshot_store.is_fresh_measurement(item):
+                continue  # failed fetch or carried over from an earlier day, no measurement
             rows.append(
                 {
                     "timestamp": timestamp,
@@ -336,6 +336,10 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     f" <span style='font-size:0.6em;color:gray'>(Brodel 1.0: {item.get('brodel_score', 0)})</span>",
                     unsafe_allow_html=True,
                 )
+                if item.get("stale_from"):
+                    st.caption(f"Stand vom {item['stale_from']}: Der heutige Abruf für diese Aktie steht noch aus oder ist fehlgeschlagen.")
+                elif not snapshot_store.item_has_price_data(item):
+                    st.caption("Für diese Aktie kamen beim letzten Abruf keine Kursdaten. Der Score ist daher nicht aussagekräftig.")
                 if item.get("brodel_v2_estimated"):
                     st.caption("Brodel 2.0 aus einem älteren Snapshot nachgerechnet (ohne Rückkauf-Daten und ohne Makro-Overlay).")
                 if item["resolved"]:

@@ -33,8 +33,55 @@ def item_has_price_data(item: Any) -> bool:
     return not (isinstance(component, dict) and component.get("summary") == MISSING_PRICE_SUMMARY)
 
 
-def items_with_price_data(items: Any) -> list[dict[str, Any]]:
-    return [item for item in items or [] if item_has_price_data(item)]
+def is_fresh_measurement(item: Any) -> bool:
+    """Price data present and computed for this snapshot's day (not carried over from an earlier day)."""
+    return item_has_price_data(item) and not item.get("stale_from")
+
+
+def fresh_items(items: Any) -> list[dict[str, Any]]:
+    return [item for item in items or [] if is_fresh_measurement(item)]
+
+
+def merge_into_day(
+    base_snapshot: dict[str, Any] | None,
+    day: str,
+    new_items: list[dict[str, Any]],
+    allowed_symbols: set[str] | None = None,
+    max_carry_days: int = 7,
+) -> list[dict[str, Any]]:
+    """Combine one group run with the latest stored snapshot into the full list of ``day``.
+
+    The nightly update runs per region (Asia, Europe, two US parts). Entries of the other groups
+    come from the latest snapshot: from the same day they are fresh, from an earlier day (at most
+    ``max_carry_days`` old) they are marked ``stale_from`` and kept only for display. A new entry
+    without price data never replaces an old entry that has it.
+    """
+    result: dict[str, dict[str, Any]] = {}
+    base_day = _day_of(base_snapshot) if isinstance(base_snapshot, dict) else ""
+    carry = bool(base_day) and (
+        base_day == day
+        or 0 < (_to_date(day) - _to_date(base_day)).days <= max_carry_days
+    )
+    if carry:
+        for item in base_snapshot.get("items", []) or []:
+            symbol = str(item.get("symbol") or "") if isinstance(item, dict) else ""
+            if not symbol or (allowed_symbols is not None and symbol not in allowed_symbols):
+                continue
+            if base_day != day and not item.get("stale_from"):
+                item = {**item, "stale_from": base_day}
+            result[symbol] = item
+    for item in new_items:
+        symbol = str(item.get("symbol") or "")
+        old = result.get(symbol)
+        if old is None or item_has_price_data(item) or not item_has_price_data(old):
+            result[symbol] = item
+    return list(result.values())
+
+
+def _to_date(day: str):
+    from datetime import date
+
+    return date.fromisoformat(day[:10])
 
 
 def read_snapshot_file(path: Path) -> list[dict[str, Any]]:
@@ -52,7 +99,9 @@ def read_snapshot_file(path: Path) -> list[dict[str, Any]]:
     return [entry for entry in data if isinstance(entry, dict)] if isinstance(data, list) else []
 
 
-def _day_of(snapshot: dict[str, Any]) -> str:
+def _day_of(snapshot: dict[str, Any] | None) -> str:
+    if not isinstance(snapshot, dict):
+        return ""
     timestamp = snapshot.get("timestamp")
     return timestamp[:10] if isinstance(timestamp, str) and len(timestamp) >= 10 else ""
 

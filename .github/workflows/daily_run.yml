@@ -1,11 +1,14 @@
 name: Daily Stock Watcher Job
 
+# Manual only since 05.11.2026: the nightly update runs per region group in update_signals.yml.
+# A second full run per day would be blocked by Yahoo after ~350 symbols.
 on:
-  schedule:
-    # Run every day at 06:00 UTC (08:00 CEST)
-    - cron: '0 6 * * *'
   workflow_dispatch:
     # Allows you to run this workflow manually from the Actions tab
+
+concurrency:
+  group: signal-snapshots
+  cancel-in-progress: false
 
 jobs:
   run-daily-job:
