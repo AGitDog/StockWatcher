@@ -66,7 +66,8 @@ def render_interactive_signals_table(rows: list[dict], selected_symbol: str = No
         except Exception:
             pass
     # Fallback to standard dataframe without selection checkboxes if component cannot be loaded
-    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    visible = [{k: v for k, v in row.items() if not k.startswith("_")} for row in rows]
+    st.dataframe(pd.DataFrame(visible), use_container_width=True, hide_index=True)
     return None
 
 
@@ -151,7 +152,7 @@ def prepare_signal_items(items: list[dict]) -> list[dict]:
 
 
 def build_signal_table_rows(signal_items: list[dict]) -> list[dict]:
-    """Rows for the main table: Brodel 2.0 and its points first, Brodel 1.0 as the last column."""
+    """Rows for the main table: Brodel 2.0 and its points. Keys starting with ``_`` only steer the display."""
     rows = []
     for item in signal_items:
         peer_context = item.get("peer_context", {})
@@ -166,7 +167,12 @@ def build_signal_table_rows(signal_items: list[dict]) -> list[dict]:
             row[label] = breakdown_v2.get(component_name, {}).get("score", 0)
         row["Vs. Sektor"] = peer_context.get("score_vs_sector", 0)
         row["Rang"] = f"{peer_context.get('sector_rank', 1)}/{peer_context.get('sector_count', 1)}"
-        row["Brodel 1.0"] = item.get("brodel_score", 0)
+        if item.get("stale_from"):
+            row["_status"] = "stale"
+            row["_hint"] = f"Stand vom {item['stale_from']}, heutiger Abruf steht noch aus"
+        elif not snapshot_store.item_has_price_data(item):
+            row["_status"] = "missing"
+            row["_hint"] = "Keine Kursdaten beim letzten Abruf, Score nicht aussagekräftig"
         rows.append(row)
     return rows
 
@@ -288,8 +294,9 @@ def render_watchlist_signal_monitor(mapping_text: str):
     m_stat3.caption(f"Snapshot-Historie: **{len(history)} Tage**")
 
     st.caption(
-        "Sortiert nach **Brodel 2.0**. Die Punkte der Einzelspalten sind 2.0-Punkte. "
-        "Der alte **Brodel 1.0** steht zum Vergleich in der letzten Spalte."
+        "Sortiert nach **Brodel 2.0**. Die Einzelspalten zeigen die Punkte je Baustein "
+        "(Maus auf die Spaltenüberschrift zeigt Name und Maximum). "
+        "Blasse Zeilen: ⏱ Wert vom Vortag, ⚠ keine Kursdaten beim letzten Abruf."
     )
     table_rows = build_signal_table_rows(signal_items)
 

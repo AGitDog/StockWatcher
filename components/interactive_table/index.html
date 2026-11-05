@@ -7,24 +7,23 @@
 <style>
   :root {
     --bg-color: #0e1117;
-    --card-bg: #161a23;
+    --card-bg: #151922;
+    --row-alt: #181d27;
+    --head-bg: #1b2130;
     --border-color: #2b313e;
-    --text-primary: #f0f2f6;
+    --divider: #39414f;
+    --text-primary: #e8ebf0;
     --text-muted: #8b949e;
-    --hover-bg: #222938;
-    --active-bg: rgba(33, 150, 243, 0.22);
+    --text-faint: #4d5562;
+    --hover-bg: #232b3b;
+    --active-bg: rgba(33, 150, 243, 0.20);
     --active-border: #2196f3;
-    --accent-green: #00c853;
-    --accent-amber: #ffb300;
-    --accent-red: #ff5252;
+    --pos: #5fd38d;
+    --neg: #ff7b72;
     --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
 
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
     background-color: var(--bg-color);
@@ -40,7 +39,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     gap: 12px;
     flex-wrap: wrap;
   }
@@ -50,183 +49,142 @@
     align-items: center;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 5px 10px;
-    width: 280px;
+    border-radius: 8px;
+    padding: 7px 12px;
+    width: 320px;
+    max-width: 100%;
     transition: border-color 0.2s ease;
   }
-
-  .search-box:focus-within {
-    border-color: var(--active-border);
-  }
-
+  .search-box:focus-within { border-color: var(--active-border); }
   .search-box input {
     background: transparent;
     border: none;
     color: var(--text-primary);
     font-family: inherit;
-    font-size: 12px;
+    font-size: 13px;
     outline: none;
     width: 100%;
   }
+  .search-box input::placeholder { color: var(--text-muted); }
 
-  .search-box input::placeholder {
-    color: var(--text-muted);
-  }
-
-  .table-stats {
+  .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
     font-size: 12px;
     color: var(--text-muted);
+    flex-wrap: wrap;
   }
+  .legend { display: flex; gap: 10px; align-items: center; }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 
   .table-container {
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    max-height: 480px;
-    overflow-y: auto;
-    overflow-x: auto;
+    border-radius: 10px;
+    max-height: 820px;
+    overflow: auto;
     background: var(--card-bg);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
   }
-
-  /* Custom scrollbar */
-  .table-container::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  .table-container::-webkit-scrollbar-track {
-    background: #12151c;
-  }
-  .table-container::-webkit-scrollbar-thumb {
-    background: #2b313e;
-    border-radius: 4px;
-  }
-  .table-container::-webkit-scrollbar-thumb:hover {
-    background: #3d4659;
-  }
+  .table-container::-webkit-scrollbar { width: 9px; height: 9px; }
+  .table-container::-webkit-scrollbar-track { background: #12151c; }
+  .table-container::-webkit-scrollbar-thumb { background: #2b313e; border-radius: 5px; }
+  .table-container::-webkit-scrollbar-thumb:hover { background: #3d4659; }
 
   table {
     width: 100%;
-    border-collapse: collapse;
-    text-align: left;
+    border-collapse: separate;
+    border-spacing: 0;
     white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 
-  thead {
+  thead th {
     position: sticky;
     top: 0;
-    background: #1a202c;
     z-index: 10;
-    box-shadow: 0 1px 0 var(--border-color);
-  }
-
-  th {
-    padding: 9px 10px;
-    font-size: 11.5px;
+    background: var(--head-bg);
+    padding: 10px 10px;
+    font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--text-muted);
     cursor: pointer;
     user-select: none;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--divider);
     transition: color 0.15s ease;
+    text-align: left;
   }
+  thead th.num { text-align: right; }
+  thead th:hover { color: var(--text-primary); }
+  thead th.sorted { color: var(--text-primary); }
+  th.sorted-asc::after { content: " ▲"; font-size: 9px; color: var(--active-border); }
+  th.sorted-desc::after { content: " ▼"; font-size: 9px; color: var(--active-border); }
 
-  th:hover {
-    color: var(--text-primary);
-  }
+  /* group separators: identity | score | components | sector */
+  .sep-left { border-left: 1px solid var(--divider); }
 
-  th.sorted-asc::after {
-    content: " ▲";
-    font-size: 9px;
-    color: var(--active-border);
-  }
-
-  th.sorted-desc::after {
-    content: " ▼";
-    font-size: 9px;
-    color: var(--active-border);
-  }
-
-  tbody tr {
-    cursor: pointer;
-    border-bottom: 1px solid rgba(43, 49, 62, 0.6);
-    transition: background-color 0.12s ease;
-  }
-
-  tbody tr:hover {
-    background-color: var(--hover-bg) !important;
-  }
-
-  tbody tr.selected {
-    background-color: var(--active-bg) !important;
-    border-left: 3px solid var(--active-border);
-  }
+  tbody tr { cursor: pointer; transition: background-color 0.12s ease; }
+  tbody tr:nth-child(even) td { background: var(--row-alt); }
+  tbody tr:hover td { background: var(--hover-bg) !important; }
+  tbody tr.selected td { background: var(--active-bg) !important; }
+  tbody tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--active-border); }
+  tbody tr.dim td { opacity: 0.5; }
 
   td {
-    padding: 8px 10px;
+    padding: 9px 10px;
     font-size: 12.5px;
     vertical-align: middle;
+    border-bottom: 1px solid rgba(43, 49, 62, 0.55);
   }
+  td.num { text-align: right; }
 
-  .col-symbol {
-    font-weight: 700;
-    color: #64b5f6;
-  }
+  .col-symbol { font-weight: 700; color: #64b5f6; }
+  .col-name { max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
+  .col-sector { color: var(--text-muted); max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
 
-  .col-name {
-    max-width: 220px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  .pts-pos { color: var(--pos); font-weight: 600; }
+  .pts-neg { color: var(--neg); font-weight: 600; }
+  .pts-zero { color: var(--text-faint); }
 
   .badge-score {
     display: inline-block;
-    padding: 2px 7px;
-    border-radius: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
     font-weight: 700;
-    font-size: 11.5px;
+    font-size: 12px;
     text-align: center;
-    min-width: 32px;
+    min-width: 38px;
   }
+  .score-high { background: rgba(0, 200, 83, 0.18); color: #5fd38d; border: 1px solid rgba(0, 200, 83, 0.45); }
+  .score-med  { background: rgba(255, 179, 0, 0.16); color: #ffc233; border: 1px solid rgba(255, 179, 0, 0.42); }
+  .score-low  { background: rgba(139, 148, 158, 0.13); color: #abb2bf; border: 1px solid rgba(139, 148, 158, 0.28); }
 
-  .score-high {
-    background: rgba(0, 200, 83, 0.18);
-    color: #4caf50;
-    border: 1px solid rgba(0, 200, 83, 0.4);
-  }
+  .status-icon { margin-left: 5px; font-size: 11px; color: var(--text-muted); }
 
-  .score-med {
-    background: rgba(255, 179, 0, 0.18);
-    color: #ffb300;
-    border: 1px solid rgba(255, 179, 0, 0.4);
-  }
-
-  .score-low {
-    background: rgba(139, 148, 158, 0.15);
-    color: #abb2bf;
-    border: 1px solid rgba(139, 148, 158, 0.3);
-  }
-
-  .empty-state {
-    padding: 40px;
-    text-align: center;
-    color: var(--text-muted);
-  }
+  .empty-state { padding: 40px; text-align: center; color: var(--text-muted); }
 </style>
 </head>
 <body>
 
 <div class="table-toolbar">
   <div class="search-box">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; opacity: 0.7;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 7px; opacity: 0.7;">
       <circle cx="11" cy="11" r="8"></circle>
       <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
     </svg>
-    <input type="text" id="searchInput" placeholder="In Tabelle suchen (z. B. NVDA, Tech)..." autocomplete="off">
+    <input type="text" id="searchInput" placeholder="Suchen: Symbol, Name oder Sektor …" autocomplete="off">
   </div>
-  <div class="table-stats" id="tableStats">0 Werte geladen</div>
+  <div class="toolbar-right">
+    <div class="legend" title="Farbstufen von Brodel 2.0 (Maximum 90 Punkte)">
+      <span><i class="dot" style="background:#5fd38d"></i>ab 50</span>
+      <span><i class="dot" style="background:#ffc233"></i>35–49</span>
+      <span><i class="dot" style="background:#abb2bf"></i>unter 35</span>
+    </div>
+    <div id="tableStats">0 Werte geladen</div>
+  </div>
 </div>
 
 <div class="table-container" id="tableContainer">
@@ -245,49 +203,39 @@
   let sortColumn = "Brodel 2.0";
   let sortAscending = false;
 
+  // kind: text | score | points | signed
   const COLUMNS = [
-    { key: "Symbol", label: "Symbol", type: "string", class: "col-symbol" },
-    { key: "Name", label: "Name", type: "string", class: "col-name" },
-    { key: "Sektor", label: "Sektor", type: "string" },
-    { key: "Brodel 2.0", label: "Brodel 2.0", type: "number", isScore: true },
-    { key: "EPS", label: "EPS", type: "number" },
-    { key: "Kursziel", label: "Kursziel", type: "number" },
-    { key: "P/V", label: "P/V", type: "number" },
-    { key: "News", label: "News", type: "number" },
-    { key: "Event", label: "Event", type: "number" },
-    { key: "Insider", label: "Insider", type: "number" },
-    { key: "Short", label: "Short", type: "number" },
-    { key: "Rel.St.", label: "Rel.St.", type: "number" },
-    { key: "Fundam.", label: "Fundam.", type: "number" },
-    { key: "Tech.", label: "Tech.", type: "number" },
-    { key: "Rückkauf", label: "Rückkauf", type: "number" },
-    { key: "Vs. Sektor", label: "Vs. Sektor", type: "number" },
-    { key: "Rang", label: "Rang", type: "string" },
-    { key: "Brodel 1.0", label: "Brodel 1.0", type: "number", isScore: true }
+    { key: "Symbol", label: "Symbol", kind: "text", class: "col-symbol" },
+    { key: "Name", label: "Name", kind: "text", class: "col-name" },
+    { key: "Sektor", label: "Sektor", kind: "text", class: "col-sector" },
+    { key: "Brodel 2.0", label: "Brodel 2.0", kind: "score", sep: true, tip: "Gesamtscore Brodel 2.0 (max. 90)" },
+    { key: "EPS", label: "EPS", kind: "points", sep: true, tip: "EPS-Revisionen (max. 15)" },
+    { key: "Kursziel", label: "Kursziel", kind: "points", tip: "Kursziele & Konsens (max. 5)" },
+    { key: "P/V", label: "P/V", kind: "points", tip: "Preis/Volumen (max. 5)" },
+    { key: "News", label: "News", kind: "points", tip: "News-Sentiment (max. 15)" },
+    { key: "Event", label: "Event", kind: "points", tip: "Event-Druck (max. 5)" },
+    { key: "Insider", label: "Insider", kind: "points", tip: "Insider-Aktivität (max. 10)" },
+    { key: "Short", label: "Short", kind: "points", tip: "Short Interest (max. 5)" },
+    { key: "Rel.St.", label: "Rel.St.", kind: "points", tip: "Relative Stärke (max. 5)" },
+    { key: "Fundam.", label: "Fundam.", kind: "points", tip: "Fundamentale Bewertung (max. 15)" },
+    { key: "Tech.", label: "Tech.", kind: "points", tip: "Technische Indikatoren (max. 5)" },
+    { key: "Rückkauf", label: "Rückkauf", kind: "points", tip: "Aktienrückkauf (max. 5)" },
+    { key: "Vs. Sektor", label: "Vs. Sektor", kind: "signed", sep: true, tip: "Abstand zum Sektor-Durchschnitt der Watchlist" },
+    { key: "Rang", label: "Rang", kind: "text", tip: "Rang innerhalb des Sektors" }
   ];
 
+  const isNumeric = col => col.kind !== "text";
+
   function sendValueToStreamlit(value) {
-    window.parent.postMessage({
-      isStreamlitMessage: true,
-      type: "streamlit:setComponentValue",
-      value: value
-    }, "*");
+    window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setComponentValue", value: value }, "*");
   }
 
   function setFrameHeight(height) {
-    window.parent.postMessage({
-      isStreamlitMessage: true,
-      type: "streamlit:setFrameHeight",
-      height: height
-    }, "*");
+    window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setFrameHeight", height: height }, "*");
   }
 
   function notifyReady() {
-    window.parent.postMessage({
-      isStreamlitMessage: true,
-      type: "streamlit:componentReady",
-      apiVersion: 1
-    }, "*");
+    window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 }, "*");
   }
 
   function renderHeader() {
@@ -296,15 +244,18 @@
     COLUMNS.forEach(col => {
       const th = document.createElement("th");
       th.textContent = col.label;
+      if (col.tip) th.title = col.tip;
+      if (isNumeric(col)) th.classList.add("num");
+      if (col.sep) th.classList.add("sep-left");
       if (col.key === sortColumn) {
-        th.classList.add(sortAscending ? "sorted-asc" : "sorted-desc");
+        th.classList.add("sorted", sortAscending ? "sorted-asc" : "sorted-desc");
       }
       th.addEventListener("click", () => {
         if (sortColumn === col.key) {
           sortAscending = !sortAscending;
         } else {
           sortColumn = col.key;
-          sortAscending = (col.type === "string");
+          sortAscending = (col.kind === "text");
         }
         applySortAndRender();
       });
@@ -313,9 +264,46 @@
   }
 
   function getScoreClass(val) {
-    if (val >= 60) return "score-high";
-    if (val >= 40) return "score-med";
+    if (val >= 50) return "score-high";
+    if (val >= 35) return "score-med";
     return "score-low";
+  }
+
+  function fillCell(td, col, val, row) {
+    if (val === undefined || val === null || val === "") {
+      td.textContent = "–";
+      td.classList.add("pts-zero");
+      return;
+    }
+    if (col.kind === "score" && typeof val === "number") {
+      const badge = document.createElement("span");
+      badge.className = `badge-score ${getScoreClass(val)}`;
+      badge.textContent = val;
+      td.appendChild(badge);
+      if (row._status) {
+        const icon = document.createElement("span");
+        icon.className = "status-icon";
+        icon.textContent = row._status === "stale" ? "⏱" : "⚠";
+        icon.title = row._hint || "";
+        td.appendChild(icon);
+      }
+      return;
+    }
+    if ((col.kind === "points" || col.kind === "signed") && typeof val === "number") {
+      if (val > 0) {
+        td.textContent = "+" + val;
+        td.classList.add("pts-pos");
+      } else if (val < 0) {
+        td.textContent = "−" + Math.abs(val);
+        td.classList.add("pts-neg");
+      } else {
+        td.textContent = col.kind === "points" ? "·" : "0";
+        td.classList.add("pts-zero");
+      }
+      return;
+    }
+    td.textContent = val;
+    if (col.class === "col-name" || col.class === "col-sector") td.title = val;
   }
 
   function renderBody() {
@@ -324,42 +312,29 @@
 
     if (currentFilteredRows.length === 0) {
       tbody.innerHTML = `<tr><td colspan="${COLUMNS.length}" class="empty-state">Keine passenden Aktien gefunden.</td></tr>`;
-      return;
     }
 
     currentFilteredRows.forEach(row => {
       const tr = document.createElement("tr");
-      const isSelected = (selectedSymbol && row["Symbol"] === selectedSymbol);
-      if (isSelected) {
-        tr.classList.add("selected");
+      if (selectedSymbol && row["Symbol"] === selectedSymbol) tr.classList.add("selected");
+      if (row._status) {
+        tr.classList.add("dim");
+        tr.title = row._hint || "";
       }
 
       tr.addEventListener("click", () => {
         selectedSymbol = row["Symbol"];
-        // Update selection visually immediately
         document.querySelectorAll("#tableBody tr").forEach(el => el.classList.remove("selected"));
         tr.classList.add("selected");
-        // Dispatch to Streamlit
         sendValueToStreamlit(row["Symbol"]);
       });
 
       COLUMNS.forEach(col => {
         const td = document.createElement("td");
-        const val = row[col.key] !== undefined && row[col.key] !== null ? row[col.key] : "-";
-        
-        if (col.class) {
-          td.classList.add(col.class);
-        }
-
-        if (col.isScore && typeof val === "number") {
-          const badge = document.createElement("span");
-          badge.className = `badge-score ${getScoreClass(val)}`;
-          badge.textContent = val;
-          td.appendChild(badge);
-        } else {
-          td.textContent = val;
-        }
-
+        if (col.class) td.classList.add(col.class);
+        if (isNumeric(col)) td.classList.add("num");
+        if (col.sep) td.classList.add("sep-left");
+        fillCell(td, col, row[col.key], row);
         tr.appendChild(td);
       });
 
@@ -376,15 +351,13 @@
       let valB = b[sortColumn];
       if (valA === undefined || valA === null) valA = "";
       if (valB === undefined || valB === null) valB = "";
-
       if (typeof valA === "number" && typeof valB === "number") {
         return sortAscending ? valA - valB : valB - valA;
       }
-      return sortAscending 
+      return sortAscending
         ? String(valA).localeCompare(String(valB))
         : String(valB).localeCompare(String(valA));
     });
-
     renderHeader();
     renderBody();
   }
@@ -406,26 +379,20 @@
 
   document.getElementById("searchInput").addEventListener("input", applyFilter);
 
+  const FRAME_HEIGHT = 880;
+
   window.addEventListener("message", (event) => {
     if (event.data && event.data.type === "streamlit:render") {
       const args = event.data.args || {};
       rawRows = args.rows || [];
-      if (args.selected_symbol) {
-        selectedSymbol = args.selected_symbol;
-      }
+      if (args.selected_symbol) selectedSymbol = args.selected_symbol;
       applyFilter();
-
-      // Ensure appropriate frame height
-      const containerHeight = Math.min(Math.max(document.body.scrollHeight, 250), 550);
-      setFrameHeight(containerHeight);
+      setFrameHeight(Math.min(Math.max(document.body.scrollHeight, 250), FRAME_HEIGHT));
     }
   });
 
-  // Notify Streamlit that the component is loaded and ready
   notifyReady();
-  setTimeout(() => {
-    setFrameHeight(540);
-  }, 100);
+  setTimeout(() => { setFrameHeight(FRAME_HEIGHT); }, 100);
 </script>
 </body>
 </html>

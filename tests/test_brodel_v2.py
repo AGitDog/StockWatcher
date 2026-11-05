@@ -184,15 +184,15 @@ def _app_item(symbol, v1, v2):
     }
 
 
-def test_table_rows_put_brodel_v2_first_and_v1_last():
+def test_table_rows_put_brodel_v2_first_without_v1():
     import app
 
     rows = app.build_signal_table_rows([_app_item("AAA", 80, 20)])
     keys = list(rows[0].keys())
     assert keys[3] == "Brodel 2.0"
-    assert keys[-1] == "Brodel 1.0"
+    assert "Brodel 1.0" not in keys
+    assert keys[-1] == "Rang"
     assert rows[0]["Brodel 2.0"] == 20
-    assert rows[0]["Brodel 1.0"] == 80
     assert rows[0]["Kursziel"] == 5  # 2.0 points
     assert rows[0]["Rückkauf"] == 3
     assert "ML-Score" not in rows[0]
@@ -244,14 +244,14 @@ def test_brodel_check_rows_list_v2_before_v1():
     assert rows[0]["Mittlerer Rank-IC"] == "+0.050"
 
 
-def test_interactive_table_shows_v2_first_and_v1_last():
+def test_interactive_table_shows_v2_first_without_v1():
     html = (Path(__file__).parent.parent / "components" / "interactive_table" / "index.html").read_text(encoding="utf-8")
     assert 'let sortColumn = "Brodel 2.0";' in html
     columns = html[html.index("const COLUMNS = ["):html.index("];", html.index("const COLUMNS = ["))]
     assert columns.index('"Brodel 2.0"') < columns.index('"EPS"')
     assert '"ML-Score"' not in columns  # hidden until a model passes the out-of-sample test
-    assert columns.rstrip().rstrip("}").rstrip().endswith("isScore: true")
-    assert columns.rindex('"Brodel 1.0"') > columns.rindex('"Rang"')
+    assert '"Brodel 1.0"' not in columns
+    assert '"Rang"' in columns
     assert '"Rückkauf"' in columns
 
 
@@ -265,3 +265,30 @@ def test_help_explains_brodel_v2_and_matches_price_volume_code():
     assert "20-Tage-Linie: **+5**" in text
     assert "50-Tage-Linie: **+6**" in text
     assert "mindestens 7 % gefallen: **−3**" in text
+
+
+def test_interactive_table_tooltips_match_v2_maxima():
+    import re
+
+    import app
+
+    html = (Path(__file__).parent.parent / "components" / "interactive_table" / "index.html").read_text(encoding="utf-8")
+    for label, component in app.V2_TABLE_COLUMNS:
+        match = re.search(r'key: "' + re.escape(label) + r'".*?max\. (\d+)\)', html)
+        assert match, label
+        assert int(match.group(1)) == BRODEL_V2_MAX_POINTS[component], label
+    assert f"max. {sum(BRODEL_V2_MAX_POINTS.values())})" in html
+
+
+def test_table_rows_mark_stale_and_missing_entries():
+    import app
+    import snapshot_store
+
+    fresh = _app_item("AAA", 80, 20)
+    stale = {**_app_item("BBB", 80, 20), "stale_from": "2026-11-04"}
+    missing = _app_item("CCC", 0, 0)
+    missing["signal_breakdown"]["Preis/Volumen"] = {"name": "Preis/Volumen", "score": 0, "summary": snapshot_store.MISSING_PRICE_SUMMARY}
+    rows = app.build_signal_table_rows([fresh, stale, missing])
+    assert "_status" not in rows[0]
+    assert rows[1]["_status"] == "stale" and "2026-11-04" in rows[1]["_hint"]
+    assert rows[2]["_status"] == "missing"
