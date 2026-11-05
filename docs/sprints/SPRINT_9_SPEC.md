@@ -19,7 +19,7 @@
 | Ausführung | Eröffnungskurs des nächsten Handelstags an der Heimatbörse, 1 € Gebühr, ganze Stück |
 | Größe | 5.000 € je Aktie, höchstens 20 Positionen, Startkapital 100.000 € |
 | Stop-Loss | 15 % unter dem Kaufkurs. Er wird täglich zum höchsten Schlusskurs nachgezogen und sinkt nie. Ab +25 % (höchster Schlusskurs gegenüber Kaufkurs) beträgt der Abstand 10 %. |
-| Auslösung | Der Tagestiefstkurs berührt den Stop: Verkauf zum Stop. Eröffnet die Aktie unter dem Stop: Verkauf zur Eröffnung. |
+| Auslösung | Der Tagestiefstkurs berührt den Stop: Verkauf zum Stop minus 0,5 % Slippage, nie unter dem Tagestief (Nachtrag 05.11., vom Nutzer gewünscht). Eröffnet die Aktie unter dem Stop: Verkauf zur Eröffnung. |
 | Sperre | Eine verkaufte Aktie wird frühestens nach 28 Kalendertagen (etwa 20 Handelstage) wieder gekauft. |
 | Währung | Depot in Euro, Umrechnung mit dem Tageskurs EUR/xxx von Yahoo |
 

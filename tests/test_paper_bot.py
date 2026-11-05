@@ -71,15 +71,26 @@ def test_buy_next_open_then_trailing_stop_sells():
     bars = {"SAP.DE": _bars([
         ("2026-11-03", 100, 98, 104),   # filled at the open 100, stop 85 -> trails to 104*0.85
         ("2026-11-04", 104, 101, 110),  # stop 93.5
-        ("2026-11-05", 109, 92, 95),    # low touches 93.5 -> sold at 93.5
+        ("2026-11-05", 109, 92, 95),    # low touches 93.5 -> sold at 93.5 minus 0.5 % slippage
     ])}
     bot.step(state, None, bars, {}, _at("2026-11-05"))
     assert pf["positions"] == [] and pf["pending"] == []
     sale = [t for t in pf["trades"] if t["side"] == "Verkauf"][0]
-    assert sale["price"] == pytest.approx(93.5) and sale["day"] == "2026-11-05"
+    fill = 93.5 * 0.995
+    assert sale["price"] == pytest.approx(fill, abs=1e-4) and sale["day"] == "2026-11-05"
     shares = (5000 - 1) // 100
     assert sale["shares"] == shares
-    assert pf["cash"] == pytest.approx(100_000 - (shares * 100 + 1) + shares * 93.5 - 1)
+    assert pf["cash"] == pytest.approx(100_000 - (shares * 100 + 1) + shares * fill - 1)
+
+
+def test_slippage_never_below_day_low():
+    state = _state()
+    bot.step(state, _snapshot("2026-11-02", [_item("SAP.DE", 62)]), {}, {}, _at("2026-11-02"))
+    # stop 85 after the fill; low 84.9 touches it, 85 * 0.995 = 84.575 would be below the low
+    bars = {"SAP.DE": _bars([("2026-11-03", 100, 99, 100), ("2026-11-04", 90, 84.9, 88)])}
+    bot.step(state, None, bars, {}, _at("2026-11-04"))
+    sale = [t for t in state["portfolios"]["bot"]["trades"] if t["side"] == "Verkauf"][0]
+    assert sale["price"] == pytest.approx(84.9)
 
     twin = state["portfolios"]["no_stop"]
     assert len(twin["positions"]) == 1 and twin["positions"][0]["last_price"] == 95

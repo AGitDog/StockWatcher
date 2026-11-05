@@ -7,7 +7,8 @@ Rules (agreed in chat, 05.11.2026):
 - Stop-loss 15 % below entry. It follows the highest close upwards and never goes down.
   Once the highest close is 25 % above entry the distance tightens to 10 %.
 - A stop is triggered when the day's low touches it. If the stock opens below the stop
-  (gap), it is sold at the open, otherwise at the stop price.
+  (gap), it is sold at the open, otherwise at the stop price minus 0.5 % slippage
+  (a triggered stop becomes a market order), but never below the day's low.
 - A stock that was stopped out may be bought again only after 28 calendar days (about 20 trading days).
 
 Two comparison portfolios run alongside: the same rules without stop-loss, and a MSCI World ETF.
@@ -45,6 +46,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "tighten_after_gain": 0.25,
     "cooldown_days": 28,
     "fee": 1.0,
+    "stop_slippage": 0.005,
     "order_expiry_days": 7,
 }
 
@@ -186,7 +188,9 @@ def process_position(pf: dict, position: dict, bars: list[tuple[date, pd.Series]
                 if _sell(pf, position, day, float(bar["Open"]), "Stop-Loss (Kurslücke, Verkauf zur Eröffnung)", fx, cfg):
                     return False
             elif float(bar["Low"]) <= stop:
-                if _sell(pf, position, day, stop, "Stop-Loss", fx, cfg):
+                # a triggered stop becomes a market order: assume a small slippage, never below the day's low
+                price = max(float(bar["Low"]), stop * (1 - cfg.get("stop_slippage", 0.0)))
+                if _sell(pf, position, day, price, "Stop-Loss", fx, cfg):
                     return False
         close = float(bar["Close"])
         position["high_close"] = max(position["high_close"], close)
