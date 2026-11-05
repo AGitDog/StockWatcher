@@ -114,3 +114,21 @@ def test_rotate_entries_moves_start_each_run():
 
 def test_breakdown_table_shows_all_rows():
     assert breakdown_table_height(11) >= 35 * 12
+
+
+def test_trailing_row_without_close_is_ignored():
+    """Yahoo appends today's row without a close before the open; it must not become the latest price."""
+    import numpy as np
+    import pandas as pd
+
+    from stock_agent import _summarize_price_volume, clean_price_history
+
+    index = pd.date_range("2026-08-01", periods=61, freq="B")
+    close = list(np.linspace(100, 130, 60)) + [np.nan]
+    history = pd.DataFrame({"Close": close, "Volume": [1000] * 60 + [1700]}, index=index)
+    assert len(clean_price_history(history)) == 60
+    result = _summarize_price_volume(history)
+    assert "nan" not in result["summary"]
+    assert result["summary"].startswith("Kurs 130.00")
+    assert result["score"] == 10  # above MA20 and MA50 (capped at the 1.0 maximum)
+    assert clean_price_history(None) is None

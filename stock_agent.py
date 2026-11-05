@@ -1057,7 +1057,7 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
     name = info.get("longName") or info.get("shortName") or INDEX_CONSTITUENT_NAMES.get(symbol) or symbol
     if name == symbol:
         name = resolve_name_fallback(symbol, name)
-    history = _safe_dataframe(lambda: ticker.history(period="6mo", auto_adjust=False))
+    history = clean_price_history(_safe_dataframe(lambda: ticker.history(period="6mo", auto_adjust=False)))
 
     eps_revision_signal = _summarize_eps_revisions(ticker)
     price_target_signal = _summarize_price_targets(ticker, info, history)
@@ -1694,7 +1694,20 @@ def _summarize_price_targets(ticker: yf.Ticker, info: dict[str, Any], history: p
     return {"name": "Kursziele & Konsens", "score": score, "summary": summary}
 
 
+def clean_price_history(history: pd.DataFrame | None) -> pd.DataFrame | None:
+    """Drop rows without a closing price.
+
+    Before the open Yahoo often appends today's row with volume but no close (seen for Xetra
+    symbols in the early run). Taken as the latest price it produced "Kurs nan" and 0 points.
+    """
+    if history is None or history.empty or "Close" not in history.columns:
+        return history
+    close = pd.to_numeric(history["Close"], errors="coerce")
+    return history[close.notna() & (close > 0)]
+
+
 def _summarize_price_volume(history: pd.DataFrame | None) -> dict[str, Any]:
+    history = clean_price_history(history)
     if history is None or history.empty or len(history) < 25:
         return {"name": "Preis/Volumen", "score": 0, "summary": snapshot_store.MISSING_PRICE_SUMMARY}
 
