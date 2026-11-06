@@ -42,8 +42,8 @@ def test_symbol_region(symbol, region):
 def test_run_group_splits_america_stably():
     symbols = [f"SYM{i}" for i in range(400)]
     groups = [run_group(symbol) for symbol in symbols]
-    assert set(groups) == {"america-1", "america-2"}
-    assert 150 < groups.count("america-1") < 250
+    assert set(groups) == {"america-1", "america-2", "america-3"}
+    assert 100 < groups.count("america-1") < 170
     assert groups == [run_group(symbol) for symbol in symbols]  # same every run
     assert run_group("SAP.DE") == "europe"
 
@@ -61,9 +61,10 @@ def test_select_group_entries_covers_every_entry_once():
 def test_snapshot_day_counts_early_utc_runs_to_previous_day():
     assert snapshot_day(datetime(2026, 11, 5, 22, 30, tzinfo=timezone.utc)) == "2026-11-05"
     assert snapshot_day(datetime(2026, 11, 6, 3, 0, tzinfo=timezone.utc)) == "2026-11-05"  # delayed US run
-    assert snapshot_day(datetime(2026, 11, 6, 8, 0, tzinfo=timezone.utc)) == "2026-11-06"
+    assert snapshot_day(datetime(2026, 11, 6, 7, 30, tzinfo=timezone.utc)) == "2026-11-05"  # 8 hours late
+    assert snapshot_day(datetime(2026, 11, 6, 10, 30, tzinfo=timezone.utc)) == "2026-11-06"
     assert snapshot_timestamp(datetime(2026, 11, 6, 3, 0, tzinfo=timezone.utc)) == "2026-11-05T23:59:59Z"
-    assert snapshot_timestamp(datetime(2026, 11, 6, 8, 0, 5, tzinfo=timezone.utc)) == "2026-11-06T08:00:05Z"
+    assert snapshot_timestamp(datetime(2026, 11, 6, 10, 30, 5, tzinfo=timezone.utc)) == "2026-11-06T10:30:05Z"
 
 
 def test_merge_same_day_keeps_other_groups_fresh():
@@ -104,7 +105,7 @@ def test_merge_drops_removed_and_too_old_entries():
 
 def test_four_group_runs_build_one_daily_snapshot(tmp_path):
     runs = [
-        (datetime(2026, 11, 5, 8, 5, tzinfo=timezone.utc), [_item("7203.T", 40)]),
+        (datetime(2026, 11, 5, 10, 35, tzinfo=timezone.utc), [_item("7203.T", 40)]),
         (datetime(2026, 11, 5, 17, 40, tzinfo=timezone.utc), [_item("SAP.DE", 30)]),
         (datetime(2026, 11, 5, 21, 45, tzinfo=timezone.utc), [_item("AAPL", 50)]),
         (datetime(2026, 11, 6, 1, 15, tzinfo=timezone.utc), [_item("MSFT", 45)]),  # delayed past midnight UTC

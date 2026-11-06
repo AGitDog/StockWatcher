@@ -1,7 +1,8 @@
 """Paper-trading bot: trades the Brodel 2.0 signals with a trailing stop-loss, forward only.
 
 Rules (agreed in chat, 05.11.2026):
-- Once a day after the last region run (america-2). The decision uses that day's snapshot only.
+- Once a day after the last region run (america-3). The decision uses that day's snapshot only.
+- No new orders when fewer than 90 % of the day's entries are fresh.
 - Buy every fresh entry with Brodel 2.0 >= 60, highest score first, 5,000 EUR each, at most 20 positions.
   Orders are filled at the next trading day's open of the stock's exchange (1 EUR fee).
 - Stop-loss 15 % below entry. It follows the highest close upwards and never goes down.
@@ -11,7 +12,10 @@ Rules (agreed in chat, 05.11.2026):
   (a triggered stop becomes a market order), but never below the day's low.
 - A stock that was stopped out may be bought again only after 28 calendar days (about 20 trading days).
 
-Two comparison portfolios run alongside: the same rules without stop-loss, and a MSCI World ETF.
+A second bot depot uses Brodel 3.0 and the same stop rules, but buys the best 2 % of the day
+(at most 5 orders a day, at most 25 % per sector, nothing in the week before results).
+
+Comparison portfolios: the first rules without stop-loss, and a MSCI World ETF.
 State lives in ``bot_depot/state.json`` (committed by the workflow).
 
     python paper_bot.py run       # daily step (workflow)
@@ -30,7 +34,7 @@ from typing import Any, Callable
 import pandas as pd
 
 import snapshot_store
-from stock_agent import load_signal_snapshot_history, primary_score, snapshot_day
+from stock_agent import ensure_brodel_v2, load_signal_snapshot_history, primary_score, snapshot_day
 
 STATE_FILE = Path("bot_depot/state.json")
 WATCHLIST_NAME = "meine_watchlist.txt"
@@ -47,12 +51,20 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "cooldown_days": 28,
     "fee": 1.0,
     "stop_slippage": 0.005,
+    "uk_stamp_duty": 0.005,
+    "japan_lot": 100,
+    "min_coverage": 0.90,
+    "top_share": 0.02,
+    "max_buys_per_day": 5,
+    "sector_cap": 0.25,
+    "earnings_block_days": 7,
     "order_expiry_days": 7,
 }
 
 PORTFOLIOS = {
-    "bot": {"label": "Bot mit Stop-Loss", "use_stop": True},
-    "no_stop": {"label": "Gleiche Käufe ohne Stop-Loss", "use_stop": False},
+    "bot": {"label": "Brodel 2.0 ab 60", "use_stop": True, "rule": "threshold"},
+    "no_stop": {"label": "Brodel 2.0 ab 60 ohne Stop-Loss", "use_stop": False, "rule": "threshold"},
+    "rank": {"label": "Brodel 3.0 beste 2 %", "use_stop": True, "rule": "rank"},
 }
 
 # exchange suffix -> (currency, price divisor); London quotes in pence
@@ -123,7 +135,7 @@ def new_state(now: datetime, config: dict[str, Any] | None = None) -> dict[str, 
     cfg = {**DEFAULT_CONFIG, **(config or {})}
     state: dict[str, Any] = {
         "config": cfg,
-        "started": now.strftime("%Y-%m-%d"),
+        "started": snapshot_day(now),  # orders of this day and the ETF both start at the next open
         "last_run": None,
         "portfolios": {},
         "etf": {"symbol": ETF_SYMBOL, "cash": cfg["capital"], "shares": 0.0, "bought_on": None, "last_value": cfg["capital"]},
@@ -133,6 +145,7 @@ def new_state(now: datetime, config: dict[str, Any] | None = None) -> dict[str, 
         state["portfolios"][key] = {
             "label": meta["label"],
             "use_stop": meta["use_stop"],
+            "rule": meta["rule"],
             "cash": cfg["capital"],
             "positions": [],
             "pending": [],
@@ -210,23 +223,28 @@ def fill_pending(pf: dict, order: dict, bars: list[tuple[date, pd.Series]], fx: 
     open_eur = to_eur(open_price, order["symbol"], day, fx)
     if open_eur is None or open_eur <= 0:
         return None
-    shares = math.floor((cfg["position_budget"] - cfg["fee"]) / open_eur)
+    symbol = str(order["symbol"]).upper()
+    unit_cost = open_eur * (1 + cfg.get("uk_stamp_duty", 0.0) if symbol.endswith(".L") else 1)
+    lot = cfg.get("japan_lot", 1) if symbol.endswith(".T") else 1  # Tokyo trades in lots of 100
+    shares = math.floor((cfg["position_budget"] - cfg["fee"]) / unit_cost / lot) * lot
     order["status"] = "done"
     if shares <= 0:
         pf["cash"] += order["reserved"]
+        pf["cooldown"][order["symbol"]] = day.isoformat()  # do not try the same stock again tomorrow
         pf["trades"].append({"symbol": order["symbol"], "name": order.get("name", ""), "side": "Storniert",
-                             "reason": "Eine Aktie kostet mehr als das Budget", "day": day.isoformat()})
+                             "reason": "Kleinste Kaufmenge kostet mehr als das Budget", "day": day.isoformat()})
         return None
-    cost = shares * open_eur + cfg["fee"]
+    cost = shares * unit_cost + cfg["fee"]
     pf["cash"] += order["reserved"] - cost
     position = {
         "symbol": order["symbol"], "name": order.get("name", ""), "score_at_buy": order["score"],
+        "sector": order.get("sector", "Unbekannt"),
         "entry_day": day.isoformat(), "entry_price": open_price, "shares": shares, "cost_eur": round(cost, 2),
         "high_close": open_price, "stop": round(open_price * (1 - cfg["initial_stop"]), 6),
         "last_price": open_price, "last_day": day.isoformat(), "currency": currency_of(order["symbol"])[0],
     }
     pf["trades"].append({"symbol": order["symbol"], "name": order.get("name", ""), "side": "Kauf",
-                         "reason": f"Brodel 2.0 = {order['score']}", "day": day.isoformat(),
+                         "reason": f"Score {order['score']}", "day": day.isoformat(),
                          "price": round(open_price, 4), "shares": shares, "value_eur": round(cost, 2)})
     return position
 
@@ -234,18 +252,62 @@ def fill_pending(pf: dict, order: dict, bars: list[tuple[date, pd.Series]], fx: 
 def buy_candidates(snapshot: dict | None, threshold: float) -> list[dict]:
     """Fresh entries of the decision snapshot at or above the threshold, best first."""
     items = snapshot_store.fresh_items(snapshot.get("items", [])) if snapshot else []
-    scored = [(primary_score(item), item) for item in items if item.get("symbol")]
+    scored = [(primary_score(ensure_brodel_v2(dict(item))), item) for item in items if item.get("symbol")]
     chosen = [(score, item) for score, item in scored if score >= threshold]
     chosen.sort(key=lambda pair: (-pair[0], str(pair[1]["symbol"])))
-    return [{"symbol": item["symbol"], "name": item.get("name", ""), "score": score} for score, item in chosen]
+    return [_candidate(item, score) for score, item in chosen]
 
 
-def place_orders(pf: dict, candidates: list[dict], decision_day: date, cfg: dict) -> list[dict]:
+def _candidate(item: dict, score: float) -> dict:
+    return {"symbol": item["symbol"], "name": item.get("name", ""), "score": score,
+            "sector": str(item.get("sector") or "Unbekannt")}
+
+
+def _results_soon(item: dict, decision_day: date, days: int) -> bool:
+    try:
+        return 0 <= (date.fromisoformat(str(item.get("next_earnings"))[:10]) - decision_day).days <= days
+    except ValueError:
+        return False
+
+
+def rank_candidates(snapshot: dict | None, cfg: dict, decision_day: date) -> list[dict]:
+    """Best ``top_share`` of the day by Brodel 3.0, without stocks reporting results within a week."""
+    items = snapshot_store.fresh_items(snapshot.get("items", [])) if snapshot else []
+    scored = [item for item in items if item.get("symbol") and item.get("brodel_score_v3") is not None]
+    scored.sort(key=lambda item: (-item["brodel_score_v3"], str(item["symbol"])))
+    top = scored[: math.ceil(len(scored) * cfg["top_share"])]
+    return [_candidate(item, item["brodel_score_v3"]) for item in top
+            if not _results_soon(item, decision_day, cfg["earnings_block_days"])]
+
+
+def data_coverage(snapshot: dict | None) -> tuple[float, float]:
+    """Share of today's entries with fresh data, and share of those with a Brodel 3.0 score."""
+    items = (snapshot or {}).get("items", []) or []
+    fresh = snapshot_store.fresh_items(items)
+    scored = [item for item in fresh if item.get("brodel_score_v3") is not None]
+    return (len(fresh) / len(items) if items else 0.0, len(scored) / len(fresh) if fresh else 0.0)
+
+
+def place_orders(
+    pf: dict,
+    candidates: list[dict],
+    decision_day: date,
+    cfg: dict,
+    max_new: int | None = None,
+    sector_limit: int | None = None,
+) -> list[dict]:
     held = {p["symbol"] for p in pf["positions"]} | {o["symbol"] for o in pf["pending"]}
+    sectors: dict[str, int] = {}
+    for entry in pf["positions"] + pf["pending"]:
+        sectors[entry.get("sector", "Unbekannt")] = sectors.get(entry.get("sector", "Unbekannt"), 0) + 1
     placed = []
     for cand in candidates:
         if len(pf["positions"]) + len(pf["pending"]) >= cfg["max_positions"]:
             break
+        if max_new is not None and len(placed) >= max_new:
+            break
+        if sector_limit is not None and sectors.get(cand.get("sector", "Unbekannt"), 0) >= sector_limit:
+            continue
         if cand["symbol"] in held:
             continue
         sold_on = pf["cooldown"].get(cand["symbol"])
@@ -257,6 +319,7 @@ def place_orders(pf: dict, candidates: list[dict], decision_day: date, cfg: dict
         order = {**cand, "order_day": decision_day.isoformat(), "reserved": cfg["position_budget"], "status": "open"}
         pf["pending"].append(order)
         held.add(cand["symbol"])
+        sectors[cand.get("sector", "Unbekannt")] = sectors.get(cand.get("sector", "Unbekannt"), 0) + 1
         placed.append(order)
     return placed
 
@@ -277,6 +340,10 @@ def step(state: dict, snapshot: dict | None, bars: dict[str, pd.DataFrame], fx: 
     cutoff = decision_cutoff(now)
     decision_day = date.fromisoformat(snapshot_day(now))
     summary: dict[str, Any] = {"cutoff": cutoff.isoformat(), "decision_day": decision_day.isoformat()}
+    fresh_share, scored_share = data_coverage(snapshot)
+    data_ok = fresh_share >= cfg.get("min_coverage", 0.0)
+    state["coverage"] = {"day": decision_day.isoformat(), "fresh": round(fresh_share, 3), "scored": round(scored_share, 3)}
+    summary["coverage"] = state["coverage"]
 
     for key, pf in state["portfolios"].items():
         # 1. fill orders of earlier days at the next open
@@ -308,7 +375,16 @@ def step(state: dict, snapshot: dict | None, bars: dict[str, pd.DataFrame], fx: 
 
         # 3. new orders from today's snapshot (once per decision day)
         if pf.get("last_decision") != decision_day.isoformat():
-            placed = place_orders(pf, buy_candidates(snapshot, cfg["buy_threshold"]), decision_day, cfg)
+            placed = []
+            if pf.get("rule") == "rank":
+                if data_ok and scored_share >= cfg.get("min_coverage", 0.0):
+                    placed = place_orders(
+                        pf, rank_candidates(snapshot, cfg, decision_day), decision_day, cfg,
+                        max_new=cfg["max_buys_per_day"],
+                        sector_limit=math.floor(cfg["sector_cap"] * cfg["max_positions"]),
+                    )
+            elif data_ok:
+                placed = place_orders(pf, buy_candidates(snapshot, cfg["buy_threshold"]), decision_day, cfg)
             pf["last_decision"] = decision_day.isoformat()
             summary[f"{key}_orders"] = [o["symbol"] for o in placed]
 

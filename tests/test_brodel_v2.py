@@ -179,6 +179,7 @@ def _app_item(symbol, v1, v2):
         "signal_breakdown_v2": {
             "Kursziele & Konsens": {"name": "Kursziele & Konsens", "score": 5, "summary": "k"},
             BUYBACK_COMPONENT_NAME: {"name": BUYBACK_COMPONENT_NAME, "score": 3, "summary": "r"},
+            "EPS-Revisionen": {"name": "EPS-Revisionen", "score": v2 - 8},
         },
         "peer_context": {"sector": "Tech", "score_vs_sector": 1.0, "sector_rank": 1, "sector_count": 2},
     }
@@ -216,13 +217,33 @@ def test_prepare_signal_items_sorts_by_v2_and_backfills():
 def test_breakdown_rows_show_both_versions():
     import app
 
-    rows = {row["Komponente"]: row for row in app.build_breakdown_rows(_app_item("AAA", 80, 20))}
-    assert rows["Kursziele & Konsens"]["Punkte 2.0"] == 5
-    assert rows["Kursziele & Konsens"]["Punkte 1.0"] == 15
-    assert rows["Kursziele & Konsens"]["Max 1.0"] == 15
-    assert rows[BUYBACK_COMPONENT_NAME]["Max 1.0"] is None
-    assert rows[BUYBACK_COMPONENT_NAME]["Punkte 1.0"] is None
-    assert rows[BUYBACK_COMPONENT_NAME]["Max 2.0"] == 5
+    rows = app.build_breakdown_rows(_app_item("AAA", 80, 20))
+    by_name = {row["Baustein"]: row for row in rows}
+    assert by_name["Kursziele & Konsens"]["Punkte 2.0"] == 5
+    assert by_name["Kursziele & Konsens"]["Punkte 1.0"] == 15
+    assert by_name["Aktienrückkauf"]["Punkte 2.0"] == 3
+    assert by_name["Aktienrückkauf"]["Punkte 1.0"] is None  # new in 2.0
+    assert not any("Max" in key for key in rows[0])
+    assert rows[0]["Punkte 2.0"] == max(row["Punkte 2.0"] for row in rows)  # strongest first
+
+
+def test_macro_overlay_of_old_snapshots_is_removed():
+    from stock_agent import primary_score
+
+    item = _app_item("AAA", 80, 20)
+    item["brodel_score_v2"] = 14  # stored with a macro factor of 0.72
+    assert primary_score(item) == 20
+    assert ensure_brodel_v2(dict(item))["brodel_score_v2"] == 20
+
+
+def test_new_scores_contain_no_macro_overlay():
+    mock_instance = MagicMock()
+    with patch.object(stock_agent.yf, "Ticker", return_value=mock_instance), \
+         patch.object(stock_agent, "_get_macro_multiplier", return_value=0.5):
+        mock_instance.get_info.return_value = {"quoteType": "EQUITY", "shortName": "Apple", "profitMargins": 0.3}
+        res = stock_agent.build_symbol_signal_monitor("AAPL")
+    assert res["brodel_score_v2"] == sum(c["score"] for c in res["signal_breakdown_v2"].values())
+    assert res["factors_v3"]["profit_margin"] == 0.3
 
 
 def test_score_history_frame_contains_both_versions():

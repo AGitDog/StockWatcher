@@ -1,14 +1,15 @@
 name: Update Stock Signals
 
-# Yahoo blocks a run after roughly 350 symbols, so the watchlist runs in four region groups,
+# Yahoo blocks a run after roughly 300 symbols, so the watchlist runs in five region groups,
 # each after its exchanges closed (times in UTC; German time is UTC+1 in winter, UTC+2 in summer).
 # Every run merges its group into the same daily snapshot.
 on:
   schedule:
-    - cron: '0 8 * * *'     # asia      (Tokyo/Mumbai closed)
+    - cron: '30 10 * * *'   # asia      (Tokyo/Mumbai closed)
     - cron: '30 17 * * *'   # europe    (Xetra/London closed)
     - cron: '30 21 * * *'   # america-1 (New York closed)
     - cron: '30 22 * * *'   # america-2
+    - cron: '30 23 * * *'   # america-3
   workflow_dispatch:
     inputs:
       group:
@@ -16,9 +17,9 @@ on:
         required: true
         default: 'asia'
         type: choice
-        options: [asia, europe, america-1, america-2, all]
+        options: [asia, europe, america-1, america-2, america-3, all]
       run_bot:
-        description: 'Paper-Bot danach ausfuehren (laeuft sonst nur nach america-2)'
+        description: 'Paper-Bot danach ausfuehren (laeuft sonst nur nach america-3)'
         required: false
         default: false
         type: boolean
@@ -64,10 +65,11 @@ jobs:
         INPUT_GROUP: ${{ inputs.group }}
       run: |
         case "$SCHEDULE" in
-          "0 8 * * *")   GROUP=asia ;;
+          "30 10 * * *") GROUP=asia ;;
           "30 17 * * *") GROUP=europe ;;
           "30 21 * * *") GROUP=america-1 ;;
           "30 22 * * *") GROUP=america-2 ;;
+          "30 23 * * *") GROUP=america-3 ;;
           *)             GROUP="${INPUT_GROUP:-all}" ;;
         esac
         echo "Gruppe: $GROUP"
@@ -75,7 +77,7 @@ jobs:
         python update_signals.py --group "$GROUP"
 
     - name: Run paper bot (after the last group of the day)
-      if: env.GROUP == 'america-2' || inputs.run_bot
+      if: env.GROUP == 'america-3' || inputs.run_bot
       continue-on-error: true  # a bot problem must never block saving the snapshot
       run: python paper_bot.py run
 

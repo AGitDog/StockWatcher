@@ -3,6 +3,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from brodel_v3 import compute_brodel_v3
 from stock_agent import (
     parse_watchlist_text,
     parse_symbol_mappings,
@@ -77,7 +78,7 @@ def main():
     raw_results, retried, recovered = retry_missing_price_items(raw_results, symbol_mappings)
     if retried:
         print(f"Wiederholung: {recovered}/{retried} Titel ohne Kursdaten nachgeladen.", flush=True)
-    enriched_results = add_watchlist_peer_context(raw_results)
+    enriched_results = add_watchlist_peer_context(compute_brodel_v3(raw_results))
     
     # Sort results
     sorted_results = sorted(enriched_results, key=primary_score, reverse=True)

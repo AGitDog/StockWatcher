@@ -391,8 +391,9 @@ def ensure_signal_history_dir(directory: str = DEFAULT_SIGNAL_HISTORY_DIR) -> Pa
 MAX_SIGNAL_HISTORY_SNAPSHOTS = 3665
 
 
-# Runs shortly after midnight UTC (delayed US runs) still belong to the previous trading day.
-SNAPSHOT_DAY_SHIFT_HOURS = 7
+# Runs after midnight UTC (delayed US runs, GitHub starts up to 8 hours late) still belong to the
+# previous trading day. The first group of a day is scheduled for 10:30 UTC.
+SNAPSHOT_DAY_SHIFT_HOURS = 9
 
 
 def snapshot_day(now: datetime | None = None) -> str:
@@ -1008,13 +1009,24 @@ def compute_brodel_v2_breakdown(
     return result
 
 
-def ensure_brodel_v2(item: dict[str, Any]) -> dict[str, Any]:
-    """Add Brodel 2.0 to an item from an older snapshot that only has Brodel 1.0.
+def _sum_v2_points(item: dict[str, Any]) -> int:
+    points = sum(int(component.get("score", 0) or 0) for component in item["signal_breakdown_v2"].values())
+    return max(-30, min(points, 100))
 
-    The estimate has no buyback data and no macro overlay. The overlay scales all
-    stocks of a day the same way, so the ranking within a day is unaffected.
+
+def ensure_brodel_v2(item: dict[str, Any]) -> dict[str, Any]:
+    """Normalise Brodel 2.0 of a stored item.
+
+    Items that carry 2.0 points get their sum, because older snapshots stored the score with a
+    macro overlay that differed between run groups. Items with 1.0 only get an estimate
+    without buyback data.
     """
-    if not isinstance(item, dict) or "brodel_score_v2" in item:
+    if not isinstance(item, dict):
+        return item
+    if isinstance(item.get("signal_breakdown_v2"), dict) and item["signal_breakdown_v2"]:
+        item["brodel_score_v2"] = _sum_v2_points(item)
+        return item
+    if "brodel_score_v2" in item:
         return item
     if not isinstance(item.get("signal_breakdown"), dict) or not item["signal_breakdown"]:
         return item  # nothing to recompute from; primary_score falls back to 1.0
@@ -1027,12 +1039,61 @@ def ensure_brodel_v2(item: dict[str, Any]) -> dict[str, Any]:
 
 
 def primary_score(item: dict[str, Any]) -> int:
-    """The score used for ranking: Brodel 2.0, falling back to 1.0 for old data."""
+    """The score used for ranking: Brodel 2.0 without macro overlay, falling back to 1.0 for old data."""
+    if isinstance(item.get("signal_breakdown_v2"), dict) and item["signal_breakdown_v2"]:
+        return _sum_v2_points(item)
     value = item.get("brodel_score_v2", item.get("brodel_score", 0))
     try:
         return int(value or 0)
     except (TypeError, ValueError):
         return 0
+
+
+MOMENTUM_MIN_DAYS = 200
+MOMENTUM_SKIP_DAYS = 21
+
+
+def momentum_12_1(history: pd.DataFrame | None) -> float | None:
+    """Return of the last year without the latest month (the last month tends to reverse)."""
+    if history is None or history.empty or len(history) < MOMENTUM_MIN_DAYS:
+        return None
+    close = pd.to_numeric(history["Close"], errors="coerce").dropna()
+    if len(close) < MOMENTUM_MIN_DAYS:
+        return None
+    start = float(close.iloc[0])
+    return float(close.iloc[-MOMENTUM_SKIP_DAYS - 1]) / start - 1 if start > 0 else None
+
+
+def collect_v3_factors(
+    symbol: str,
+    info: dict[str, Any],
+    history: pd.DataFrame | None,
+    eps_signal: dict[str, Any],
+    buyback_signal: dict[str, Any],
+    is_etf: bool,
+) -> dict[str, Any] | None:
+    """Raw values for Brodel 3.0. The ranks are computed later across the whole watchlist."""
+    if is_etf:
+        return None
+    up, down = eps_signal.get("up") or 0, eps_signal.get("down") or 0
+    free_cashflow = _safe_float(info.get("freeCashflow"))
+    market_cap = _safe_float(info.get("marketCap"))
+    import finnhub_cache
+
+    insider = None
+    if "." not in str(symbol) and not str(symbol).startswith("^"):  # US filings only
+        insider = finnhub_cache.get_insider_buy_value(symbol)
+    return {
+        "profit_margin": _safe_float(info.get("profitMargins")),
+        "return_on_equity": _safe_float(info.get("returnOnEquity")),
+        "debt_equity": _safe_float(info.get("debtToEquity")),
+        "forward_pe": _safe_float(info.get("forwardPE")),
+        "fcf_yield": free_cashflow / market_cap if free_cashflow is not None and market_cap else None,
+        "momentum_12_1": momentum_12_1(history),
+        "eps_up_ratio": up / (up + down) if up + down >= 2 else None,
+        "share_change": buyback_signal.get("share_change"),
+        "insider_buy_usd": insider,
+    }
 
 
 def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, str] | None = None) -> dict[str, Any]:
@@ -1058,7 +1119,7 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
     name = info.get("longName") or info.get("shortName") or INDEX_CONSTITUENT_NAMES.get(symbol) or symbol
     if name == symbol:
         name = resolve_name_fallback(symbol, name)
-    history = clean_price_history(_safe_dataframe(lambda: ticker.history(period="6mo", auto_adjust=False)))
+    history = clean_price_history(_safe_dataframe(lambda: ticker.history(period="1y", auto_adjust=False)))
 
     eps_revision_signal = _summarize_eps_revisions(ticker)
     price_target_signal = _summarize_price_targets(ticker, info, history)
@@ -1091,7 +1152,8 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
     signal_breakdown = {component["name"]: component for component in signal_components}
     v2_breakdown = compute_brodel_v2_breakdown(signal_breakdown, buyback_signal)
     v2_raw = sum(component["score"] for component in v2_breakdown.values())
-    brodel_score_v2 = max(-30, min(_apply_macro_overlay(v2_raw), 100))
+    # no macro overlay: it differs between run groups of one day and would make their scores incomparable
+    brodel_score_v2 = max(-30, min(int(v2_raw), 100))
     signal_items = [component["summary"] for component in signal_components if component["summary"]]
     if buyback_signal.get("summary"):
         signal_items.append(buyback_signal["summary"])
@@ -1109,14 +1171,16 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
         "signal_items": signal_items,
         "signal_breakdown": signal_breakdown,
         "signal_breakdown_v2": v2_breakdown,
+        "factors_v3": collect_v3_factors(symbol, info, history, eps_revision_signal, buyback_signal, quote_type == "etf"),
+        "next_earnings": event_signal.get("next_earnings"),
     }
 
 
 RUN_ROTATION_STRIDE = 350
 
-# Nightly update in four groups of at most ~400 symbols, each after its exchanges closed
-# (Yahoo blocks a run after roughly 350 symbols).
-RUN_GROUPS = ("asia", "europe", "america-1", "america-2")
+# Nightly update in five groups of at most ~280 symbols, each after its exchanges closed
+# (Yahoo blocks a run after roughly 280 to 400 symbols).
+RUN_GROUPS = ("asia", "europe", "america-1", "america-2", "america-3")
 ASIA_SUFFIXES = {"T", "NS", "BO", "HK", "AX", "KS", "KQ", "SS", "SZ", "TW", "TWO", "SI", "JK", "KL", "BK", "NZ"}
 EUROPE_SUFFIXES = {
     "DE", "F", "MU", "DU", "HM", "BE", "HA", "SG", "XC", "L", "IL", "PA", "SW", "VX", "AS", "MI", "MC",
@@ -1141,11 +1205,11 @@ def symbol_region(symbol: str | None) -> str:
 
 
 def run_group(symbol: str | None) -> str:
-    """Stable run group; American symbols are split into two halves by a hash of the symbol."""
+    """Stable run group; American symbols are split into three parts by a hash of the symbol."""
     region = symbol_region(symbol)
     if region != "america":
         return region
-    part = int(hashlib.md5(str(symbol or "").upper().encode("utf-8")).hexdigest(), 16) % 2
+    part = int(hashlib.md5(str(symbol or "").upper().encode("utf-8")).hexdigest(), 16) % 3
     return f"america-{part + 1}"
 
 
@@ -1903,6 +1967,7 @@ def _summarize_event_pressure(ticker: yf.Ticker, info: dict[str, Any]) -> dict[s
         return {"name": "Event-Druck", "score": 0, "summary": "Keine nahen Termine erkannt."}
 
     upcoming_days: list[int] = []
+    next_earnings: str | None = None
     for entry in next_dates:
         parsed = _extract_first_date(entry)
         if parsed is None:
@@ -1910,6 +1975,9 @@ def _summarize_event_pressure(ticker: yf.Ticker, info: dict[str, Any]) -> dict[s
         delta_days = (parsed.date() - datetime.utcnow().date()).days
         if delta_days >= 0:
             upcoming_days.append(delta_days)
+            if entry.lower().startswith("earnings"):
+                day = parsed.date().isoformat()
+                next_earnings = min(next_earnings, day) if next_earnings else day
 
     if not upcoming_days:
         return {"name": "Event-Druck", "score": 0, "summary": "Keine nahen Termine erkannt."}
@@ -1924,7 +1992,7 @@ def _summarize_event_pressure(ticker: yf.Ticker, info: dict[str, Any]) -> dict[s
         score = 1
 
     summary = f"Naechster Termin in {nearest} Tagen"
-    return {"name": "Event-Druck", "score": score, "summary": summary}
+    return {"name": "Event-Druck", "score": score, "summary": summary, "next_earnings": next_earnings}
 
 
 def _summarize_insider_signal(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]:

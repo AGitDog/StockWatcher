@@ -1,8 +1,8 @@
 """Nightly signal update, run per region group.
 
-    python update_signals.py --group asia|europe|america-1|america-2|all
+    python update_signals.py --group asia|europe|america-1|america-2|america-3|all
 
-Yahoo blocks a run after roughly 350 symbols, so the watchlist is split into four groups that
+Yahoo blocks a run after roughly 350 symbols, so the watchlist is split into five groups that
 each run after their exchanges closed. A group run merges its results with the other groups'
 latest entries into one daily snapshot. ``all`` computes the whole list at once (manual use).
 """
@@ -12,6 +12,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from brodel_v3 import compute_brodel_v3
 from stock_agent import (
     RUN_GROUPS,
     parse_watchlist_text,
@@ -101,8 +102,8 @@ def run_update(group: str = "all"):
         raw_results = merge_group_run(watchlist_name, raw_results, allowed_symbols=allowed)
         print(f"Merged with the other groups: {len(raw_results)} entries in today's snapshot.", flush=True)
 
-    print("Applying peer context...", flush=True)
-    enriched_results = add_watchlist_peer_context(raw_results)
+    print("Applying Brodel 3.0 ranks and peer context...", flush=True)
+    enriched_results = add_watchlist_peer_context(compute_brodel_v3(raw_results))
     sorted_results = sorted(enriched_results, key=primary_score, reverse=True)
 
     print("Saving snapshot...", flush=True)

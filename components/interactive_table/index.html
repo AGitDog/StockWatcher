@@ -203,12 +203,13 @@
   let sortColumn = "Brodel 2.0";
   let sortAscending = false;
 
-  // kind: text | score | points | signed
+  // kind: text | score | plain | points | signed
   const COLUMNS = [
     { key: "Symbol", label: "Symbol", kind: "text", class: "col-symbol" },
     { key: "Name", label: "Name", kind: "text", class: "col-name" },
     { key: "Sektor", label: "Sektor", kind: "text", class: "col-sector" },
     { key: "Brodel 2.0", label: "Brodel 2.0", kind: "score", sep: true, tip: "Gesamtscore Brodel 2.0 (max. 90)" },
+    { key: "Brodel 3.0", label: "Brodel 3.0", kind: "plain", tip: "Rang-Score aus 6 Bausteinen (0 bis 100), läuft im eigenen Depot" },
     { key: "EPS", label: "EPS", kind: "points", sep: true, tip: "EPS-Revisionen (max. 15)" },
     { key: "Kursziel", label: "Kursziel", kind: "points", tip: "Kursziele & Konsens (max. 5)" },
     { key: "P/V", label: "P/V", kind: "points", tip: "Preis/Volumen (max. 5)" },

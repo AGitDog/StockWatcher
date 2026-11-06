@@ -87,6 +87,33 @@ def get_analyst_data(symbol: str) -> tuple[dict[str, Any] | None, list[dict[str,
         _save_cache(cache_data)
         
     return price_target, recommendation
+def get_insider_buy_value(symbol: str, days: int = 90) -> float | None:
+    """Value in USD of open-market purchases (Form 4 code P) of the last ``days`` days.
+
+    Returns None when the API gives no answer, so a failed call is not read as "no purchases".
+    """
+    api_key = get_finnhub_key()
+    if not api_key:
+        return None
+    start = time.strftime("%Y-%m-%d", time.gmtime(time.time() - days * 86400))
+    try:
+        res = requests.get(
+            "https://finnhub.io/api/v1/stock/insider-transactions",
+            params={"symbol": symbol, "from": start, "token": api_key},
+            timeout=10,
+        )
+        if res.status_code != 200:
+            return None
+        rows = res.json().get("data") or []
+    except Exception:
+        return None
+    return float(sum(
+        abs(row.get("change") or 0) * (row.get("transactionPrice") or 0)
+        for row in rows
+        if row.get("transactionCode") == "P"
+    ))
+
+
 def get_insider_sentiment(symbol: str) -> list[dict[str, Any]]:
     """
     Holt Insider Sentiment von Finnhub.

@@ -179,7 +179,7 @@ def test_workflow_runs_bot_after_last_group_and_commits_state():
 
     content = (Path(__file__).resolve().parent.parent / ".github/workflows/update_signals.yml").read_text(encoding="utf-8")
     assert "python paper_bot.py run" in content
-    assert "env.GROUP == 'america-2'" in content
+    assert "env.GROUP == 'america-3'" in content
     assert "continue-on-error: true" in content
     assert "git add -A signal_history/ bot_depot/" in content
 
@@ -208,7 +208,7 @@ def test_app_bot_rows():
     no_stop = app.build_bot_position_rows(state["portfolios"]["no_stop"], state["config"])
     assert "Stop-Loss" not in no_stop[0] and len(no_stop) == 2
     frame = app.build_bot_equity_frame(state)
-    assert list(frame.columns) == ["Bot mit Stop-Loss", "Ohne Stop-Loss", "MSCI World ETF"]
+    assert list(frame.columns) == list(app.BOT_SERIES.values())
 
 
 def test_bot_tab_renders(tmp_path, monkeypatch):
@@ -238,4 +238,76 @@ def test_bot_tab_renders(tmp_path, monkeypatch):
     at.run()
     assert not at.exception
     assert any("Bot-Depot" in s.value for s in at.subheader)
-    assert len(at.metric) == 3
+    assert len(at.metric) == 4
+
+
+def _ranked(symbol, score, **extra):
+    return _item(symbol, 40, brodel_score_v3=score, sector=extra.pop("sector", "Tech"), **extra)
+
+
+def test_rank_candidates_take_best_two_percent_and_skip_results_week():
+    items = [_ranked(f"S{i:03d}", float(i)) for i in range(200)]
+    items[199]["next_earnings"] = "2026-11-05"  # best stock reports in 3 days
+    cands = bot.rank_candidates(_snapshot("2026-11-02", items), bot.DEFAULT_CONFIG, date(2026, 11, 2))
+    assert [c["symbol"] for c in cands] == ["S198", "S197", "S196"]  # top 4 of 200, the best one blocked
+
+
+def test_rank_depot_limits_daily_buys_and_sector():
+    state = _state()
+    items = [_ranked(f"T{i:02d}.DE", 90 - i, sector="Tech") for i in range(4)]
+    items += [_ranked(f"F{i:02d}.DE", 70 - i, sector="Fin") for i in range(4)]
+    items += [_ranked(f"X{i:03d}.DE", 1.0, sector="Rest") for i in range(392)]
+    pf = state["portfolios"]["rank"]
+    cands = bot.rank_candidates(_snapshot("2026-11-02", items), state["config"], date(2026, 11, 2))
+    assert len(cands) == 8
+    placed = bot.place_orders(pf, cands, date(2026, 11, 2), state["config"], max_new=5, sector_limit=2)
+    assert [o["symbol"] for o in placed] == ["T00.DE", "T01.DE", "F00.DE", "F01.DE"]
+
+
+def test_rank_depot_trades_alongside_threshold_depot():
+    state = _state()
+    items = [_ranked(f"R{i:03d}.DE", 50.0 + i * 0.1) for i in range(100)]
+    items[0]["brodel_score_v2"] = 65
+    bot.step(state, _snapshot("2026-11-02", items), {}, {}, _at("2026-11-02"))
+    assert [o["symbol"] for o in state["portfolios"]["bot"]["pending"]] == ["R000.DE"]
+    assert [o["symbol"] for o in state["portfolios"]["rank"]["pending"]] == ["R099.DE", "R098.DE"]
+    assert state["portfolios"]["rank"]["cash"] == 90_000
+
+
+def test_no_orders_when_too_little_fresh_data():
+    state = _state()
+    items = [_item("A.DE", 70)] + [_item(f"S{i}.DE", 10, stale_from="2026-11-01") for i in range(3)]
+    summary = bot.step(state, _snapshot("2026-11-02", items), {}, {}, _at("2026-11-02"))
+    assert state["portfolios"]["bot"]["pending"] == []
+    assert summary["coverage"]["fresh"] == 0.25
+
+
+def test_rank_depot_waits_until_brodel_v3_is_available():
+    state = _state()
+    bot.step(state, _snapshot("2026-11-02", [_item("A.DE", 70)]), {}, {}, _at("2026-11-02"))
+    assert state["portfolios"]["rank"]["pending"] == []
+    assert len(state["portfolios"]["bot"]["pending"]) == 1
+
+
+def test_london_stamp_duty_and_japan_lots():
+    state = _state()
+    pf = state["portfolios"]["bot"]
+    cfg = state["config"]
+    fx = {"EURGBP=X": _bars([("2026-11-02", 1.0, 1.0, 1.0)]), "EURJPY=X": _bars([("2026-11-02", 100.0, 100.0, 100.0)])}
+    day = date(2026, 11, 3)
+    london = bot.fill_pending(pf, {"symbol": "LSEG.L", "score": 60, "reserved": 5000.0},
+                              [(day, pd.Series({"Open": 10000.0, "Low": 9900.0, "Close": 10000.0}))], fx, cfg)
+    assert london["shares"] == 49  # 100 EUR + 0.5 % duty each
+    assert london["cost_eur"] == pytest.approx(49 * 100.5 + 1)
+    japan = bot.fill_pending(pf, {"symbol": "7203.T", "score": 60, "reserved": 5000.0},
+                             [(day, pd.Series({"Open": 3000.0, "Low": 2900.0, "Close": 3000.0}))], fx, cfg)
+    assert japan["shares"] == 100
+    costly = bot.fill_pending(pf, {"symbol": "9983.T", "score": 60, "reserved": 5000.0},
+                              [(day, pd.Series({"Open": 60000.0, "Low": 59000.0, "Close": 60000.0}))], fx, cfg)
+    assert costly is None and pf["trades"][-1]["side"] == "Storniert"
+    assert "9983.T" in pf["cooldown"]
+
+
+def test_etf_starts_with_the_first_orders():
+    state = bot.new_state(_at("2026-11-06", 2))  # delayed run of the 5th
+    assert state["started"] == "2026-11-05"

@@ -38,6 +38,7 @@ from ml_weights import load_trained_weights, train_on_snapshots
 from backtest_engine.engine import load_snapshots, snapshots_with_datetimes
 import snapshot_store
 import paper_bot
+from brodel_v3 import BRODEL_V3_WEIGHTS, compute_brodel_v3
 from factor_lab import BacktestConfig, build_truth_report, snapshot_score_ic
 from factor_lab.data import download_close_prices, filter_single_currency, load_universe
 from factor_lab.factors import FACTOR_DESCRIPTIONS
@@ -118,7 +119,7 @@ def build_score_history_frame(history: list[dict[str, object]]) -> pd.DataFrame:
                     "timestamp": timestamp,
                     "symbol": item.get("symbol"),
                     "name": item.get("name"),
-                    "brodel_score_v2": ensure_brodel_v2(dict(item)).get("brodel_score_v2", 0),
+                    "brodel_score_v2": primary_score(ensure_brodel_v2(dict(item))),
                     "brodel_score": item.get("brodel_score", 0),
                 }
             )
@@ -163,6 +164,7 @@ def build_signal_table_rows(signal_items: list[dict]) -> list[dict]:
             "Name": item["name"],
             "Sektor": peer_context.get("sector", "Unbekannt"),
             "Brodel 2.0": primary_score(item),
+            "Brodel 3.0": item.get("brodel_score_v3"),
         }
         for label, component_name in V2_TABLE_COLUMNS:
             row[label] = breakdown_v2.get(component_name, {}).get("score", 0)
@@ -178,28 +180,61 @@ def build_signal_table_rows(signal_items: list[dict]) -> list[dict]:
     return rows
 
 
+BRODEL_COMPONENT_LABELS = {
+    "Relative Staerke": "Relative Stärke",
+    "Insider-Aktivitaet": "Insider-Aktivität",
+    BUYBACK_COMPONENT_NAME: "Aktienrückkauf",
+}
+BRODEL_V3_LABELS = {"Qualitaet": "Qualität", "Aktienrueckkauf": "Aktienrückkauf"}
+
+
 def breakdown_table_height(row_count: int) -> int:
     """Pixel height that shows every row of st.dataframe without an inner scrollbar."""
     return 38 + 35 * max(row_count, 1)
 
 
 def build_breakdown_rows(item: dict) -> list[dict]:
-    """Component table of the detail view with the points of both versions."""
+    """Component table of the detail view, strongest component first."""
     breakdown_v1 = item.get("signal_breakdown", {}) or {}
     breakdown_v2 = item.get("signal_breakdown_v2", {}) or {}
     rows = []
-    for name, max_v2 in BRODEL_V2_MAX_POINTS.items():
+    for name in BRODEL_V2_MAX_POINTS:
         component_v2 = breakdown_v2.get(name, {})
         component_v1 = breakdown_v1.get(name, {})
         rows.append({
-            "Komponente": name,
+            "Baustein": BRODEL_COMPONENT_LABELS.get(name, name),
             "Punkte 2.0": component_v2.get("score", 0),
-            "Max 2.0": max_v2,
             "Punkte 1.0": component_v1.get("score", 0) if name in BRODEL_V1_MAX_POINTS else None,
-            "Max 1.0": BRODEL_V1_MAX_POINTS.get(name),
             "Detail": component_v2.get("summary") or component_v1.get("summary", ""),
         })
-    return rows
+    return sorted(rows, key=lambda row: row["Punkte 2.0"], reverse=True)
+
+
+def build_v3_rows(item: dict) -> list[dict]:
+    """Brodel 3.0 blocks: points and how much of the block's weight the stock reaches."""
+    breakdown = item.get("signal_breakdown_v3") or {}
+    rows = []
+    for name, weight in BRODEL_V3_WEIGHTS.items():
+        points = breakdown.get(name)
+        rows.append({
+            "Baustein": BRODEL_V3_LABELS.get(name, name),
+            "Punkte": points,
+            "Stärke": round(points / weight * 100) if points is not None else None,
+        })
+    return sorted(rows, key=lambda row: -1 if row["Punkte"] is None else row["Stärke"], reverse=True)
+
+
+def style_points(frame: pd.DataFrame, columns: list[str]):
+    """Green for positive points, red for negative ones, faint for zero."""
+    def color(value):
+        if pd.isna(value):
+            return ""
+        if value > 0:
+            return "color: #2e9e5b; font-weight: 600"
+        if value < 0:
+            return "color: #d9534f; font-weight: 600"
+        return "color: #9aa3ad"
+    return frame.style.map(color, subset=columns).format(lambda v: "–" if pd.isna(v) else f"{v:+.0f}", subset=columns)
 
 
 def execute_signal_calculation(mapping_text: str = ""):
@@ -238,7 +273,7 @@ def execute_signal_calculation(mapping_text: str = ""):
         
         progress_bar.progress(1.0, text="Berechnung Peer-Kontext...")
         
-        enriched_results = add_watchlist_peer_context(raw_results)
+        enriched_results = add_watchlist_peer_context(compute_brodel_v3(raw_results))
         strategy_results = build_strategy_signals(enriched_results)
         
         trainer = load_trained_weights()
@@ -338,17 +373,13 @@ def render_watchlist_signal_monitor(mapping_text: str):
         if item:
             head_col1, head_col2 = st.columns([3, 1])
             with head_col1:
-                st.markdown(
-                    f"### {item['symbol']} - {item['name']} | Brodel 2.0: {primary_score(item)}"
-                    f" <span style='font-size:0.6em;color:gray'>(Brodel 1.0: {item.get('brodel_score', 0)})</span>",
-                    unsafe_allow_html=True,
-                )
+                st.markdown(f"### {item['symbol']} · {item['name']}")
                 if item.get("stale_from"):
                     st.caption(f"Stand vom {item['stale_from']}: Der heutige Abruf für diese Aktie steht noch aus oder ist fehlgeschlagen.")
                 elif not snapshot_store.item_has_price_data(item):
                     st.caption("Für diese Aktie kamen beim letzten Abruf keine Kursdaten. Der Score ist daher nicht aussagekräftig.")
                 if item.get("brodel_v2_estimated"):
-                    st.caption("Brodel 2.0 aus einem älteren Snapshot nachgerechnet (ohne Rückkauf-Daten und ohne Makro-Overlay).")
+                    st.caption("Brodel 2.0 aus einem älteren Snapshot nachgerechnet (ohne Rückkauf-Daten).")
                 if item["resolved"]:
                     st.caption(f"Eingabe: {item['input_name']} | {item['resolution_note']}")
             with head_col2:
@@ -360,46 +391,54 @@ def render_watchlist_signal_monitor(mapping_text: str):
             with st.spinner("Lade Unternehmenszahlen & Profil..."):
                 ext = get_extended_fundamentals(item["symbol"])
 
+            peer_context = item.get("peer_context", {})
+            score_v3 = item.get("brodel_score_v3")
+            kpi_cols = st.columns(4)
+            kpi_cols[0].metric("Brodel 2.0", primary_score(item), help="Summe der Bausteine, höchstens 90 Punkte")
+            kpi_cols[1].metric("Brodel 3.0", score_v3 if score_v3 is not None else "–", help="Rang-Score aus 6 Bausteinen, 0 bis 100")
+            kpi_cols[2].metric("Rang im Sektor", f"{peer_context.get('sector_rank', 1)} von {peer_context.get('sector_count', 1)}")
+            kpi_cols[3].metric("Abstand zum Sektor", f"{peer_context.get('score_vs_sector', 0):+.1f}", help=f"Sektor-Durchschnitt: {peer_context.get('sector_average', 0)}")
+            top_peer = peer_context.get("top_peer")
+            peer_text = f" · Stärkster Peer: {top_peer['symbol']} ({top_peer['score']})" if top_peer else ""
+            st.caption(f"{peer_context.get('sector', 'Unbekannt')} · {peer_context.get('industry', 'Unbekannt')}{peer_text} · Brodel 1.0: {item.get('brodel_score', 0)}")
+
             detail_tab_signals, detail_tab_fundamentals = st.tabs(["🔥 Brodel-Index Kalkulation", "🏢 Unternehmenswerte"])
 
             with detail_tab_signals:
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.markdown("**Signal-Zusammenfassung**")
-                    if item.get("signal_items"):
-                        for detail in item.get("signal_items", []):
-                            st.markdown(f"- {detail}")
-                    else:
-                        st.markdown("- Keine aussagekraeftigen Fruehsignale erkannt.")
-
-                with col2:
-                    peer_context = item.get("peer_context", {})
-                    st.markdown("**Peer- und Sektor-Kontext**")
-                    st.markdown(
-                        f"- Sektor: {peer_context.get('sector', 'Unbekannt')} | Branche: {peer_context.get('industry', 'Unbekannt')}"
-                    )
-                    st.markdown(
-                        f"- Sektor-Durchschnitt: {peer_context.get('sector_average', 0)} | Abstand: {peer_context.get('score_vs_sector', 0)} | Rang: {peer_context.get('sector_rank', 1)}/{peer_context.get('sector_count', 1)}"
-                    )
-                    top_peer = peer_context.get("top_peer")
-                    if top_peer:
-                        st.markdown(
-                            f"- Staerkster Peer in der Watchlist: {top_peer['symbol']} - {top_peer['name']} | Score {top_peer['score']}"
-                        )
-                    else:
-                        st.markdown("- Kein weiterer Peer im gleichen Sektor innerhalb der Watchlist.")
-
-                st.markdown("**Signal-Breakdown**")
-                breakdown_rows = build_breakdown_rows(item)
+                st.markdown("**Bausteine Brodel 2.0**")
+                breakdown_frame = pd.DataFrame(build_breakdown_rows(item))
                 st.dataframe(
-                    pd.DataFrame(breakdown_rows),
+                    style_points(breakdown_frame, ["Punkte 2.0", "Punkte 1.0"]),
                     use_container_width=True,
                     hide_index=True,
-                    height=breakdown_table_height(len(breakdown_rows)),
-                    column_config={"Detail": st.column_config.TextColumn("Detail", width="large")},
+                    height=breakdown_table_height(len(breakdown_frame)),
+                    column_config={
+                        "Baustein": st.column_config.TextColumn("Baustein", width="medium"),
+                        "Punkte 2.0": st.column_config.Column("2.0", width="small"),
+                        "Punkte 1.0": st.column_config.Column("1.0", width="small"),
+                        "Detail": st.column_config.TextColumn("Detail", width="large"),
+                    },
                 )
 
-                st.markdown("---")
+                if item.get("signal_breakdown_v3"):
+                    st.markdown("**Bausteine Brodel 3.0**")
+                    v3_frame = pd.DataFrame(build_v3_rows(item))
+                    st.dataframe(
+                        v3_frame,
+                        use_container_width=True,
+                        hide_index=True,
+                        height=breakdown_table_height(len(v3_frame)),
+                        column_config={
+                            "Punkte": st.column_config.NumberColumn("Punkte", format="%.1f", width="small"),
+                            "Stärke": st.column_config.ProgressColumn(
+                                "Stärke", min_value=0, max_value=100, format="%d %%",
+                                help="Wie weit oben die Aktie bei diesem Baustein im Vergleich zu ihren Mitbewerbern liegt",
+                            ),
+                        },
+                    )
+                    if item.get("next_earnings"):
+                        st.caption(f"Nächste Quartalszahlen: {item['next_earnings']}")
+
                 st.markdown("**Score-Verlauf (letzte 100 Tage)**")
                 if not score_history.empty:
                     symbol_history = score_history[score_history["symbol"] == selected_symbol].copy()
@@ -950,8 +989,9 @@ def render_truth_machine_help():
 def render_help_tab():
     st.subheader("Hilfe & Methodik")
     st.write("Der **Brodel-Score** (Skala: -30 bis 100) ist ein 'Frühwarn-Thermometer' dieses Systems. "
-             "Er zählt Punkte aus 11 Bausteinen zusammen und wendet abschließend ein Makro-Overlay an. "
-             "Die App rankt nach **Brodel 2.0**. Der alte **Brodel 1.0** läuft zum Vergleich mit und steht in der Tabelle ganz rechts.")
+             "Er zählt Punkte aus 11 Bausteinen zusammen. "
+             "Die App rankt nach **Brodel 2.0**. **Brodel 3.0** ist ein neuer Rang-Score aus 6 Bausteinen, der in einem eigenen Bot-Depot läuft. "
+             "Der alte **Brodel 1.0** läuft zum Vergleich mit und steht in der Detailansicht.")
 
     st.markdown("### Schnellstart: der empfohlene Ablauf")
     st.markdown(
@@ -1086,7 +1126,11 @@ def render_help_tab():
 
     st.markdown("---")
     st.markdown("### Das Makro-Overlay (Markt-Kontext)")
-    st.write("Nachdem der Basis-Score berechnet wurde (Brodel 2.0 maximal 90 Punkte, Brodel 1.0 maximal 100 Punkte), wird die Großwetterlage geprüft. Das Overlay gilt für beide Versionen gleich:")
+    st.write(
+        "Das Overlay gilt nur noch für **Brodel 1.0**. Bei Brodel 2.0 und 3.0 ist es entfernt: Die Werte werden seit November 2026 in mehreren Läufen pro Tag berechnet, "
+        "und der Faktor sprang zwischen den Läufen von 1,0 auf 0,72. Aktien eines Tages wären so nicht mehr vergleichbar gewesen. "
+        "Auch ältere 2.0-Werte werden deshalb ohne Overlay angezeigt."
+    )
 
     st.markdown("- **Bullenmarkt-Bonus:** Steht der S&P 500 (SPY) über seiner 200-Tage-Linie, wird der Basis-Score um **10% angehoben (1.1x)**.")
     st.markdown("- **Bärenmarkt-Malus:** Steht der S&P 500 unter der 200-Tage-Linie, wird der Score um **20% gekürzt (0.8x)**.")
@@ -1337,7 +1381,7 @@ def render_brodel_check_section():
     )
     st.caption(
         "Für ältere Snapshots wird Brodel 2.0 aus den gespeicherten Einzelpunkten nachgerechnet, ohne Rückkauf-Daten. "
-        "Das Makro-Overlay ändert die Reihenfolge innerhalb eines Tages nicht und spielt für diese Messung keine Rolle."
+        "Brodel 2.0 wird dabei ohne Makro-Overlay gemessen."
     )
     horizon = st.select_slider("Horizont (Handelstage)", options=[5, 10, 21, 63], value=21, key="brodel_horizon")
     if st.button("Brodel-Score messen", use_container_width=True):
@@ -1550,15 +1594,21 @@ def render_backtest_tab():
                 })
 
 
+BOT_SERIES = {
+    "rank": "Brodel 3.0 beste 2 %",
+    "bot": "Brodel 2.0 ab 60",
+    "no_stop": "2.0 ohne Stop-Loss",
+    "etf": "MSCI World ETF",
+}
+
+
 def build_bot_equity_frame(state: dict) -> pd.DataFrame:
     rows = state.get("equity", []) if state else []
     if not rows:
-        return pd.DataFrame(columns=["Bot mit Stop-Loss", "Ohne Stop-Loss", "MSCI World ETF"])
+        return pd.DataFrame(columns=list(BOT_SERIES.values()))
     frame = pd.DataFrame(rows)
     frame["day"] = pd.to_datetime(frame["day"])
-    return frame.set_index("day").rename(
-        columns={"bot": "Bot mit Stop-Loss", "no_stop": "Ohne Stop-Loss", "etf": "MSCI World ETF"}
-    )[["Bot mit Stop-Loss", "Ohne Stop-Loss", "MSCI World ETF"]]
+    return frame.set_index("day").rename(columns=BOT_SERIES).reindex(columns=list(BOT_SERIES.values()))
 
 
 def build_bot_position_rows(portfolio: dict, config: dict) -> list[dict]:
@@ -1609,9 +1659,12 @@ def render_bot_tab():
     with st.expander("Regeln des Bots", expanded=state is None):
         st.markdown(
             f"- Läuft einmal täglich nach dem letzten US-Lauf und nutzt nur den Snapshot dieses Tages.\n"
-            f"- **Kauf:** jede Aktie mit Brodel 2.0 ab **{cfg['buy_threshold']}**, die höchsten zuerst, "
-            f"je **{cfg['position_budget']:,.0f} €**, höchstens **{cfg['max_positions']} Aktien**. "
-            "Gekauft wird zum Eröffnungskurs am nächsten Handelstag (1 € Gebühr).\n"
+            f"- **Depot Brodel 2.0:** kauft jede Aktie ab **{cfg['buy_threshold']} Punkten**, die höchsten zuerst.\n"
+            f"- **Depot Brodel 3.0:** kauft die besten **{cfg['top_share'] * 100:.0f} % des Tages**, höchstens {cfg['max_buys_per_day']} Käufe pro Tag "
+            f"und {cfg['sector_cap'] * 100:.0f} % des Depots je Sektor, keine Aktie in der Woche vor ihren Quartalszahlen.\n"
+            f"- **Beide:** je **{cfg['position_budget']:,.0f} €**, höchstens **{cfg['max_positions']} Aktien**, Kauf zur Eröffnung am nächsten Handelstag "
+            f"(1 € Gebühr, London {cfg['uk_stamp_duty'] * 100:.1f} % Stempelsteuer, Tokio in 100er-Stückelung).\n"
+            f"- **Datenprüfung:** Neue Käufe nur, wenn mindestens {cfg['min_coverage'] * 100:.0f} % der Tagesdaten frisch sind.\n"
             f"- **Stop-Loss:** {cfg['initial_stop'] * 100:.0f} % unter dem Kaufkurs. Er wird jeden Tag zum höchsten Schlusskurs nachgezogen "
             f"und sinkt nie. Ab **+{cfg['tighten_after_gain'] * 100:.0f} %** Gewinn rückt er auf **{cfg['tight_stop'] * 100:.0f} %** heran.\n"
             f"- **Verkauf:** sobald der Tiefstkurs den Stop berührt, zum Stop-Kurs minus {cfg.get('stop_slippage', 0) * 100:.1f} % "
@@ -1627,18 +1680,22 @@ def render_bot_tab():
 
     last = state["equity"][-1] if state["equity"] else {}
     capital = cfg["capital"]
-    cols = st.columns(3)
-    for col, (key, label) in zip(cols, [("bot", "Bot mit Stop-Loss"), ("no_stop", "Ohne Stop-Loss"), ("etf", "MSCI World ETF")]):
+    cols = st.columns(len(BOT_SERIES))
+    for col, (key, label) in zip(cols, BOT_SERIES.items()):
         value = last.get(key, capital)
         col.metric(label, f"{value:,.0f} €", f"{(value / capital - 1) * 100:+.2f} %")
     st.caption(f"Gestartet am {state['started']}, letzter Lauf {state['last_run']}, bewertet mit Schlusskursen bis {last.get('day', '-')}.")
+    coverage = state.get("coverage") or {}
+    if coverage and coverage.get("fresh", 0) < cfg["min_coverage"]:
+        st.warning(f"Am {coverage['day']} waren nur {coverage['fresh'] * 100:.0f} % der Daten frisch. An diesem Tag gab es keine neuen Käufe.")
 
     equity = build_bot_equity_frame(state)
     if len(equity) > 1:
         st.line_chart(equity)
 
-    choice = st.radio("Depot", ["Bot mit Stop-Loss", "Ohne Stop-Loss"], horizontal=True, key="bot_depot_choice")
-    portfolio = state["portfolios"]["bot" if choice == "Bot mit Stop-Loss" else "no_stop"]
+    depots = {meta["label"]: key for key, meta in paper_bot.PORTFOLIOS.items() if key in state["portfolios"]}
+    choice = st.radio("Depot", list(depots), horizontal=True, key="bot_depot_choice")
+    portfolio = state["portfolios"][depots[choice]]
     st.markdown(f"**Bestand** ({len(portfolio['positions'])} von {cfg['max_positions']} Plätzen, Cash {portfolio['cash']:,.0f} €)")
     position_rows = build_bot_position_rows(portfolio, cfg)
     if position_rows:
