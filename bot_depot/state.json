@@ -1,0 +1,244 @@
+{
+ "config": {
+  "capital": 100000.0,
+  "position_budget": 5000.0,
+  "max_positions": 20,
+  "buy_threshold": 60,
+  "initial_stop": 0.15,
+  "tight_stop": 0.1,
+  "tighten_after_gain": 0.25,
+  "cooldown_days": 28,
+  "fee": 1.0,
+  "stop_slippage": 0.005,
+  "uk_stamp_duty": 0.005,
+  "japan_lot": 100,
+  "min_coverage": 0.9,
+  "top_share": 0.02,
+  "max_buys_per_day": 5,
+  "sector_cap": 0.25,
+  "earnings_block_days": 7,
+  "order_expiry_days": 7
+ },
+ "started": "2026-11-06",
+ "last_run": "2026-11-07T03:05:26Z",
+ "portfolios": {
+  "bot": {
+   "label": "Brodel 2.0 ab 60",
+   "use_stop": true,
+   "rule": "threshold",
+   "cash": 55000.0,
+   "positions": [],
+   "pending": [
+    {
+     "symbol": "JKHY",
+     "name": "Jack Henry & Associates, Inc.",
+     "score": 63,
+     "sector": "Technology",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "SSE.L",
+     "name": "SSE plc",
+     "score": 62,
+     "sector": "Utilities",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "ACGL",
+     "name": "Arch Capital Group Ltd.",
+     "score": 61,
+     "sector": "Financial Services",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "CPAY",
+     "name": "Corpay, Inc.",
+     "score": 61,
+     "sector": "Technology",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "LSEG.L",
+     "name": "London Stock Exchange Group plc",
+     "score": 61,
+     "sector": "Financial Services",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "FTV",
+     "name": "Fortive Corporation",
+     "score": 60,
+     "sector": "Technology",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "GEHC",
+     "name": "GE HealthCare Technologies Inc.",
+     "score": 60,
+     "sector": "Healthcare",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "PYPL",
+     "name": "PayPal Holdings, Inc.",
+     "score": 60,
+     "sector": "Financial Services",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "SU.TO",
+     "name": "Suncor Energy Inc.",
+     "score": 60,
+     "sector": "Energy",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    }
+   ],
+   "trades": [],
+   "cooldown": {},
+   "last_decision": "2026-11-06"
+  },
+  "no_stop": {
+   "label": "Brodel 2.0 ab 60 ohne Stop-Loss",
+   "use_stop": false,
+   "rule": "threshold",
+   "cash": 55000.0,
+   "positions": [],
+   "pending": [
+    {
+     "symbol": "JKHY",
+     "name": "Jack Henry & Associates, Inc.",
+     "score": 63,
+     "sector": "Technology",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "SSE.L",
+     "name": "SSE plc",
+     "score": 62,
+     "sector": "Utilities",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "ACGL",
+     "name": "Arch Capital Group Ltd.",
+     "score": 61,
+     "sector": "Financial Services",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "CPAY",
+     "name": "Corpay, Inc.",
+     "score": 61,
+     "sector": "Technology",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "LSEG.L",
+     "name": "London Stock Exchange Group plc",
+     "score": 61,
+     "sector": "Financial Services",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "FTV",
+     "name": "Fortive Corporation",
+     "score": 60,
+     "sector": "Technology",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "GEHC",
+     "name": "GE HealthCare Technologies Inc.",
+     "score": 60,
+     "sector": "Healthcare",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "PYPL",
+     "name": "PayPal Holdings, Inc.",
+     "score": 60,
+     "sector": "Financial Services",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "SU.TO",
+     "name": "Suncor Energy Inc.",
+     "score": 60,
+     "sector": "Energy",
+     "order_day": "2026-11-06",
+     "reserved": 5000.0,
+     "status": "open"
+    }
+   ],
+   "trades": [],
+   "cooldown": {},
+   "last_decision": "2026-11-06"
+  },
+  "rank": {
+   "label": "Brodel 3.0 beste 2 %",
+   "use_stop": true,
+   "rule": "rank",
+   "cash": 100000.0,
+   "positions": [],
+   "pending": [],
+   "trades": [],
+   "cooldown": {},
+   "last_decision": "2026-11-06"
+  }
+ },
+ "etf": {
+  "symbol": "EUNL.DE",
+  "cash": 100000.0,
+  "shares": 0.0,
+  "bought_on": null,
+  "last_value": 100000.0
+ },
+ "equity": [
+  {
+   "day": "2026-11-06",
+   "etf": 100000.0,
+   "bot": 100000.0,
+   "no_stop": 100000.0,
+   "rank": 100000.0
+  }
+ ],
+ "coverage": {
+  "day": "2026-11-06",
+  "fresh": 0.988,
+  "scored": 0.75
+ }
+}
