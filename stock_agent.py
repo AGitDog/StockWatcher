@@ -577,32 +577,34 @@ def load_index_constituents(index_name: str) -> list[str]:
 
     parser_type = config.get("parser", "table")
     if parser_type == "nasdaq_api":
-        try:
-            today_str = datetime.now().strftime("%Y-%m-%d")
-            post_data = dict(config.get("post_data", {}))
-            if "tradeDate" not in post_data:
-                post_data["tradeDate"] = today_str
-            response = requests.post(
-                config["url"],
-                data=post_data,
-                headers={"User-Agent": "StockWatcher/2.0 (contact@stockwatcher.local)"},
-                timeout=15,
-            )
-            response.raise_for_status()
-            payload = response.json()
-            raw_items = payload.get("aaData", []) if isinstance(payload, dict) else []
-            symbols = []
-            for item in raw_items:
-                sym = str(item.get("Symbol") or "").strip().upper()
-                name = str(item.get("Name") or "").strip()
-                if sym and sym not in symbols:
-                    symbols.append(sym)
-                    if name:
-                        INDEX_CONSTITUENT_NAMES[sym] = name
-            if symbols:
-                return symbols
-        except Exception:
-            pass
+        # Weekends and holidays have no weightings: walk back to the last trading day.
+        # Without this the list fell to the 20 fallback symbols every weekend.
+        for days_back in range(NASDAQ_INDEX_LOOKBACK_DAYS):
+            try:
+                post_data = dict(config.get("post_data", {}))
+                if "tradeDate" not in post_data:
+                    post_data["tradeDate"] = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
+                response = requests.post(
+                    config["url"],
+                    data=post_data,
+                    headers={"User-Agent": "StockWatcher/2.0 (contact@stockwatcher.local)"},
+                    timeout=15,
+                )
+                response.raise_for_status()
+                payload = response.json()
+                raw_items = payload.get("aaData", []) if isinstance(payload, dict) else []
+                symbols = []
+                for item in raw_items:
+                    sym = str(item.get("Symbol") or "").strip().upper()
+                    name = str(item.get("Name") or "").strip()
+                    if sym and sym not in symbols:
+                        symbols.append(sym)
+                        if name:
+                            INDEX_CONSTITUENT_NAMES[sym] = name
+                if symbols:
+                    return symbols
+            except Exception:
+                continue
 
         fallback = list(config.get("fallback_symbols", []))
         for sym, name in config.get("fallback_names", {}).items():
@@ -1070,6 +1072,7 @@ def collect_v3_factors(
     history: pd.DataFrame | None,
     eps_signal: dict[str, Any],
     buyback_signal: dict[str, Any],
+    insider_signal: dict[str, Any],
     is_etf: bool,
 ) -> dict[str, Any] | None:
     """Raw values for Brodel 3.0. The ranks are computed later across the whole watchlist."""
@@ -1082,7 +1085,9 @@ def collect_v3_factors(
 
     insider = None
     if "." not in str(symbol) and not str(symbol).startswith("^"):  # US filings only
-        insider = finnhub_cache.get_insider_buy_value(symbol)
+        insider = insider_signal.get("buy_value_usd")
+        if insider is None:
+            insider = finnhub_cache.get_insider_buy_value(symbol)
     return {
         "profit_margin": _safe_float(info.get("profitMargins")),
         "return_on_equity": _safe_float(info.get("returnOnEquity")),
@@ -1171,11 +1176,12 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
         "signal_items": signal_items,
         "signal_breakdown": signal_breakdown,
         "signal_breakdown_v2": v2_breakdown,
-        "factors_v3": collect_v3_factors(symbol, info, history, eps_revision_signal, buyback_signal, quote_type == "etf"),
+        "factors_v3": collect_v3_factors(symbol, info, history, eps_revision_signal, buyback_signal, insider_signal, quote_type == "etf"),
         "next_earnings": event_signal.get("next_earnings"),
     }
 
 
+NASDAQ_INDEX_LOOKBACK_DAYS = 6
 RUN_ROTATION_STRIDE = 350
 
 # Nightly update in five groups of at most ~280 symbols, each after its exchanges closed
@@ -1995,6 +2001,21 @@ def _summarize_event_pressure(ticker: yf.Ticker, info: dict[str, Any]) -> dict[s
     return {"name": "Event-Druck", "score": score, "summary": summary, "next_earnings": next_earnings}
 
 
+def insider_buy_value(transactions: pd.DataFrame | None, days: int = 90) -> float | None:
+    """Value of open-market purchases of the last ``days`` days from Yahoo's insider table.
+
+    Awards, gifts and sales do not count. None means the table could not be loaded.
+    """
+    if transactions is None:
+        return None
+    if transactions.empty or not {"Text", "Value", "Start Date"} <= set(transactions.columns):
+        return 0.0
+    dates = pd.to_datetime(transactions["Start Date"], errors="coerce")
+    recent = dates >= pd.Timestamp.now() - pd.Timedelta(days=days)
+    bought = transactions["Text"].astype(str).str.lower().str.startswith("purchase")
+    return float(pd.to_numeric(transactions.loc[recent & bought, "Value"], errors="coerce").sum())
+
+
 def _summarize_insider_signal(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]:
     """Score insider buying activity. Nutzt Finnhub Insider Sentiment als primäre Quelle, 
     Fallback auf yfinance falls nicht verfügbar."""
@@ -2008,6 +2029,7 @@ def _summarize_insider_signal(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]
     purchase_count = 0
     sell_count = 0
     provider = "YF"
+    buy_value_usd = None
 
     # Try Finnhub First
     if fh_insider and isinstance(fh_insider, list) and len(fh_insider) > 0:
@@ -2033,6 +2055,7 @@ def _summarize_insider_signal(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]
     else:
         # Fallback to yfinance
         transactions = _safe_dataframe(lambda: ticker.get_insider_transactions())
+        buy_value_usd = insider_buy_value(transactions)
         if transactions is not None and not transactions.empty:
             columns = {str(col).lower(): col for col in transactions.columns}
             text_col = columns.get("text") or columns.get("transaction")
@@ -2064,7 +2087,7 @@ def _summarize_insider_signal(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]
         elif purchase_count >= 2:
             summary += " - mehrfache Insiderkaeufe"
 
-    return {"name": "Insider-Aktivitaet", "score": score, "summary": summary}
+    return {"name": "Insider-Aktivitaet", "score": score, "summary": summary, "buy_value_usd": buy_value_usd}
 
 
 def _summarize_short_interest(info: dict[str, Any], history: pd.DataFrame | None = None) -> dict[str, Any]:

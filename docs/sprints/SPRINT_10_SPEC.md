@@ -36,7 +36,7 @@ Die Prüfung des Nachtlaufs vom 05.11. zeigte zwei Fehler:
 | EPS-Revisionen | 20 | Anteil der Hochstufungen, Rang in der Region |
 | Bewertung | 15 | Gewinnrendite und Free-Cashflow-Rendite, Rang in Region und Sektor |
 | Aktienrückkauf | 10 | Veränderung der Aktienzahl, Rang in der Region |
-| Insider | 10 | nur USA, Käufe am offenen Markt (Finnhub, Code P) der letzten 90 Tage: keine 5, unter 100.000 $ 7,5, ab 100.000 $ 10 Punkte |
+| Insider | 10 | nur USA, Käufe am offenen Markt der letzten 90 Tage (Yahoo, ersatzweise Finnhub): keine 5, unter 100.000 $ 7,5, ab 100.000 $ 10 Punkte |
 
 - Fehlt ein Baustein, wird über die vorhandenen gerechnet. Unter 4 Bausteinen gibt es keinen Score.
 - Sektoren mit weniger als 8 Aktien werden innerhalb der Region verglichen.
@@ -51,9 +51,13 @@ Die Prüfung des Nachtlaufs vom 05.11. zeigte zwei Fehler:
 
 ### Task 4: Detailansicht
 - Kopf mit vier Kennzahlen: Brodel 2.0, Brodel 3.0, Rang im Sektor, Abstand zum Sektor. Sektor, Branche, stärkster Peer und Brodel 1.0 in einer Zeile darunter.
-- Tabelle „Bausteine Brodel 2.0“ ohne Max-Spalten, nach Punkten sortiert, Punkte farbig. Die doppelte Liste „Signal-Zusammenfassung“ entfällt, die Texte stehen in der Spalte Detail.
-- Neue Tabelle „Bausteine Brodel 3.0“ mit Stärke-Balken.
+- Gemeinsame Tabelle „Bausteine“ mit den Spalten 3.0, 2.0, 1.0 und Detail, ohne Max-Spalten, nach Punkten sortiert, Punkte farbig. Die drei Bausteine, die nur 3.0 hat, stehen mit ihren Rohwerten darin. Die doppelte Liste „Signal-Zusammenfassung“ entfällt.
 - Haupttabelle: neue Spalte „Brodel 3.0“.
+
+### Task 5 (Nachtrag 07.11.2026)
+- Hilfe: neue Abschnitte zu Brodel 3.0 und zu den Bot-Depots.
+- Biotech-Index: Die Nasdaq-Abfrage nutzte das heutige Datum und lieferte am Wochenende nichts. Die Watchlist fiel dann von 1375 auf 1152 Aktien. `load_index_constituents` geht jetzt bis zu 6 Tage zurück.
+- Insider: Finnhub lieferte auf GitHub in keinem Snapshot Daten (Einträge alle „[YF]“). Brodel 3.0 liest den Kaufwert deshalb zuerst aus Yahoos Insider-Tabelle (`insider_buy_value`).
 
 ## 3. Bewusst nicht umgesetzt
 - Einfrieren für 12 Monate und Stoppregel (Schritt 4): Stehen noch zur Entscheidung aus.
@@ -61,4 +65,4 @@ Die Prüfung des Nachtlaufs vom 05.11. zeigte zwei Fehler:
 
 ## 4. Offen
 - Brodel 3.0 liegt erst vor, wenn alle Gruppen einmal mit neuem Code gelaufen sind. Das Rang-Depot kauft frühestens danach.
-- Finnhub erlaubt 60 Abfragen pro Minute. Ob die zusätzliche Insider-Abfrage dazu passt, zeigt der erste Lauf.
+- Finnhub liefert auf GitHub keine Daten. Der Schlüssel in den Repository-Secrets sollte geprüft werden.

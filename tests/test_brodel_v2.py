@@ -224,7 +224,37 @@ def test_breakdown_rows_show_both_versions():
     assert by_name["Aktienrückkauf"]["Punkte 2.0"] == 3
     assert by_name["Aktienrückkauf"]["Punkte 1.0"] is None  # new in 2.0
     assert not any("Max" in key for key in rows[0])
-    assert rows[0]["Punkte 2.0"] == max(row["Punkte 2.0"] for row in rows)  # strongest first
+    assert rows[0]["Punkte 2.0"] == max(row["Punkte 2.0"] or 0 for row in rows)  # strongest first
+    assert all(row["Punkte 3.0"] is None for row in rows)  # no 3.0 value yet
+    assert by_name["Qualität (neu in 3.0)"]["Punkte 2.0"] is None
+
+
+def test_breakdown_rows_show_brodel_v3():
+    import app
+
+    item = _app_item("AAA", 80, 20)
+    item["signal_breakdown_v3"] = {"Qualitaet": 20.0, "Momentum": 15.0, "EPS-Revisionen": 18.0,
+                                   "Bewertung": 9.0, "Aktienrueckkauf": 9.5, "Insider": None}
+    item["factors_v3"] = {"profit_margin": 0.25, "forward_pe": 14.2, "momentum_12_1": 0.31}
+    rows = app.build_breakdown_rows(item)
+    assert rows[0]["Baustein"] == "Qualität (neu in 3.0)" and rows[0]["Punkte 3.0"] == 20.0
+    assert "Marge 25.0 %" in rows[0]["Detail"]
+    by_name = {row["Baustein"]: row for row in rows}
+    assert by_name["EPS-Revisionen"]["Punkte 3.0"] == 18.0
+    assert by_name["Aktienrückkauf"]["Punkte 3.0"] == 9.5
+    assert "+31.0 %" in by_name["Momentum (neu in 3.0)"]["Detail"]
+    assert by_name["Relative Stärke"]["Punkte 3.0"] is None
+
+
+def test_help_explains_brodel_v3_with_the_real_weights():
+    import app
+    from brodel_v3 import BRODEL_V3_WEIGHTS
+
+    rows = app.build_v3_help_rows()
+    assert [int(row["Punkte"]) for row in rows] == list(BRODEL_V3_WEIGHTS.values())
+    source = (Path(__file__).parent.parent / "app.py").read_text(encoding="utf-8")
+    assert "Brodel 3.0: was ist neu und warum" in source
+    assert "Bot-Depot: drei Depots im Vergleich" in source
 
 
 def test_macro_overlay_of_old_snapshots_is_removed():

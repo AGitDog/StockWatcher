@@ -186,6 +186,11 @@ BRODEL_COMPONENT_LABELS = {
     BUYBACK_COMPONENT_NAME: "Aktienrückkauf",
 }
 BRODEL_V3_LABELS = {"Qualitaet": "Qualität", "Aktienrueckkauf": "Aktienrückkauf"}
+BRODEL_SHARED_BLOCKS = {
+    "EPS-Revisionen": "EPS-Revisionen",
+    "Insider-Aktivitaet": "Insider",
+    BUYBACK_COMPONENT_NAME: "Aktienrueckkauf",
+}
 
 
 def breakdown_table_height(row_count: int) -> int:
@@ -194,34 +199,51 @@ def breakdown_table_height(row_count: int) -> int:
 
 
 def build_breakdown_rows(item: dict) -> list[dict]:
-    """Component table of the detail view, strongest component first."""
+    """One table for all versions: components of 2.0 and 1.0 plus the blocks that are new in 3.0."""
     breakdown_v1 = item.get("signal_breakdown", {}) or {}
     breakdown_v2 = item.get("signal_breakdown_v2", {}) or {}
+    breakdown_v3 = item.get("signal_breakdown_v3", {}) or {}
     rows = []
     for name in BRODEL_V2_MAX_POINTS:
         component_v2 = breakdown_v2.get(name, {})
         component_v1 = breakdown_v1.get(name, {})
         rows.append({
             "Baustein": BRODEL_COMPONENT_LABELS.get(name, name),
+            "Punkte 3.0": breakdown_v3.get(BRODEL_SHARED_BLOCKS.get(name)),
             "Punkte 2.0": component_v2.get("score", 0),
             "Punkte 1.0": component_v1.get("score", 0) if name in BRODEL_V1_MAX_POINTS else None,
             "Detail": component_v2.get("summary") or component_v1.get("summary", ""),
         })
-    return sorted(rows, key=lambda row: row["Punkte 2.0"], reverse=True)
-
-
-def build_v3_rows(item: dict) -> list[dict]:
-    """Brodel 3.0 blocks: points and how much of the block's weight the stock reaches."""
-    breakdown = item.get("signal_breakdown_v3") or {}
-    rows = []
-    for name, weight in BRODEL_V3_WEIGHTS.items():
-        points = breakdown.get(name)
+    details = v3_block_details(item.get("factors_v3") or {})
+    for name in ("Qualitaet", "Bewertung", "Momentum"):
         rows.append({
-            "Baustein": BRODEL_V3_LABELS.get(name, name),
-            "Punkte": points,
-            "Stärke": round(points / weight * 100) if points is not None else None,
+            "Baustein": f"{BRODEL_V3_LABELS.get(name, name)} (neu in 3.0)",
+            "Punkte 3.0": breakdown_v3.get(name),
+            "Punkte 2.0": None,
+            "Punkte 1.0": None,
+            "Detail": details[name],
         })
-    return sorted(rows, key=lambda row: -1 if row["Punkte"] is None else row["Stärke"], reverse=True)
+
+    def order(row: dict) -> tuple[float, float]:
+        v3, v2 = row["Punkte 3.0"], row["Punkte 2.0"]
+        return (-v3 if v3 is not None else 1.0, -v2 if v2 is not None else 1000.0)
+
+    return sorted(rows, key=order)
+
+
+def v3_block_details(factors: dict) -> dict[str, str]:
+    """Plain-language values behind the blocks that have no 2.0 counterpart."""
+    def percent(value, signed=False):
+        return "k. A." if value is None else f"{value * 100:{'+' if signed else ''}.1f} %"
+
+    pe = factors.get("forward_pe")
+    debt = factors.get("debt_equity")
+    return {
+        "Qualitaet": f"Marge {percent(factors.get('profit_margin'))}, Eigenkapitalrendite {percent(factors.get('return_on_equity'))}, "
+                     f"Verschuldung {'k. A.' if debt is None else f'{debt:.0f} %'} des Eigenkapitals",
+        "Bewertung": f"KGV {'k. A.' if pe is None else f'{pe:.1f}'}, Free-Cashflow-Rendite {percent(factors.get('fcf_yield'))}",
+        "Momentum": f"{percent(factors.get('momentum_12_1'), signed=True)} in 12 Monaten ohne den letzten Monat",
+    }
 
 
 def style_points(frame: pd.DataFrame, columns: list[str]):
@@ -234,7 +256,11 @@ def style_points(frame: pd.DataFrame, columns: list[str]):
         if value < 0:
             return "color: #d9534f; font-weight: 600"
         return "color: #9aa3ad"
-    return frame.style.map(color, subset=columns).format(lambda v: "–" if pd.isna(v) else f"{v:+.0f}", subset=columns)
+    def text(value):
+        if pd.isna(value):
+            return "–"
+        return f"{value:+.1f}" if value != int(value) else f"{value:+.0f}"
+    return frame.style.map(color, subset=columns).format(text, subset=columns)
 
 
 def execute_signal_calculation(mapping_text: str = ""):
@@ -330,7 +356,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
     m_stat3.caption(f"Snapshot-Historie: **{len(history)} Tage**")
 
     st.caption(
-        "Sortiert nach **Brodel 2.0**. Die Einzelspalten zeigen die Punkte je Baustein "
+        "Sortiert nach **Brodel 2.0**. **Brodel 3.0** ist ein Rang-Score von 0 bis 100. Die Einzelspalten zeigen die 2.0-Punkte je Baustein "
         "(Maus auf die Spaltenüberschrift zeigt Name und Maximum). "
         "Blasse Zeilen: ⏱ Wert vom Vortag, ⚠ keine Kursdaten beim letzten Abruf."
     )
@@ -405,39 +431,26 @@ def render_watchlist_signal_monitor(mapping_text: str):
             detail_tab_signals, detail_tab_fundamentals = st.tabs(["🔥 Brodel-Index Kalkulation", "🏢 Unternehmenswerte"])
 
             with detail_tab_signals:
-                st.markdown("**Bausteine Brodel 2.0**")
+                st.markdown("**Bausteine**")
+                if score_v3 is None:
+                    st.caption("Für diese Aktie gibt es noch keinen Brodel-3.0-Wert: Ihr nächster Lauf steht aus oder es fehlen Daten. ETFs und Indizes bekommen keinen Wert.")
                 breakdown_frame = pd.DataFrame(build_breakdown_rows(item))
                 st.dataframe(
-                    style_points(breakdown_frame, ["Punkte 2.0", "Punkte 1.0"]),
+                    style_points(breakdown_frame, ["Punkte 3.0", "Punkte 2.0", "Punkte 1.0"]),
                     use_container_width=True,
                     hide_index=True,
                     height=breakdown_table_height(len(breakdown_frame)),
                     column_config={
                         "Baustein": st.column_config.TextColumn("Baustein", width="medium"),
+                        "Punkte 3.0": st.column_config.Column("3.0", width="small"),
                         "Punkte 2.0": st.column_config.Column("2.0", width="small"),
                         "Punkte 1.0": st.column_config.Column("1.0", width="small"),
                         "Detail": st.column_config.TextColumn("Detail", width="large"),
                     },
                 )
 
-                if item.get("signal_breakdown_v3"):
-                    st.markdown("**Bausteine Brodel 3.0**")
-                    v3_frame = pd.DataFrame(build_v3_rows(item))
-                    st.dataframe(
-                        v3_frame,
-                        use_container_width=True,
-                        hide_index=True,
-                        height=breakdown_table_height(len(v3_frame)),
-                        column_config={
-                            "Punkte": st.column_config.NumberColumn("Punkte", format="%.1f", width="small"),
-                            "Stärke": st.column_config.ProgressColumn(
-                                "Stärke", min_value=0, max_value=100, format="%d %%",
-                                help="Wie weit oben die Aktie bei diesem Baustein im Vergleich zu ihren Mitbewerbern liegt",
-                            ),
-                        },
-                    )
-                    if item.get("next_earnings"):
-                        st.caption(f"Nächste Quartalszahlen: {item['next_earnings']}")
+                if item.get("next_earnings"):
+                    st.caption(f"Nächste Quartalszahlen: {item['next_earnings']}")
 
                 st.markdown("**Score-Verlauf (letzte 100 Tage)**")
                 if not score_history.empty:
@@ -986,6 +999,24 @@ def render_truth_machine_help():
         st.caption("Die Wahrheitsmaschine ist ein Lern- und Prüfwerkzeug und keine Anlageberatung.")
 
 
+def build_v3_help_rows() -> list[dict]:
+    """Help table of Brodel 3.0, the points come straight from the weights in the code."""
+    return [
+        {"Baustein": BRODEL_V3_LABELS.get(name, name), "Punkte": str(weight), "Was gemessen wird": BRODEL_V3_EXPLANATIONS[name]}
+        for name, weight in BRODEL_V3_WEIGHTS.items()
+    ]
+
+
+BRODEL_V3_EXPLANATIONS = {
+    "Qualitaet": "Marge, Eigenkapitalrendite und niedrige Verschuldung",
+    "Momentum": "Kursentwicklung der letzten 12 Monate ohne den letzten Monat",
+    "EPS-Revisionen": "Anteil der Analysten-Hochstufungen an allen Änderungen",
+    "Bewertung": "Gewinn und Free Cashflow im Verhältnis zum Preis",
+    "Aktienrueckkauf": "Rückgang der Aktienzahl in den letzten 12 Monaten",
+    "Insider": "Nur USA: Käufe am offenen Markt in 90 Tagen. Keine Käufe 5, unter 100.000 $ 7,5, ab 100.000 $ 10 Punkte",
+}
+
+
 def render_help_tab():
     st.subheader("Hilfe & Methodik")
     st.write("Der **Brodel-Score** (Skala: -30 bis 100) ist ein 'Frühwarn-Thermometer' dieses Systems. "
@@ -1016,6 +1047,38 @@ def render_help_tab():
         st.warning("Ein fehlender Datenpunkt wird nicht automatisch zu einem positiven Signal. Prüfe in der Detailanalyse, ob ein Score durch echte Daten oder durch neutrale Standardwerte zustande kommt.")
     
     st.markdown("---")
+    st.markdown("### Brodel 3.0: was ist neu und warum")
+    with st.expander("Brodel 3.0 gegen Brodel 2.0", expanded=True):
+        st.markdown(
+            "Brodel 2.0 zählt feste Punkte zusammen. Brodel 3.0 fragt stattdessen: **Wie gut ist diese Aktie im Vergleich zu den anderen?** "
+            "Für jeden Baustein bekommt jede Aktie einen Rang von 0 bis 100 %. Wer bei einem Baustein besser ist als 80 % der Vergleichsaktien, "
+            "bekommt 80 % der Punkte dieses Bausteins. Das Ergebnis liegt zwischen 0 und 100."
+        )
+        st.table(pd.DataFrame(build_v3_help_rows()))
+        st.markdown(
+            "**Verglichen wird innerhalb derselben Region** (Asien, Europa, Amerika). Qualität und Bewertung werden zusätzlich innerhalb des Sektors verglichen, "
+            "denn eine Bank hat von Natur aus andere Kennzahlen als ein Softwarehaus.\n\n"
+            "**Fehlt ein Baustein**, zum Beispiel Insider-Daten außerhalb der USA, wird über die übrigen gerechnet. "
+            "Eine Aktie braucht mindestens 4 Bausteine, sonst bekommt sie keinen Wert. ETFs und Indizes bleiben außen vor.\n\n"
+            "**Nicht mehr dabei:** Preis/Volumen, Technik, Kursziele, News, Event-Druck und Short Interest. "
+            "Sie zeigten in unseren Tests keinen Nutzen, sind nicht rückwirkend prüfbar oder messen eher Aufmerksamkeit als Qualität. "
+            "Die Marktlage (Makro-Overlay) gehört ebenfalls nicht in den Score."
+        )
+        st.warning(
+            "Die Gewichte sind fachlich begründete Startwerte, kein Messergebnis. Ob Brodel 3.0 besser ist als 2.0, ist nicht bewiesen. "
+            "Das zeigt erst der Vergleich der Bot-Depots über mindestens 12 Monate."
+        )
+
+    st.markdown("### Bot-Depot: drei Depots im Vergleich")
+    st.markdown(
+        "Jedes Depot startet mit 100.000 € und kauft Aktien für je 5.000 €, höchstens 20 Stück. Es wird nur simuliert, es fließt kein echtes Geld.\n\n"
+        "- **Brodel 2.0 ab 60:** kauft jede Aktie ab 60 Punkten.\n"
+        "- **Brodel 2.0 ab 60 ohne Stop-Loss:** dieselben Käufe, aber ohne Verkauf. Zeigt, ob der Stop-Loss hilft.\n"
+        "- **Brodel 3.0 beste 2 %:** kauft die besten 2 % des Tages, höchstens 5 Käufe pro Tag und 25 % je Sektor, keine Aktie in der Woche vor ihren Quartalszahlen.\n"
+        "- **MSCI World ETF:** die Messlatte. Wer sie nicht schlägt, lohnt die Mühe nicht.\n\n"
+        "Die genauen Stop-Loss-Regeln stehen im Reiter **Bot-Depot**."
+    )
+
     st.markdown("### Brodel 2.0: was ist neu und warum")
     with st.expander("Brodel 2.0 gegen Brodel 1.0", expanded=True):
         st.write(

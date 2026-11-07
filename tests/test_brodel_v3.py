@@ -87,3 +87,44 @@ def test_momentum_skips_the_last_month():
     close = [100.0] * 229 + [150.0] + [10.0] * 21  # crash in the last month does not count
     assert momentum_12_1(pd.DataFrame({"Close": close})) == pytest.approx(0.5)
     assert momentum_12_1(pd.DataFrame({"Close": [100.0] * 150})) is None
+
+
+def test_insider_value_counts_only_recent_purchases():
+    import pandas as pd
+
+    from stock_agent import insider_buy_value
+
+    now = pd.Timestamp.now()
+    frame = pd.DataFrame({
+        "Text": ["Purchase at price 64.18 per share.", "Sale at price 10 per share.",
+                 "Stock Award(Grant) at price 0.00 per share.", "Purchase at price 5 per share.", ""],
+        "Value": [641800, 900000, 0, 50000, None],
+        "Start Date": [now - pd.Timedelta(days=10), now, now, now - pd.Timedelta(days=200), now],
+    })
+    assert insider_buy_value(frame) == 641800
+    assert insider_buy_value(frame.iloc[0:0]) == 0.0
+    assert insider_buy_value(None) is None
+
+
+def test_biotech_index_uses_last_trading_day_on_weekends():
+    from unittest.mock import MagicMock, patch
+
+    import stock_agent
+
+    def post(url, data, headers, timeout):
+        response = MagicMock()
+        rows = [{"Symbol": "ABCL", "Name": "AbCellera"}] if data["tradeDate"] == "2026-11-06" else []
+        response.json.return_value = {"aaData": rows}
+        return response
+
+    class Saturday(stock_agent.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 11, 7, 3, 0)
+
+    stock_agent.load_index_constituents.cache_clear()
+    try:
+        with patch.object(stock_agent.requests, "post", side_effect=post), patch.object(stock_agent, "datetime", Saturday):
+            assert stock_agent.load_index_constituents("NASDAQ Biotechnology Index") == ["ABCL"]
+    finally:
+        stock_agent.load_index_constituents.cache_clear()  # other tests must not see this list
