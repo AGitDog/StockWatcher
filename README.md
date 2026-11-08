@@ -1,4 +1,4 @@
-# 🔥 Brodel-Radar – Quantitative Marktbeobachtung
+# 📈 StockWatcher – Aktien-Score und Spieldepots
 
 Dieses Repository enthaelt eine Streamlit-Anwendung fuer einen Aktien-Agenten, der Watchlists aus Textdateien einliest und pro Aktie oder ETF Kurzlagen, Alerts und Fruehsignale erzeugt.
 
@@ -91,13 +91,16 @@ Die App bietet zusätzlich eine Alert-Funktion für:
 ## Aufbau der Anwendung
 
 Die Anwendung gliedert sich in 3 fokussierte Tabs:
-- **🔥 Signal Monitor:** Frühwarnsignale, Sektor-Rankings, ML-Scores, automatisierte Tages-Snapshots und zweigeteilte Detailansicht (Brodel-Index & Unternehmenswerte).
-- **Backtest & ML:** Historische Rebalancing-Simulation, Score-Range-Backtest, ML-Gewichtungstraining und Datenpflege.
+- **🏠 Start:** erklärt das System und zeigt Datenstand, Spieldepots und die besten Aktien.
+- **📊 Marktbeobachtung:** Rangliste nach Rang-Score und Punkte-Score, Detailansicht je Aktie, Score-Verlauf.
+- **💼 Trades:** drei Spieldepots (Paper-Trading mit Stop-Loss) gegen einen MSCI-World-ETF.
+- **❓ Hilfe:** Berechnung der Scores im Detail.
+- **🔬 Forschung:** Historische Rebalancing-Simulation, Score-Range-Backtest, ML-Gewichtungstraining und Datenpflege.
 - **Hilfe & Methodik:** Dokumentation der 10 Signalkomponenten, Schwellwerte und Handlungslogik.
 
-## 🔥 Signal Monitor
+## 📊 Marktbeobachtung
 
-Die App enthält einen `Signal Monitor`, der die Watchlist nach Frühsignalen priorisiert.
+Die Marktbeobachtung die Watchlist nach Frühsignalen priorisiert.
 
 Bewertet werden aktuell:
 
@@ -107,7 +110,7 @@ Bewertet werden aktuell:
 4. News-Dichte der letzten Tage
 5. Naehe zum naechsten relevanten Termin
 
-Aus diesen Bausteinen wird ein `Brodel-Score` berechnet, damit interessante Aktien schneller oben landen.
+Aus diesen Bausteinen wird der `Punkte-Score` berechnet (dazu der `Rang-Score` aus 6 Bausteinen), damit interessante Aktien schneller oben landen.
 
 Zusätzlich unterstützt das System:
 
@@ -120,7 +123,7 @@ Zusätzlich unterstützt das System:
 
 Die Seite `Hilfe & Methodik` enthaelt eine eingebaute Hilfe-Sektion, die erklaert:
 
-1. Wie der Brodel-Score gelesen wird
+1. Wie der Aktien-Score gelesen wird
 2. Was die einzelnen Signal-Bausteine bedeuten
 3. Wie Peer-Vergleiche und Strategie-Setups zu interpretieren sind
 
@@ -132,7 +135,7 @@ Die Daten fuer den Aktien-Agenten kommen aus frei verfuegbaren Yahoo-Finance-End
 
 Das Paket `factor_lab/` testet kursbasierte Faktoren über bis zu 20 Jahre gegen einen ETF. Es rechnet mit Transaktionskosten, deutscher Abgeltungssteuer samt Verlusttopf und Sparerpauschbetrag sowie einem Trendfilter für die Investitionsquote. Der ETF wird mit 30 Prozent Teilfreistellung erst beim Verkauf besteuert.
 
-Zugang über den Reiter **Backtest & ML** in der App oder per Kommandozeile:
+Zugang über die Seite **Forschung** in der App oder per Kommandozeile:
 
 ```powershell
 # Momentum und Low-Volatility, Top 20, S&P 500 gegen SPY ab 2005
@@ -141,10 +144,10 @@ Zugang über den Reiter **Backtest & ML** in der App oder per Kommandozeile:
 # Andere Faktoren; jede getestete Variante in --n-trials mitzählen
 .\.venv\Scripts\python.exe -m factor_lab --factors momentum_12_1 --n-trials 3
 
-# Gespeicherte Brodel-Scores gegen die Folgerenditen messen
+# Gespeicherte Aktien-Scores gegen die Folgerenditen messen
 .\.venv\Scripts\python.exe -m factor_lab --brodel --horizon-days 21
 ```
 
 Berichte und Kurs-Cache landen in `cache/factor_lab/`. Wichtigste Grenze: Das Universum besteht aus heutigen Indexmitgliedern, was rückblickend die Gewinner bevorzugt.
 
-ML-Gewichte für den Brodel-Score werden nur noch angewendet, wenn sie auf einem zeitlich getrennten Testzeitraum die Gleichgewichtung schlagen. Dafür sind mindestens 60 Snapshot-Tage nötig.
+ML-Gewichte für den Punkte-Score werden nur noch angewendet, wenn sie auf einem zeitlich getrennten Testzeitraum die Gleichgewichtung schlagen. Dafür sind mindestens 60 Snapshot-Tage nötig.
