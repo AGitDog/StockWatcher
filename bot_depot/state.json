@@ -20,7 +20,7 @@
   "order_expiry_days": 7
  },
  "started": "2026-11-06",
- "last_run": "2026-11-07T03:05:26Z",
+ "last_run": "2026-11-08T02:42:22Z",
  "portfolios": {
   "bot": {
    "label": "Brodel 2.0 ab 60",
@@ -113,7 +113,7 @@
    ],
    "trades": [],
    "cooldown": {},
-   "last_decision": "2026-11-06"
+   "last_decision": "2026-11-07"
   },
   "no_stop": {
    "label": "Brodel 2.0 ab 60 ohne Stop-Loss",
@@ -206,18 +206,64 @@
    ],
    "trades": [],
    "cooldown": {},
-   "last_decision": "2026-11-06"
+   "last_decision": "2026-11-07"
   },
   "rank": {
    "label": "Brodel 3.0 beste 2 %",
    "use_stop": true,
    "rule": "rank",
-   "cash": 100000.0,
+   "cash": 75000.0,
    "positions": [],
-   "pending": [],
+   "pending": [
+    {
+     "symbol": "BGEO.L",
+     "name": "Lion Finance Group PLC",
+     "score": 90.6,
+     "sector": "Financial Services",
+     "order_day": "2026-11-07",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "SNDK",
+     "name": "Sandisk Corporation",
+     "score": 86.6,
+     "sector": "Technology",
+     "order_day": "2026-11-07",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "HALO",
+     "name": "Halozyme Therapeutics, Inc.",
+     "score": 86.0,
+     "sector": "Healthcare",
+     "order_day": "2026-11-07",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "FIX",
+     "name": "Comfort Systems USA, Inc.",
+     "score": 82.7,
+     "sector": "Industrials",
+     "order_day": "2026-11-07",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "EXEL",
+     "name": "Exelixis, Inc.",
+     "score": 81.9,
+     "sector": "Healthcare",
+     "order_day": "2026-11-07",
+     "reserved": 5000.0,
+     "status": "open"
+    }
+   ],
    "trades": [],
    "cooldown": {},
-   "last_decision": "2026-11-06"
+   "last_decision": "2026-11-07"
   }
  },
  "etf": {
@@ -234,11 +280,18 @@
    "bot": 100000.0,
    "no_stop": 100000.0,
    "rank": 100000.0
+  },
+  {
+   "day": "2026-11-07",
+   "etf": 100000.0,
+   "bot": 100000.0,
+   "no_stop": 100000.0,
+   "rank": 100000.0
   }
  ],
  "coverage": {
-  "day": "2026-11-06",
-  "fresh": 0.988,
-  "scored": 0.75
+  "day": "2026-11-07",
+  "fresh": 0.983,
+  "scored": 0.993
  }
 }
