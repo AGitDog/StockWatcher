@@ -5,11 +5,12 @@ name: Update Stock Signals
 # Every run merges its group into the same daily snapshot.
 on:
   schedule:
-    - cron: '30 10 * * *'   # asia      (Tokyo/Mumbai closed)
-    - cron: '30 17 * * *'   # europe    (Xetra/London closed)
-    - cron: '30 21 * * *'   # america-1 (New York closed)
-    - cron: '30 22 * * *'   # america-2
-    - cron: '30 23 * * *'   # america-3
+    # Monday to Friday only: on weekends a run would only repeat Friday's prices as a new day.
+    - cron: '30 10 * * 1-5'   # asia      (Tokyo/Mumbai closed)
+    - cron: '30 17 * * 1-5'   # europe    (Xetra/London closed)
+    - cron: '30 21 * * 1-5'   # america-1 (New York closed)
+    - cron: '30 22 * * 1-5'   # america-2
+    - cron: '30 23 * * 1-5'   # america-3
   workflow_dispatch:
     inputs:
       group:
@@ -32,7 +33,7 @@ concurrency:
 jobs:
   update-signals:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45  # Finnhub allows 55 calls a minute: about 15 minutes per group
 
     permissions:
       contents: write  # Required to push signal_history/ back to repo
@@ -65,11 +66,11 @@ jobs:
         INPUT_GROUP: ${{ inputs.group }}
       run: |
         case "$SCHEDULE" in
-          "30 10 * * *") GROUP=asia ;;
-          "30 17 * * *") GROUP=europe ;;
-          "30 21 * * *") GROUP=america-1 ;;
-          "30 22 * * *") GROUP=america-2 ;;
-          "30 23 * * *") GROUP=america-3 ;;
+          "30 10 * * 1-5") GROUP=asia ;;
+          "30 17 * * 1-5") GROUP=europe ;;
+          "30 21 * * 1-5") GROUP=america-1 ;;
+          "30 22 * * 1-5") GROUP=america-2 ;;
+          "30 23 * * 1-5") GROUP=america-3 ;;
           *)             GROUP="${INPUT_GROUP:-all}" ;;
         esac
         echo "Gruppe: $GROUP"

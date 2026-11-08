@@ -600,3 +600,28 @@ def test_update_signals_exits_1_on_all_symbols_failed(mock_build, mock_file, moc
 
     mock_exit.assert_called_once_with(1)
 
+
+
+@patch("update_signals.os.path.exists")
+@patch("builtins.open", new_callable=mock_open, read_data="AAPL\nFLAKY")
+@patch("update_signals.build_symbol_signal_monitor")
+@patch("update_signals.save_signal_snapshot")
+@patch("update_signals.add_watchlist_peer_context")
+def test_update_signals_retries_crashed_symbol_once(mock_peer, mock_save, mock_build, mock_file, mock_exists):
+    mock_exists.return_value = True
+    calls = {"FLAKY": 0}
+
+    def build(symbol, mappings):
+        if symbol == "FLAKY":
+            calls["FLAKY"] += 1
+            if calls["FLAKY"] == 1:
+                raise ValueError("Yahoo hiccup")
+        return {"symbol": symbol, "brodel_score": 50}
+
+    mock_build.side_effect = build
+    mock_peer.side_effect = lambda x: x
+    mock_save.return_value = Path("dummy/path.json")
+    from update_signals import run_update
+
+    run_update()
+    assert sorted(item["symbol"] for item in mock_save.call_args[0][1]) == ["AAPL", "FLAKY"]

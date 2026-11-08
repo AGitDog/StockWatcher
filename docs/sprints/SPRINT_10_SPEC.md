@@ -59,6 +59,14 @@ Die Prüfung des Nachtlaufs vom 05.11. zeigte zwei Fehler:
 - Biotech-Index: Die Nasdaq-Abfrage nutzte das heutige Datum und lieferte am Wochenende nichts. Die Watchlist fiel dann von 1375 auf 1152 Aktien. `load_index_constituents` geht jetzt bis zu 6 Tage zurück.
 - Insider: Finnhub lieferte auf GitHub in keinem Snapshot Daten (Einträge alle „[YF]“). Brodel 3.0 liest den Kaufwert deshalb zuerst aus Yahoos Insider-Tabelle (`insider_buy_value`).
 
+### Task 6 (Nachtrag 08.11.2026): Prüfung nach dem ersten Wochenende
+- Alle Läufe seit dem 06.11. erfolgreich, 98 % frische Daten, 1352 Aktien mit Brodel 3.0, Insider-Werte für 747 von 821 US-Aktien.
+- **Aktiensplits:** Die Aktienzahl ist bei Yahoo nicht um Splits bereinigt (NFLX +866 %, KLAC +891 %, NOW +399 %). 58 Aktien bekamen so falsche Rückkauf-Punkte, ein Reverse-Split hätte volle Punkte gebracht. Veränderungen über 50 % werden nicht mehr bewertet (`SHARE_CHANGE_PLAUSIBLE`). Das gilt auch für Brodel 2.0.
+- **Wochenende:** Die Läufe liefen auch samstags und sonntags und speicherten Freitagskurse als neuen Tag. Die Läufe sind jetzt auf Montag bis Freitag begrenzt.
+- **Abgebrochene Aktien:** 11 Aktien fehlten in einem US-Lauf. Lokal liefen sie fehlerfrei. Abgestürzte Aktien werden jetzt am Ende einzeln ein zweites Mal geladen, und der Fehlertyp steht im Log.
+- **Finnhub:** Der Schlüssel ist jetzt als Secret eingetragen. Eine Bremse begrenzt die Abfragen auf 55 pro Minute (`wait_for_rate_limit`), sonst bekäme ein Teil der Aktien Finnhub- und ein Teil Yahoo-Daten. Zeitlimit des Workflows auf 45 Minuten erhöht.
+- Folge: Brodel 2.0 (Kursziele, Insider) bezieht ab dem 09.11. Daten von Finnhub statt Yahoo, die Werte können sich dadurch verschieben.
+
 ## 3. Bewusst nicht umgesetzt
 - Einfrieren für 12 Monate und Stoppregel (Schritt 4): Stehen noch zur Entscheidung aus.
 - EDGAR-Pipeline, Gewinnüberraschung, Investitionsquote nach Marktlage.

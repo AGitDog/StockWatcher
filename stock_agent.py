@@ -946,6 +946,9 @@ def buyback_points(share_change: float | None) -> int:
     return 0
 
 
+SHARE_CHANGE_PLAUSIBLE = 0.5
+
+
 def _summarize_share_buyback(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]:
     """Share count today versus one year ago. Shrinking share counts (buybacks) score high."""
     name = BUYBACK_COMPONENT_NAME
@@ -971,6 +974,9 @@ def _summarize_share_buyback(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]:
         return {"name": name, "score": 0, "summary": "Aktienanzahl-Historie zu kurz fuer einen Jahresvergleich."}
     # Medians smooth out single-day data glitches in the Yahoo share count
     change = float(recent.median() / year_ago.median() - 1.0)
+    if abs(change) > SHARE_CHANGE_PLAUSIBLE:
+        # Splits, reverse splits and Yahoo glitches (KLAC jumped from 132 to 1300 million shares)
+        return {"name": name, "score": 0, "summary": f"Aktienanzahl 12M: {change * 100:+.0f}% - unplausibel (Split oder Datenfehler), nicht bewertet."}
     score = buyback_points(change)
     summary = f"Aktienanzahl 12M: {change * 100:+.1f}%"
     if score >= 3:

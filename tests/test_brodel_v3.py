@@ -128,3 +128,50 @@ def test_biotech_index_uses_last_trading_day_on_weekends():
             assert stock_agent.load_index_constituents("NASDAQ Biotechnology Index") == ["ABCL"]
     finally:
         stock_agent.load_index_constituents.cache_clear()  # other tests must not see this list
+
+
+def test_implausible_share_count_jump_gets_no_buyback_points():
+    from unittest.mock import MagicMock
+
+    import pandas as pd
+
+    import stock_agent
+
+    days = pd.date_range(end=pd.Timestamp.now().normalize(), periods=420, freq="D")
+    shares = pd.Series([132e6] * 300 + [1300e6] * 120, index=days)
+    ticker = MagicMock()
+    ticker.get_shares_full.return_value = shares
+    result = stock_agent._summarize_share_buyback(ticker, False)
+    assert result["score"] == 0 and "share_change" not in result and "unplausibel" in result["summary"]
+    ticker.get_shares_full.return_value = pd.Series([100e6] * 300 + [96e6] * 120, index=days)
+    assert stock_agent._summarize_share_buyback(ticker, False)["share_change"] == pytest.approx(-0.04)
+
+
+def test_workflow_runs_only_on_weekdays():
+    from pathlib import Path
+    import re
+
+    content = (Path(__file__).resolve().parent.parent / ".github/workflows/update_signals.yml").read_text(encoding="utf-8")
+    crons = re.findall(r"cron: '([^']+)'", content)
+    assert crons and all(cron.endswith("* * 1-5") for cron in crons)
+
+
+def test_finnhub_brake_allows_55_calls_per_minute():
+    import finnhub_cache
+
+    now = [0.0]
+    slept = []
+
+    def sleep(seconds):
+        slept.append(seconds)
+        now[0] += seconds
+
+    finnhub_cache._call_times.clear()
+    try:
+        for _ in range(55):
+            finnhub_cache.wait_for_rate_limit(clock=lambda: now[0], sleep=sleep)
+        assert slept == []
+        finnhub_cache.wait_for_rate_limit(clock=lambda: now[0], sleep=sleep)
+        assert len(slept) == 1 and now[0] >= 60
+    finally:
+        finnhub_cache._call_times.clear()

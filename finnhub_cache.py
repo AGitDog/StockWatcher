@@ -1,5 +1,8 @@
 import json
+import threading
 import time
+from collections import deque
+
 import requests
 from pathlib import Path
 from typing import Any
@@ -9,6 +12,31 @@ from config_loader import get_secret
 CACHE_DIR = Path("cache")
 CACHE_FILE = CACHE_DIR / "finnhub_targets.json"
 CACHE_TTL = 24 * 60 * 60  # 24 hours in seconds
+
+# The free plan allows 60 calls per minute. Without a brake, parallel runs exceeded it and
+# some stocks got Finnhub data while others silently fell back to Yahoo.
+MAX_CALLS_PER_MINUTE = 55
+_call_times: deque[float] = deque()
+_rate_lock = threading.Lock()
+
+
+def wait_for_rate_limit(clock=time.monotonic, sleep=time.sleep, limit: int = MAX_CALLS_PER_MINUTE) -> None:
+    """Block until another call fits into the last 60 seconds."""
+    while True:
+        with _rate_lock:
+            now = clock()
+            while _call_times and now - _call_times[0] >= 60:
+                _call_times.popleft()
+            if len(_call_times) < limit:
+                _call_times.append(now)
+                return
+            wait = 60 - (now - _call_times[0]) + 0.05
+        sleep(wait)
+
+
+def _get(url: str, **kwargs):
+    wait_for_rate_limit()
+    return requests.get(url, **kwargs)
 
 def get_finnhub_key() -> str:
     """Holt den Finnhub API Key aus Streamlit secrets, Umgebungsvariablen oder .env."""
@@ -62,13 +90,13 @@ def get_analyst_data(symbol: str) -> tuple[dict[str, Any] | None, list[dict[str,
     try:
         # Fetch Price Target
         target_url = f"https://finnhub.io/api/v1/stock/price-target?symbol={symbol}&token={api_key}"
-        res_target = requests.get(target_url, timeout=10)
+        res_target = _get(target_url, timeout=10)
         if res_target.status_code == 200:
             price_target = res_target.json()
             
         # Fetch Recommendation Trends
         rec_url = f"https://finnhub.io/api/v1/stock/recommendation?symbol={symbol}&token={api_key}"
-        res_rec = requests.get(rec_url, timeout=10)
+        res_rec = _get(rec_url, timeout=10)
         if res_rec.status_code == 200:
             recommendation = res_rec.json()
             
@@ -97,7 +125,7 @@ def get_insider_buy_value(symbol: str, days: int = 90) -> float | None:
         return None
     start = time.strftime("%Y-%m-%d", time.gmtime(time.time() - days * 86400))
     try:
-        res = requests.get(
+        res = _get(
             "https://finnhub.io/api/v1/stock/insider-transactions",
             params={"symbol": symbol, "from": start, "token": api_key},
             timeout=10,
@@ -133,7 +161,7 @@ def get_insider_sentiment(symbol: str) -> list[dict[str, Any]]:
     insider_data = []
     try:
         url = f"https://finnhub.io/api/v1/stock/insider-sentiment?symbol={symbol}&from=2024-01-01&to=2030-01-01&token={api_key}"
-        res = requests.get(url, timeout=10)
+        res = _get(url, timeout=10)
         if res.status_code == 200:
             data = res.json()
             if "data" in data:

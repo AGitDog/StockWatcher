@@ -65,6 +65,7 @@ def run_update(group: str = "all"):
 
     job_start = time.time()
     raw_results = []
+    failed: list[str] = []
     completed = 0
 
     def _fetch_symbol(entry):
@@ -83,7 +84,16 @@ def run_update(group: str = "all"):
                 raw_results.append(item)
                 print(f"[{completed}/{len(entries)}] OK: {entry}", flush=True)
             except Exception as e:
-                print(f"[{completed}/{len(entries)}] Error for {entry}: {e}", flush=True)
+                failed.append(entry)
+                print(f"[{completed}/{len(entries)}] Error for {entry}: {type(e).__name__}: {e}", flush=True)
+
+    # A crash of a single stock loses it for the day; try those once more, one by one.
+    for entry in failed:
+        try:
+            raw_results.append(build_symbol_signal_monitor(entry, symbol_mappings))
+            print(f"Second attempt OK: {entry}", flush=True)
+        except Exception as e:
+            print(f"Second attempt failed for {entry}: {type(e).__name__}: {e}", flush=True)
 
     print(f"Signal calculation done in {time.time() - job_start:.1f}s ({len(raw_results)}/{len(entries)} successful).", flush=True)
 
