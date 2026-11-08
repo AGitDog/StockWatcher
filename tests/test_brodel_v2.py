@@ -190,10 +190,10 @@ def test_table_rows_put_brodel_v2_first_without_v1():
 
     rows = app.build_signal_table_rows([_app_item("AAA", 80, 20)])
     keys = list(rows[0].keys())
-    assert keys[3] == "Brodel 2.0"
-    assert "Brodel 1.0" not in keys
+    assert keys[3:5] == ["Rang-Score", "Punkte-Score"]
+    assert "Punkte-Score alt" not in keys
     assert keys[-1] == "Rang"
-    assert rows[0]["Brodel 2.0"] == 20
+    assert rows[0]["Punkte-Score"] == 20
     assert rows[0]["Kursziel"] == 5  # 2.0 points
     assert rows[0]["Rückkauf"] == 3
     assert "ML-Score" not in rows[0]
@@ -253,8 +253,8 @@ def test_help_explains_brodel_v3_with_the_real_weights():
     rows = app.build_v3_help_rows()
     assert [int(row["Punkte"]) for row in rows] == list(BRODEL_V3_WEIGHTS.values())
     source = (Path(__file__).parent.parent / "app.py").read_text(encoding="utf-8")
-    assert "Brodel 3.0: was ist neu und warum" in source
-    assert "Bot-Depot: drei Depots im Vergleich" in source
+    assert "Rang-Score: wie er rechnet" in source
+    assert "Trades: drei Spieldepots im Vergleich" in source
 
 
 def test_macro_overlay_of_old_snapshots_is_removed():
@@ -291,17 +291,17 @@ def test_brodel_check_rows_list_v2_before_v1():
     summary = {"mean_ic": 0.05, "n": 3, "t_stat": 1.2}
     results = {label: {"summary": summary, "summary_independent": summary} for label, _ in app.BRODEL_CHECK_VERSIONS}
     rows = app.build_brodel_check_rows(results)
-    assert [row["Score"] for row in rows] == ["Brodel 2.0", "Brodel 1.0"]
+    assert [row["Score"] for row in rows] == ["Punkte-Score", "Punkte-Score alt"]
     assert rows[0]["Mittlerer Rank-IC"] == "+0.050"
 
 
 def test_interactive_table_shows_v2_first_without_v1():
     html = (Path(__file__).parent.parent / "components" / "interactive_table" / "index.html").read_text(encoding="utf-8")
-    assert 'let sortColumn = "Brodel 2.0";' in html
+    assert 'let sortColumn = "Rang-Score";' in html
     columns = html[html.index("const COLUMNS = ["):html.index("];", html.index("const COLUMNS = ["))]
-    assert columns.index('"Brodel 2.0"') < columns.index('"EPS"')
+    assert columns.index('"Rang-Score"') < columns.index('"Punkte-Score"') < columns.index('"EPS"')
     assert '"ML-Score"' not in columns  # hidden until a model passes the out-of-sample test
-    assert '"Brodel 1.0"' not in columns
+    assert "Brodel" not in html
     assert '"Rang"' in columns
     assert '"Rückkauf"' in columns
 
@@ -310,7 +310,7 @@ def test_help_explains_brodel_v2_and_matches_price_volume_code():
     from tests.test_truth_machine_app import _rendered_help_text
 
     text = _rendered_help_text("render_help_tab")
-    for term in ("Brodel 2.0", "Brodel 1.0", "Aktienrückkauf", "Anteil", "Die 11 Bausteine"):
+    for term in ("Punkte-Score", "Punkte-Score alt", "Aktienrückkauf", "Anteil", "Die 11 Bausteine"):
         assert term in text, term
     # Preis/Volumen help now matches the code: +5 over MA20, +6 over MA50, -3 at a 7 % drop
     assert "20-Tage-Linie: **+5**" in text
@@ -343,3 +343,35 @@ def test_table_rows_mark_stale_and_missing_entries():
     assert "_status" not in rows[0]
     assert rows[1]["_status"] == "stale" and "2026-11-04" in rows[1]["_hint"]
     assert rows[2]["_status"] == "missing"
+
+
+def test_no_brodel_in_visible_texts():
+    """The system is called StockWatcher; "Brodel" only survives in internal field names."""
+    import re
+
+    source = (Path(__file__).parent.parent / "app.py").read_text(encoding="utf-8")
+    strings = re.findall(r'"[^"\n]*"', source)
+    assert not [s for s in strings if "Brodel" in s]
+
+
+def test_start_page_is_shown_unless_the_browser_skips_it():
+    import app
+
+    fresh: dict = {}
+    app.choose_start_page(None, fresh)  # browser has not answered yet
+    assert fresh["page"] == app.PAGE_START and "start_pref_applied" not in fresh
+    app.choose_start_page({"skip_start": False}, fresh)
+    assert fresh["page"] == app.PAGE_START
+
+    skipper: dict = {}
+    app.choose_start_page({"skip_start": True}, skipper)
+    assert skipper["page"] == app.PAGE_MARKET
+    skipper["page"] = app.PAGE_START  # user clicks "Start" later in the same session
+    app.choose_start_page({"skip_start": True}, skipper)
+    assert skipper["page"] == app.PAGE_START  # applied only once
+
+
+def test_visitor_prefs_component_stores_only_in_the_browser():
+    html = (Path(__file__).parent.parent / "components" / "visitor_prefs" / "index.html").read_text(encoding="utf-8")
+    assert "localStorage" in html and "stockwatcher.skip_start" in html
+    assert "fetch(" not in html and "XMLHttpRequest" not in html

@@ -70,7 +70,7 @@ def test_truth_machine_section_renders_without_report():
     assert not at.exception
     labels = [button.label for button in at.button]
     assert "Wahrheitsmaschine starten" in labels
-    assert "Brodel-Score messen" in labels
+    assert "Score messen" in labels
 
 
 def _rendered_help_text(render_name: str) -> str:

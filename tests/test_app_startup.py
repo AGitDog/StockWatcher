@@ -11,7 +11,7 @@ def test_app_module_imports_without_errors():
         pytest.fail(f"app.py failed to import with {type(e).__name__}: {e}")
 
     assert hasattr(app, "main"), "app.py must have a main entrypoint"
-    assert hasattr(app, "render_stock_agent"), "app.py must define render_stock_agent"
+    assert hasattr(app, "render_app"), "app.py must define render_app"
     assert hasattr(app, "get_extended_fundamentals"), "app.py must define get_extended_fundamentals"
 
 
@@ -71,25 +71,19 @@ def test_stock_agent_resilient_to_missing_genai():
         assert hasattr(stock_agent, "fetch_company_extended_fundamentals")
 
 
-def test_render_stock_agent_layout():
-    """Verify render_stock_agent creates exactly 3 tabs (🔥 Signal Monitor, Backtest & ML, Hilfe & Methodik)."""
-    from unittest.mock import MagicMock
+def test_render_app_navigation():
+    """The app opens with a page selector: Start, Marktbeobachtung, Trades, Forschung, Hilfe."""
     import app
 
-    tab_mock_1 = MagicMock()
-    tab_mock_2 = MagicMock()
-    tab_mock_3 = MagicMock()
-    tab_mock_4 = MagicMock()
-
-    with patch("streamlit.tabs", return_value=[tab_mock_1, tab_mock_2, tab_mock_3, tab_mock_4]) as mock_tabs, \
-         patch("streamlit.title"), \
-         patch("streamlit.caption"), \
-         patch("app.render_watchlist_signal_monitor"), \
-         patch("app.render_bot_tab"), \
-         patch("app.render_backtest_tab"), \
-         patch("app.render_help_tab"):
-        app.render_stock_agent()
-        mock_tabs.assert_called_once_with(["🔥 Signal Monitor", "🤖 Bot-Depot", "Backtest & ML", "Hilfe & Methodik"])
+    assert app.PAGES == ["🏠 Start", "📊 Marktbeobachtung", "💼 Trades", "🔬 Forschung", "❓ Hilfe"]
+    with patch("streamlit.radio", return_value=app.PAGE_TRADES) as mock_radio, \
+         patch("streamlit.title"), patch("streamlit.caption"), patch("streamlit.markdown"), \
+         patch("app.visitor_prefs", return_value=None), \
+         patch("app.render_bot_tab") as trades, patch("app.render_start_page") as start_page:
+        app.render_app()
+    assert mock_radio.call_args.args[1] == app.PAGES
+    trades.assert_called_once()
+    start_page.assert_not_called()
 
 
 def test_default_watchlist_contains_new_indices():

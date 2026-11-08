@@ -237,7 +237,7 @@ def test_bot_tab_renders(tmp_path, monkeypatch):
     at = AppTest.from_function(script, default_timeout=60)
     at.run()
     assert not at.exception
-    assert any("Bot-Depot" in s.value for s in at.subheader)
+    assert any("Trades" in s.value for s in at.subheader)
     assert len(at.metric) == 4
 
 

@@ -162,6 +162,7 @@
   .score-med  { background: rgba(255, 179, 0, 0.16); color: #ffc233; border: 1px solid rgba(255, 179, 0, 0.42); }
   .score-low  { background: rgba(139, 148, 158, 0.13); color: #abb2bf; border: 1px solid rgba(139, 148, 158, 0.28); }
 
+  .rank-score { font-weight: 700; color: var(--text-primary); }
   .status-icon { margin-left: 5px; font-size: 11px; color: var(--text-muted); }
 
   .empty-state { padding: 40px; text-align: center; color: var(--text-muted); }
@@ -178,7 +179,8 @@
     <input type="text" id="searchInput" placeholder="Suchen: Symbol, Name oder Sektor …" autocomplete="off">
   </div>
   <div class="toolbar-right">
-    <div class="legend" title="Farbstufen von Brodel 2.0 (Maximum 90 Punkte)">
+    <div class="legend" title="Farbstufen des Punkte-Scores (Maximum 90 Punkte)">
+      <span>Punkte-Score:</span>
       <span><i class="dot" style="background:#5fd38d"></i>ab 50</span>
       <span><i class="dot" style="background:#ffc233"></i>35–49</span>
       <span><i class="dot" style="background:#abb2bf"></i>unter 35</span>
@@ -200,16 +202,16 @@
   let rawRows = [];
   let currentFilteredRows = [];
   let selectedSymbol = null;
-  let sortColumn = "Brodel 2.0";
+  let sortColumn = "Rang-Score";
   let sortAscending = false;
 
-  // kind: text | score | plain | points | signed
+  // kind: text | rank | score | plain | points | signed
   const COLUMNS = [
     { key: "Symbol", label: "Symbol", kind: "text", class: "col-symbol" },
     { key: "Name", label: "Name", kind: "text", class: "col-name" },
     { key: "Sektor", label: "Sektor", kind: "text", class: "col-sector" },
-    { key: "Brodel 2.0", label: "Brodel 2.0", kind: "score", sep: true, tip: "Gesamtscore Brodel 2.0 (max. 90)" },
-    { key: "Brodel 3.0", label: "Brodel 3.0", kind: "plain", tip: "Rang-Score aus 6 Bausteinen (0 bis 100), läuft im eigenen Depot" },
+    { key: "Rang-Score", label: "Rang-Score", kind: "rank", sep: true, tip: "Rang aus 6 Bausteinen, 0 bis 100: besser als so viel Prozent der Vergleichsaktien" },
+    { key: "Punkte-Score", label: "Punkte-Score", kind: "score", tip: "Summe fester Punkte aus 11 Signalen (max. 90)" },
     { key: "EPS", label: "EPS", kind: "points", sep: true, tip: "EPS-Revisionen (max. 15)" },
     { key: "Kursziel", label: "Kursziel", kind: "points", tip: "Kursziele & Konsens (max. 5)" },
     { key: "P/V", label: "P/V", kind: "points", tip: "Preis/Volumen (max. 5)" },
@@ -274,6 +276,11 @@
     if (val === undefined || val === null || val === "") {
       td.textContent = "–";
       td.classList.add("pts-zero");
+      return;
+    }
+    if (col.kind === "rank" && typeof val === "number") {
+      td.textContent = val.toFixed(1);
+      td.classList.add("rank-score");
       return;
     }
     if (col.kind === "score" && typeof val === "number") {
@@ -350,8 +357,10 @@
     currentFilteredRows.sort((a, b) => {
       let valA = a[sortColumn];
       let valB = b[sortColumn];
-      if (valA === undefined || valA === null) valA = "";
-      if (valB === undefined || valB === null) valB = "";
+      const numeric = COLUMNS.some(col => col.key === sortColumn && isNumeric(col));
+      const empty = numeric ? (sortAscending ? Infinity : -Infinity) : "";  // missing values always last
+      if (valA === undefined || valA === null) valA = empty;
+      if (valB === undefined || valB === null) valB = empty;
       if (typeof valA === "number" && typeof valB === "number") {
         return sortAscending ? valA - valB : valB - valA;
       }

@@ -62,9 +62,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
 }
 
 PORTFOLIOS = {
-    "bot": {"label": "Brodel 2.0 ab 60", "use_stop": True, "rule": "threshold"},
-    "no_stop": {"label": "Brodel 2.0 ab 60 ohne Stop-Loss", "use_stop": False, "rule": "threshold"},
-    "rank": {"label": "Brodel 3.0 beste 2 %", "use_stop": True, "rule": "rank"},
+    "bot": {"label": "Punkte-Score ab 60", "use_stop": True, "rule": "threshold"},
+    "no_stop": {"label": "Punkte-Score ab 60 ohne Stop-Loss", "use_stop": False, "rule": "threshold"},
+    "rank": {"label": "Rang-Score beste 2 %", "use_stop": True, "rule": "rank"},
 }
 
 # exchange suffix -> (currency, price divisor); London quotes in pence
@@ -479,7 +479,7 @@ def status_text(state: dict) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Brodel paper-trading bot")
+    parser = argparse.ArgumentParser(description="StockWatcher paper-trading bot")
     parser.add_argument("command", choices=("run", "status", "reset"))
     args = parser.parse_args(argv)
     if args.command == "run":

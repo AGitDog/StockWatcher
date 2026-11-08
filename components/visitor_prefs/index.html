@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Visitor preferences</title>
+</head>
+<body style="margin:0">
+<script>
+  // Remembers in this browser whether the start page should be skipped.
+  // Nothing is sent anywhere: the value lives in the browser's localStorage only.
+  const KEY = "stockwatcher.skip_start";
+  let lastSent = null;
+
+  function post(type, extra) {
+    window.parent.postMessage(Object.assign({ isStreamlitMessage: true, type: type }, extra), "*");
+  }
+
+  function readSkip() {
+    try {
+      return { skip_start: window.localStorage.getItem(KEY) === "1", storage: true };
+    } catch (error) {
+      return { skip_start: false, storage: false };  // blocked storage: always show the start page
+    }
+  }
+
+  window.addEventListener("message", (event) => {
+    if (!event.data || event.data.type !== "streamlit:render") return;
+    const args = event.data.args || {};
+    if (args.set === true || args.set === false) {
+      try { window.localStorage.setItem(KEY, args.set ? "1" : "0"); } catch (error) { /* storage blocked */ }
+    }
+    const value = readSkip();
+    const text = JSON.stringify(value);
+    if (text !== lastSent) {
+      lastSent = text;
+      post("streamlit:setComponentValue", { value: value });
+    }
+    post("streamlit:setFrameHeight", { height: 0 });
+  });
+
+  post("streamlit:componentReady", { apiVersion: 1 });
+</script>
+</body>
+</html>
