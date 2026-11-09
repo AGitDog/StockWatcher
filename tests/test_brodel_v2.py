@@ -152,6 +152,30 @@ def test_peer_context_ranks_by_brodel_v2():
     assert enriched["B"]["sector_rank"] == 1
     assert enriched["A"]["top_peer"]["symbol"] == "B"
     assert enriched["A"]["top_peer"]["score"] == 50
+    assert enriched["A"]["score_basis"] == "points"
+
+
+def test_peer_context_ranks_by_rank_score_within_region_and_sector():
+    items = [
+        {"symbol": "BGEO.L", "sector": "Financial Services", "brodel_score_v2": 38, "brodel_score_v3": 90.6},
+        {"symbol": "HSBA.L", "sector": "Financial Services", "brodel_score_v2": 70, "brodel_score_v3": 60.0},
+        {"symbol": "DBK.DE", "sector": "Financial Services", "brodel_score_v2": 55, "brodel_score_v3": 75.0},
+        {"symbol": "JPM", "sector": "Financial Services", "brodel_score_v2": 80, "brodel_score_v3": 95.0},
+        {"symbol": "SAP.DE", "sector": "Technology", "brodel_score_v2": 60, "brodel_score_v3": 99.0},
+        {"symbol": "EUNL.DE", "sector": "Financial Services", "brodel_score_v2": 20},
+    ]
+    enriched = {item["symbol"]: item["peer_context"] for item in add_watchlist_peer_context(items)}
+    bgeo = enriched["BGEO.L"]
+    assert bgeo["score_basis"] == "rank"
+    assert bgeo["region"] == "europe"
+    assert (bgeo["sector_rank"], bgeo["sector_count"]) == (1, 3)  # JPM, SAP.DE and the ETF are not peers
+    assert bgeo["sector_average"] == 75.2
+    assert bgeo["score_vs_sector"] == 15.4
+    assert bgeo["top_peer"] == {"symbol": "DBK.DE", "name": None, "score": 75.0}
+    assert enriched["HSBA.L"]["sector_rank"] == 3
+    etf = enriched["EUNL.DE"]
+    assert etf["score_basis"] == "points"
+    assert (etf["sector_rank"], etf["sector_count"]) == (1, 1)
 
 
 @patch("stock_agent.yf.Ticker")

@@ -39,3 +39,9 @@ Die internen Feldnamen (`brodel_score_v2`, `brodel_score_v3`, …) bleiben unver
 - **Ersatzstart** um 03:35 UTC am Folgetag. `run_check.py` lässt ihn nur laufen, wenn der Bot für den Handelstag noch nicht entschieden hat, und nie zwischen 09:00 und 21:00 UTC (sonst halbe Tageskurse).
 - Ein manueller Start („Run workflow“) startet die ganze Kette.
 - **App:** Die Marktbeobachtung lädt einen neuen Snapshot nach, auch wenn die Seite offen geblieben ist, und zeigt den Datenstand an.
+
+## 4. Nachtrag 09.11.2026: Sektor-Vergleich nach Rang-Score
+- **Befund:** „Rang“ und „Vs. Sektor“ rechneten noch mit dem Punkte-Score und über alle Regionen. BGEO.L stand deshalb bei 50/159, obwohl die Aktie den höchsten Rang-Score aller europäischen Finanzwerte hat.
+- **Neu:** Aktien mit Rang-Score werden nach Rang-Score mit derselben Region und demselben Sektor verglichen. Das ist dieselbe Gruppe, in der der Rang-Score selbst gebildet wird. BGEO.L steht damit bei 1/43 und +37,3. Aktien ohne Rang-Score (ETFs, dünne Daten) behalten den Vergleich nach Punkte-Score über den ganzen Sektor.
+- Die App berechnet den Vergleich beim Laden neu, deshalb gilt die Änderung auch für schon gespeicherte Tage. Die Tooltips der Tabelle und der Detailansicht nennen die Vergleichsgruppe.
+- **Test:** `test_peer_context_ranks_by_rank_score_within_region_and_sector`. 355 Tests grün.

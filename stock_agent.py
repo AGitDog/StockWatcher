@@ -2327,39 +2327,54 @@ def _summarize_relative_strength(history: pd.DataFrame | None, symbol: str = "")
     return {"name": "Relative Staerke", "score": score, "summary": summary}
 
 
+def _peer_basis(item: dict[str, Any]) -> tuple[str, tuple[str, str], float]:
+    """Score and comparison group for the sector comparison.
+
+    Stocks with a Rang-Score are compared by Rang-Score within their region and sector, because
+    the Rang-Score itself is a ranking within the region. Stocks without one (ETFs, thin data)
+    keep the comparison by Punkte-Score across the whole sector.
+    """
+    sector = str(item.get("sector") or "Unbekannt")
+    score_v3 = item.get("brodel_score_v3")
+    if isinstance(score_v3, (int, float)):
+        return "rank", (symbol_region(item.get("symbol")), sector), float(score_v3)
+    return "points", ("", sector), float(primary_score(item))
+
+
 def add_watchlist_peer_context(signal_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    sector_groups: dict[str, list[dict[str, Any]]] = {}
+    groups: dict[tuple[str, tuple[str, str]], list[tuple[dict[str, Any], float]]] = {}
     for item in signal_items:
-        sector = str(item.get("sector") or "Unbekannt")
-        sector_groups.setdefault(sector, []).append(item)
+        basis, group, score = _peer_basis(item)
+        groups.setdefault((basis, group), []).append((item, score))
 
     enriched: list[dict[str, Any]] = []
     for item in signal_items:
-        sector = str(item.get("sector") or "Unbekannt")
-        peers = sector_groups.get(sector, [])
-        peer_scores = [primary_score(peer) for peer in peers if peer.get("symbol") != item.get("symbol")]
-        sector_average = round(sum(primary_score(peer) for peer in peers) / len(peers), 1) if peers else 0
-        rank = 1 + sum(1 for peer in peers if primary_score(peer) > primary_score(item))
+        basis, group, score = _peer_basis(item)
+        peers = groups.get((basis, group), [])
+        sector_average = round(sum(peer_score for _, peer_score in peers) / len(peers), 1) if peers else 0
+        rank = 1 + sum(1 for _, peer_score in peers if peer_score > score)
 
         top_peer = None
-        if peer_scores:
-            sorted_peers = sorted(
-                (peer for peer in peers if peer.get("symbol") != item.get("symbol")),
-                key=primary_score,
-                reverse=True,
-            )
-            if sorted_peers:
-                top_peer = {
-                    "symbol": sorted_peers[0].get("symbol"),
-                    "name": sorted_peers[0].get("name"),
-                    "score": primary_score(sorted_peers[0]),
-                }
+        others = sorted(
+            ((peer, peer_score) for peer, peer_score in peers if peer.get("symbol") != item.get("symbol")),
+            key=lambda pair: pair[1],
+            reverse=True,
+        )
+        if others:
+            best, best_score = others[0]
+            top_peer = {
+                "symbol": best.get("symbol"),
+                "name": best.get("name"),
+                "score": round(best_score, 1) if basis == "rank" else int(best_score),
+            }
 
         peer_context = {
-            "sector": sector,
+            "sector": group[1],
             "industry": item.get("industry") or "Unbekannt",
+            "region": group[0] or None,
+            "score_basis": basis,
             "sector_average": sector_average,
-            "score_vs_sector": round(primary_score(item) - sector_average, 1),
+            "score_vs_sector": round(score - sector_average, 1),
             "sector_rank": rank,
             "sector_count": len(peers),
             "top_peer": top_peer,

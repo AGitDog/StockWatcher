@@ -170,6 +170,18 @@ def prepare_signal_items(items: list[dict]) -> list[dict]:
     return sorted(prepared, key=primary_score, reverse=True)
 
 
+PEER_REGION_LABELS = {"europe": "Europa", "america": "Amerika", "asia": "Asien"}
+
+
+def peer_group_text(peer_context: dict) -> str:
+    """Who a stock is compared with in 'Rang' and 'Vs. Sektor', in words."""
+    sector = peer_context.get("sector", "Unbekannt")
+    if peer_context.get("score_basis") == "points":
+        return f"allen Aktien im Sektor {sector}, nach Punkte-Score"
+    region = PEER_REGION_LABELS.get(peer_context.get("region"), peer_context.get("region") or "der Region")
+    return f"Aktien aus {region} im Sektor {sector}, nach Rang-Score"
+
+
 def build_signal_table_rows(signal_items: list[dict]) -> list[dict]:
     """Rows for the main table: Punkte-Score and its points. Keys starting with ``_`` only steer the display."""
     rows = []
@@ -428,8 +440,9 @@ def render_watchlist_signal_monitor(mapping_text: str):
             kpi_cols = st.columns(4)
             kpi_cols[0].metric("Rang-Score", score_v3 if score_v3 is not None else "–", help="Rang aus 6 Bausteinen, 0 bis 100")
             kpi_cols[1].metric("Punkte-Score", primary_score(item), help="Summe fester Punkte, höchstens 90")
-            kpi_cols[2].metric("Rang im Sektor", f"{peer_context.get('sector_rank', 1)} von {peer_context.get('sector_count', 1)}")
-            kpi_cols[3].metric("Abstand zum Sektor", f"{peer_context.get('score_vs_sector', 0):+.1f}", help=f"Sektor-Durchschnitt: {peer_context.get('sector_average', 0)}")
+            peer_group = peer_group_text(peer_context)
+            kpi_cols[2].metric("Rang im Sektor", f"{peer_context.get('sector_rank', 1)} von {peer_context.get('sector_count', 1)}", help=f"Platz unter {peer_group}")
+            kpi_cols[3].metric("Abstand zum Sektor", f"{peer_context.get('score_vs_sector', 0):+.1f}", help=f"Abstand zum Durchschnitt ({peer_context.get('sector_average', 0)}) der {peer_group}")
             top_peer = peer_context.get("top_peer")
             peer_text = f" · Stärkster Peer: {top_peer['symbol']} ({top_peer['score']})" if top_peer else ""
             st.caption(f"{peer_context.get('sector', 'Unbekannt')} · {peer_context.get('industry', 'Unbekannt')}{peer_text} · Punkte-Score alt: {item.get('brodel_score', 0)}")

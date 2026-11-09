@@ -223,8 +223,8 @@
     { key: "Fundam.", label: "Fundam.", kind: "points", tip: "Fundamentale Bewertung (max. 15)" },
     { key: "Tech.", label: "Tech.", kind: "points", tip: "Technische Indikatoren (max. 5)" },
     { key: "Rückkauf", label: "Rückkauf", kind: "points", tip: "Aktienrückkauf (max. 5)" },
-    { key: "Vs. Sektor", label: "Vs. Sektor", kind: "signed", sep: true, tip: "Abstand zum Sektor-Durchschnitt der Watchlist" },
-    { key: "Rang", label: "Rang", kind: "text", tip: "Rang innerhalb des Sektors" }
+    { key: "Vs. Sektor", label: "Vs. Sektor", kind: "signed", sep: true, tip: "Rang-Score minus Durchschnitt der Aktien aus derselben Region und demselben Sektor" },
+    { key: "Rang", label: "Rang", kind: "text", tip: "Platz nach Rang-Score unter den Aktien aus derselben Region und demselben Sektor" }
   ];
 
   const isNumeric = col => col.kind !== "text";
