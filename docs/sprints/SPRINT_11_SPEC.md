@@ -31,3 +31,11 @@ Die internen Feldnamen (`brodel_score_v2`, `brodel_score_v3`, …) bleiben unver
 - **Checkbox:** „Diese Startseite beim nächsten Besuch überspringen“. Gespeichert wird nur im Browser (`localStorage`) über die Komponente `components/visitor_prefs`. Es gibt kein Konto und keine Speicherung auf dem Server. Ohne Haken oder bei gesperrtem Speicher erscheint immer die Startseite. Der gespeicherte Wunsch gilt einmal pro Sitzung, danach bleibt „Start“ jederzeit erreichbar.
 - Die Marktbeobachtung sortiert die Haupttabelle jetzt standardmäßig nach dem Rang-Score. Aktien ohne Wert stehen am Ende. Der Punkte-Score steht daneben.
 - Der Kasten „Mission & Prinzipien“ in der Marktbeobachtung ist entfallen. Sein Inhalt steht jetzt auf der Startseite.
+
+## 3. Nachtrag 09.11.2026: Nachtlauf als Kette
+- **Befund:** Seit Sonntag 02:42 UTC lief nichts mehr. Sonntag war gewollt (nur werktags). Der Asien-Lauf vom Montag (geplant 10:30 UTC) war um 17:10 UTC noch nicht gestartet, weil GitHub geplante Läufe bisher 7 bis 8½ Stunden zu spät oder gar nicht startet. Bei fünf einzelnen Startzeiten reicht ein ausgefallener Lauf für einen unvollständigen Tag. Gekauft wird erst beim Bot-Lauf nach dem letzten US-Lauf.
+- **Bot geprüft:** Die Simulation auf einer Kopie des Depots mit den Eröffnungskursen vom 09.11. führt alle 14 offenen Orders und den ETF-Kauf korrekt aus (Pence, CAD, Stempelsteuer, Stops).
+- **Neu:** ein Start pro Werktag um 21:35 UTC, nach US-Börsenschluss. Die fünf Gruppen laufen als Matrix-Jobs nacheinander (`max-parallel: 1`), jeweils auf einem neuen Runner und damit mit neuer IP. Danach läuft der Job `paper-bot`, auch wenn eine Gruppe fehlschlägt.
+- **Ersatzstart** um 03:35 UTC am Folgetag. `run_check.py` lässt ihn nur laufen, wenn der Bot für den Handelstag noch nicht entschieden hat, und nie zwischen 09:00 und 21:00 UTC (sonst halbe Tageskurse).
+- Ein manueller Start („Run workflow“) startet die ganze Kette.
+- **App:** Die Marktbeobachtung lädt einen neuen Snapshot nach, auch wenn die Seite offen geblieben ist, und zeigt den Datenstand an.

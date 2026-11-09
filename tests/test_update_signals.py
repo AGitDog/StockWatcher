@@ -286,17 +286,19 @@ def test_workflow_daily_run_is_manual_only():
     assert "schedule:" not in content, "Ein zweiter Volllauf pro Tag wuerde von Yahoo gebremst"
 
 
-def test_workflow_update_signals_runs_each_group_once():
-    """Jede Regionsgruppe hat genau einen Cron-Eintrag und wird dem Skript uebergeben."""
+def test_workflow_runs_all_groups_as_one_chain():
+    """Ein Start pro Abend: alle Gruppen nacheinander auf eigenen Runnern, dazu ein Ersatzstart."""
     import re
     from stock_agent import RUN_GROUPS
 
     content = (BASE_DIR / ".github/workflows/update_signals.yml").read_text(encoding="utf-8")
     crons = re.findall(r"cron: '([^']+)'", content)
-    assert len(crons) == len(RUN_GROUPS) == len(set(crons))
-    for cron, group in zip(crons, RUN_GROUPS):
-        assert re.search(rf'"{re.escape(cron)}"\)\s+GROUP={group} ;;', content), (cron, group)
-    assert 'python update_signals.py --group "$GROUP"' in content
+    assert crons == ["35 21 * * 1-5", "35 3 * * 2-6"]
+    assert f"group: [{', '.join(RUN_GROUPS)}]" in content
+    assert "max-parallel: 1" in content and "fail-fast: false" in content
+    assert 'python update_signals.py --group "${{ matrix.group }}"' in content
+    assert "ref: main" in content  # each group starts from what the previous one pushed
+    assert "python3 run_check.py" in content
     assert "concurrency:" in content
 
 

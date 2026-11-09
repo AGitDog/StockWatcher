@@ -1,48 +1,64 @@
 name: Update Stock Signals
 
-# Yahoo blocks a run after roughly 300 symbols, so the watchlist runs in five region groups,
-# each after its exchanges closed (times in UTC; German time is UTC+1 in winter, UTC+2 in summer).
-# Every run merges its group into the same daily snapshot.
+# One chain per trading day: all region groups one after another, then the paper bot.
+# Every group runs as its own job on a fresh runner (new IP), because Yahoo blocks a single
+# machine after roughly 300 symbols. GitHub starts scheduled runs hours late or skips them,
+# so there is a backup start the next morning; run_check.py skips it when the day is done.
+# Times in UTC: the US closes at 21:00 (winter) or 20:00 (summer).
 on:
   schedule:
-    # Monday to Friday only: on weekends a run would only repeat Friday's prices as a new day.
-    - cron: '30 10 * * 1-5'   # asia      (Tokyo/Mumbai closed)
-    - cron: '30 17 * * 1-5'   # europe    (Xetra/London closed)
-    - cron: '30 21 * * 1-5'   # america-1 (New York closed)
-    - cron: '30 22 * * 1-5'   # america-2
-    - cron: '30 23 * * 1-5'   # america-3
+    - cron: '35 21 * * 1-5'   # main start after the US close, Monday to Friday
+    - cron: '35 3 * * 2-6'    # backup start the next morning
   workflow_dispatch:
     inputs:
-      group:
-        description: 'Gruppe (all laedt alles auf einmal und wird von Yahoo nach ~350 Titeln gebremst)'
-        required: true
-        default: 'asia'
-        type: choice
-        options: [asia, europe, america-1, america-2, america-3, all]
-      run_bot:
-        description: 'Paper-Bot danach ausfuehren (laeuft sonst nur nach america-3)'
+      force:
+        description: 'Auch laufen, wenn der Tag schon fertig ist'
         required: false
-        default: false
+        default: true
         type: boolean
 
-# Runs never overlap: each one starts from the snapshot the previous run pushed.
+# Runs never overlap: each job starts from what the previous one pushed.
 concurrency:
   group: signal-snapshots
   cancel-in-progress: false
 
+permissions:
+  contents: write  # Required to push signal_history/ and bot_depot/ back to repo
+
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: main
+    - id: decide
+      env:
+        FORCE: ${{ inputs.force }}
+      run: |
+        if [ "$FORCE" = "true" ]; then RUN=true; else RUN=$(python3 run_check.py); fi
+        echo "Kette noetig: $RUN"
+        echo "run=$RUN" >> "$GITHUB_OUTPUT"
+
   update-signals:
+    needs: check
+    if: needs.check.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45  # Finnhub allows 55 calls a minute: about 15 minutes per group
-
-    permissions:
-      contents: write  # Required to push signal_history/ back to repo
+    strategy:
+      max-parallel: 1   # one group after another
+      fail-fast: false  # a failed group must not stop the others
+      matrix:
+        group: [asia, europe, america-1, america-2, america-3]
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        # Important: fetch full history so we can push back
+        ref: main        # the latest state, including what the previous group pushed
         fetch-depth: 0
 
     - name: Set up Python
@@ -62,25 +78,7 @@ jobs:
         ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
         FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-        SCHEDULE: ${{ github.event.schedule }}
-        INPUT_GROUP: ${{ inputs.group }}
-      run: |
-        case "$SCHEDULE" in
-          "30 10 * * 1-5") GROUP=asia ;;
-          "30 17 * * 1-5") GROUP=europe ;;
-          "30 21 * * 1-5") GROUP=america-1 ;;
-          "30 22 * * 1-5") GROUP=america-2 ;;
-          "30 23 * * 1-5") GROUP=america-3 ;;
-          *)             GROUP="${INPUT_GROUP:-all}" ;;
-        esac
-        echo "Gruppe: $GROUP"
-        echo "GROUP=$GROUP" >> "$GITHUB_ENV"
-        python update_signals.py --group "$GROUP"
-
-    - name: Run paper bot (after the last group of the day)
-      if: env.GROUP == 'america-3' || inputs.run_bot
-      continue-on-error: true  # a bot problem must never block saving the snapshot
-      run: python paper_bot.py run
+      run: python update_signals.py --group "${{ matrix.group }}"
 
     - name: Commit and Push changes
       run: |
@@ -90,9 +88,45 @@ jobs:
         git add -A signal_history/ bot_depot/
         git status
         if ! git diff --staged --quiet; then
-          git commit -m "Auto-update signal snapshots"
-          git pull --rebase origin main
-          git push origin HEAD:main
+          git commit -m "Auto-update signal snapshots (${{ matrix.group }})"
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && break
+            sleep 10
+          done
         else
           echo "No changes to commit"
+        fi
+
+  paper-bot:
+    needs: [check, update-signals]
+    if: always() && needs.check.outputs.run == 'true'  # also after a failed group: stops must run
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: main
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Run paper bot
+      run: python paper_bot.py run
+    - name: Commit and Push changes
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+        git add -A signal_history/ bot_depot/
+        if ! git diff --staged --quiet; then
+          git commit -m "Paper bot: daily step"
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && break
+            sleep 10
+          done
         fi

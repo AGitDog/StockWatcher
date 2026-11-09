@@ -179,8 +179,8 @@ def test_workflow_runs_bot_after_last_group_and_commits_state():
 
     content = (Path(__file__).resolve().parent.parent / ".github/workflows/update_signals.yml").read_text(encoding="utf-8")
     assert "python paper_bot.py run" in content
-    assert "env.GROUP == 'america-3'" in content
-    assert "continue-on-error: true" in content
+    assert "needs: [check, update-signals]" in content
+    assert "if: always() && needs.check.outputs.run == 'true'" in content  # runs even after a failed group
     assert "git add -A signal_history/ bot_depot/" in content
 
 

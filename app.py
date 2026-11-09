@@ -336,24 +336,29 @@ def render_watchlist_signal_monitor(mapping_text: str):
 
     active_name = st.session_state.get("active_watchlist_name", DEFAULT_WATCHLIST_NAME)
 
-    if "signal_monitor_items" not in st.session_state:
-        history = load_signal_snapshot_history(active_name)
-        if history:
-            st.session_state.signal_monitor_items = history[-1].get("items", [])
+    latest_history = load_signal_snapshot_history(active_name)
+    latest_stamp = latest_history[-1].get("timestamp") if latest_history else None
+    # Reload when a newer nightly snapshot arrived while the page stayed open
+    if "signal_monitor_items" not in st.session_state or (
+        latest_stamp and st.session_state.get("signal_monitor_timestamp") not in (None, latest_stamp)
+    ):
+        if latest_history:
+            st.session_state.signal_monitor_items = latest_history[-1].get("items", [])
             st.session_state.signal_monitor_watchlist_name = active_name
+            st.session_state.signal_monitor_timestamp = latest_stamp
 
     signal_items = prepare_signal_items(st.session_state.get("signal_monitor_items", []))
     if not signal_items:
         st.info("Noch kein Snapshot vorhanden. Starte die Berechnung auf der Seite 'Forschung' unter '⚙️ Datenpflege & Signal-Snapshot erstellen'.")
         return
 
-    history = load_signal_snapshot_history(active_name)
+    history = latest_history
     score_history = build_score_history_frame(history)
 
     m_stat1, m_stat2, m_stat3 = st.columns(3)
     m_stat1.caption(f"Watchlist: `{active_name}`")
     m_stat2.caption(f"Analysierte Werte: **{len(signal_items)} Symbole**")
-    m_stat3.caption(f"Snapshot-Historie: **{len(history)} Tage**")
+    m_stat3.caption(f"Datenstand: **{str(latest_stamp or '')[:10]}** · Historie: **{len(history)} Tage**")
 
     st.caption(
         "Sortiert nach dem **Rang-Score** (0 bis 100). Der **Punkte-Score** ist die ältere Methode mit festen Punkten. "

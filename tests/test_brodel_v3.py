@@ -153,7 +153,8 @@ def test_workflow_runs_only_on_weekdays():
 
     content = (Path(__file__).resolve().parent.parent / ".github/workflows/update_signals.yml").read_text(encoding="utf-8")
     crons = re.findall(r"cron: '([^']+)'", content)
-    assert crons and all(cron.endswith("* * 1-5") for cron in crons)
+    assert crons[0].endswith("* * 1-5")  # main start Monday to Friday
+    assert crons[1].endswith("* * 2-6")  # backup the morning after
 
 
 def test_finnhub_brake_allows_55_calls_per_minute():
