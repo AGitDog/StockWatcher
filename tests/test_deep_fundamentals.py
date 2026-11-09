@@ -243,3 +243,45 @@ def test_fetch_company_extended_fundamentals_dividend_streak_reset_on_cut():
 
 
 
+
+
+def test_dividend_yield_reads_both_yahoo_formats():
+    from stock_agent import dividend_yield_percent
+
+    assert dividend_yield_percent(0.32, 0.0031) == 0.32  # Apple, current format (percent)
+    assert dividend_yield_percent(0.0032, 0.0031) == 0.32  # older format (fraction)
+    assert dividend_yield_percent(2.86) == 2.86  # without trailing yield: current format
+    assert dividend_yield_percent(None, 0.01) is None
+
+
+def test_quote_currency_units_for_pence():
+    from stock_agent import quote_currency_units
+
+    assert quote_currency_units("GBp") == ("GBP", 100)
+    assert quote_currency_units("USD") == ("USD", 1)
+    assert quote_currency_units(None) == ("EUR", 1)
+
+
+def test_london_stock_uses_pence_for_dividend_and_pounds_for_pe():
+    """Yahoo: price and dividend history in pence, dividend rate in pounds, EPS in the report currency."""
+    mock_ticker = MagicMock()
+    mock_ticker.get_info.return_value = {
+        "longName": "London Corp", "currency": "GBp", "financialCurrency": "GBP",
+        "dividendRate": 1.50, "dividendYield": 3.0, "trailingAnnualDividendYield": 0.03, "currentPrice": 5000.0,
+    }
+    eps = pd.Series([4.0], index=[pd.Timestamp("2025-12-31")])
+    mock_ticker.income_stmt = pd.DataFrame([eps], index=["Diluted EPS"])
+    prices = pd.DataFrame({"Close": [5000.0]}, index=[pd.Timestamp("2025-12-30")])
+    mock_ticker.history.return_value = prices
+    mock_ticker.dividends = pd.Series([70.0, 75.0], index=[pd.Timestamp("2024-06-01"), pd.Timestamp("2025-06-01")])
+    with patch("stock_agent.yf.Ticker", return_value=mock_ticker):
+        fetch_company_extended_fundamentals.cache_clear()
+        try:
+            result = fetch_company_extended_fundamentals("LON.L")
+        finally:
+            fetch_company_extended_fundamentals.cache_clear()
+    assert result["dividend_rate"] == 150.0  # pence, like the price and the history
+    assert result["dividend_yield_pct"] == 3.0
+    assert result["pe_trend"][0]["KGV"] == 12.5  # 50 pounds / 4 pounds EPS, not 5000 / 4
+    assert result["main_currency"] == "GBP" and result["financial_currency"] == "GBP"
+    assert result["dividend_streak_years"] == 2  # 150 pence beats 75, 75 beats 70: no false cut from mixing units

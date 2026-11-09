@@ -163,6 +163,16 @@
   .score-low  { background: rgba(139, 148, 158, 0.13); color: #abb2bf; border: 1px solid rgba(139, 148, 158, 0.28); }
 
   .rank-score { font-weight: 700; color: var(--text-primary); }
+  .blk-high { color: var(--pos); font-weight: 600; }
+  .blk-mid { color: var(--text-primary); }
+  .blk-low { color: var(--neg); }
+
+  .view-toggle { display: inline-flex; border: 1px solid var(--border-color); border-radius: 7px; overflow: hidden; }
+  .view-toggle button {
+    background: var(--card-bg); color: var(--text-muted); border: none; padding: 5px 10px;
+    font-family: inherit; font-size: 12px; cursor: pointer;
+  }
+  .view-toggle button.active { background: var(--active-bg); color: var(--text-primary); font-weight: 600; }
   .status-icon { margin-left: 5px; font-size: 11px; color: var(--text-muted); }
 
   .empty-state { padding: 40px; text-align: center; color: var(--text-muted); }
@@ -179,7 +189,16 @@
     <input type="text" id="searchInput" placeholder="Suchen: Symbol, Name oder Sektor …" autocomplete="off">
   </div>
   <div class="toolbar-right">
-    <div class="legend" title="Farbstufen des Punkte-Scores (Maximum 90 Punkte)">
+    <div class="view-toggle" title="Welche Bausteine die Spalten in der Mitte zeigen">
+      <span style="padding:5px 8px;">Bausteine:</span>
+      <button type="button" data-view="v3">Rang-Score</button>
+      <button type="button" data-view="v2">Punkte-Score</button>
+    </div>
+    <div class="legend" id="legendV3" title="Farben der Rang-Score-Bausteine">
+      <span><i class="dot" style="background:#5fd38d"></i>oberes Drittel</span>
+      <span><i class="dot" style="background:#ff7b72"></i>unteres Drittel</span>
+    </div>
+    <div class="legend" id="legendV2" title="Farbstufen des Punkte-Scores (Maximum 90 Punkte)">
       <span>Punkte-Score:</span>
       <span><i class="dot" style="background:#5fd38d"></i>ab 50</span>
       <span><i class="dot" style="background:#ffc233"></i>35–49</span>
@@ -204,6 +223,8 @@
   let selectedSymbol = null;
   let sortColumn = "Rang-Score";
   let sortAscending = false;
+  let blockView = "v3";
+  try { blockView = localStorage.getItem("stockwatcher.block_view") || "v3"; } catch (e) { blockView = "v3"; }
 
   // kind: text | rank | score | plain | points | signed
   const COLUMNS = [
@@ -211,23 +232,41 @@
     { key: "Name", label: "Name", kind: "text", class: "col-name" },
     { key: "Sektor", label: "Sektor", kind: "text", class: "col-sector" },
     { key: "Rang-Score", label: "Rang-Score", kind: "rank", sep: true, tip: "Rang aus 6 Bausteinen, 0 bis 100: besser als so viel Prozent der Vergleichsaktien" },
-    { key: "Punkte-Score", label: "Punkte-Score", kind: "score", tip: "Summe fester Punkte aus 11 Signalen (max. 90)" },
-    { key: "EPS", label: "EPS", kind: "points", sep: true, tip: "EPS-Revisionen (max. 15)" },
-    { key: "Kursziel", label: "Kursziel", kind: "points", tip: "Kursziele & Konsens (max. 5)" },
-    { key: "P/V", label: "P/V", kind: "points", tip: "Preis/Volumen (max. 5)" },
-    { key: "News", label: "News", kind: "points", tip: "News-Sentiment (max. 15)" },
-    { key: "Event", label: "Event", kind: "points", tip: "Event-Druck (max. 5)" },
-    { key: "Insider", label: "Insider", kind: "points", tip: "Insider-Aktivität (max. 10)" },
-    { key: "Short", label: "Short", kind: "points", tip: "Short Interest (max. 5)" },
-    { key: "Rel.St.", label: "Rel.St.", kind: "points", tip: "Relative Stärke (max. 5)" },
-    { key: "Fundam.", label: "Fundam.", kind: "points", tip: "Fundamentale Bewertung (max. 15)" },
-    { key: "Tech.", label: "Tech.", kind: "points", tip: "Technische Indikatoren (max. 5)" },
-    { key: "Rückkauf", label: "Rückkauf", kind: "points", tip: "Aktienrückkauf (max. 5)" },
+    { key: "Punkte-Score", label: "Punkte-Score", kind: "score", tip: "Summe fester Punkte aus 11 Signalen, einzelne Signale geben auch Minuspunkte (max. 90)" },
+    { key: "R:Qualitaet", label: "Qualität", kind: "block", max: 25, view: "v3", sep: true, tip: "Rang-Score-Baustein Qualität: Marge, Eigenkapitalrendite, Verschuldung im Vergleich zum Sektor (max. 25)" },
+    { key: "R:Momentum", label: "Momentum", kind: "block", max: 20, view: "v3", tip: "Rang-Score-Baustein Momentum: Kursentwicklung 12 Monate ohne den letzten Monat (max. 20)" },
+    { key: "R:EPS-Revisionen", label: "EPS-Rev.", kind: "block", max: 20, view: "v3", tip: "Rang-Score-Baustein EPS-Revisionen: Anteil der Analysten, die ihre Gewinnschätzung erhöhen (max. 20)" },
+    { key: "R:Bewertung", label: "Bewertung", kind: "block", max: 15, view: "v3", tip: "Rang-Score-Baustein Bewertung: KGV und Free-Cashflow-Rendite im Vergleich zum Sektor (max. 15)" },
+    { key: "R:Aktienrueckkauf", label: "Rückkauf", kind: "block", max: 10, view: "v3", tip: "Rang-Score-Baustein Aktienrückkauf: Veränderung der Aktienanzahl in 12 Monaten (max. 10)" },
+    { key: "R:Insider", label: "Insider", kind: "block", max: 10, view: "v3", tip: "Rang-Score-Baustein Insider-Käufe der letzten 90 Tage; – = keine Daten, zählt dann nicht mit (max. 10)" },
+    { key: "EPS", label: "EPS", kind: "points", view: "v2", sep: true, tip: "EPS-Revisionen (max. 15)" },
+    { key: "Kursziel", label: "Kursziel", kind: "points", view: "v2", tip: "Kursziele & Konsens (max. 5)" },
+    { key: "P/V", label: "P/V", kind: "points", view: "v2", tip: "Preis/Volumen (max. 5)" },
+    { key: "News", label: "News", kind: "points", view: "v2", tip: "News-Sentiment (max. 15)" },
+    { key: "Event", label: "Event", kind: "points", view: "v2", tip: "Event-Druck (max. 5)" },
+    { key: "Insider", label: "Insider", kind: "points", view: "v2", tip: "Insider-Aktivität (max. 10)" },
+    { key: "Short", label: "Short", kind: "points", view: "v2", tip: "Short Interest (max. 5)" },
+    { key: "Rel.St.", label: "Rel.St.", kind: "points", view: "v2", tip: "Relative Stärke (max. 5)" },
+    { key: "Fundam.", label: "Fundam.", kind: "points", view: "v2", tip: "Fundamentale Bewertung (max. 15)" },
+    { key: "Tech.", label: "Tech.", kind: "points", view: "v2", tip: "Technische Indikatoren (max. 5)" },
+    { key: "Rückkauf", label: "Rückkauf", kind: "points", view: "v2", tip: "Aktienrückkauf (max. 5)" },
     { key: "Vs. Sektor", label: "Vs. Sektor", kind: "signed", sep: true, tip: "Rang-Score minus Durchschnitt der Aktien aus derselben Region und demselben Sektor" },
-    { key: "Rang", label: "Rang", kind: "text", tip: "Platz nach Rang-Score unter den Aktien aus derselben Region und demselben Sektor" }
+    { key: "Rang", label: "Rang", kind: "text", sortKey: "_rang_pos", tip: "Platz nach Rang-Score unter den Aktien aus derselben Region und demselben Sektor" }
   ];
 
   const isNumeric = col => col.kind !== "text";
+  const visibleColumns = () => COLUMNS.filter(col => !col.view || col.view === blockView);
+  const sortKeyOf = key => (COLUMNS.find(col => col.key === key) || {}).sortKey || key;
+
+  function setBlockView(view) {
+    blockView = view;
+    try { localStorage.setItem("stockwatcher.block_view", view); } catch (e) { /* private window */ }
+    const sortCol = COLUMNS.find(col => col.key === sortColumn);
+    if (sortCol && sortCol.view && sortCol.view !== view) { sortColumn = "Rang-Score"; sortAscending = false; }
+    document.querySelectorAll(".view-toggle button").forEach(btn => btn.classList.toggle("active", btn.dataset.view === view));
+    document.getElementById("legendV3").style.display = view === "v3" ? "" : "none";
+    applySortAndRender();
+  }
 
   function sendValueToStreamlit(value) {
     window.parent.postMessage({ isStreamlitMessage: true, type: "streamlit:setComponentValue", value: value }, "*");
@@ -244,7 +283,7 @@
   function renderHeader() {
     const headerRow = document.getElementById("tableHeader");
     headerRow.innerHTML = "";
-    COLUMNS.forEach(col => {
+    visibleColumns().forEach(col => {
       const th = document.createElement("th");
       th.textContent = col.label;
       if (col.tip) th.title = col.tip;
@@ -258,7 +297,7 @@
           sortAscending = !sortAscending;
         } else {
           sortColumn = col.key;
-          sortAscending = (col.kind === "text");
+          sortAscending = (col.kind === "text");  // text and Rang: A-Z and rank 1 first
         }
         applySortAndRender();
       });
@@ -283,26 +322,27 @@
       td.classList.add("rank-score");
       return;
     }
+    if (col.kind === "block" && typeof val === "number") {
+      const share = val / col.max;
+      td.textContent = val.toFixed(1);
+      td.classList.add(share >= 2 / 3 ? "blk-high" : share <= 1 / 3 ? "blk-low" : "blk-mid");
+      td.title = `${val.toFixed(1)} von ${col.max}: besser als ${Math.round(share * 100)} % der Vergleichsaktien`;
+      return;
+    }
     if (col.kind === "score" && typeof val === "number") {
       const badge = document.createElement("span");
       badge.className = `badge-score ${getScoreClass(val)}`;
       badge.textContent = val;
       td.appendChild(badge);
-      if (row._status) {
-        const icon = document.createElement("span");
-        icon.className = "status-icon";
-        icon.textContent = row._status === "stale" ? "⏱" : "⚠";
-        icon.title = row._hint || "";
-        td.appendChild(icon);
-      }
       return;
     }
     if ((col.kind === "points" || col.kind === "signed") && typeof val === "number") {
+      const shown = col.kind === "signed" ? Math.abs(val).toFixed(1) : Math.abs(val);
       if (val > 0) {
-        td.textContent = "+" + val;
+        td.textContent = "+" + shown;
         td.classList.add("pts-pos");
       } else if (val < 0) {
-        td.textContent = "−" + Math.abs(val);
+        td.textContent = "−" + shown;
         td.classList.add("pts-neg");
       } else {
         td.textContent = col.kind === "points" ? "·" : "0";
@@ -312,6 +352,13 @@
     }
     td.textContent = val;
     if (col.class === "col-name" || col.class === "col-sector") td.title = val;
+    if (col.key === "Symbol" && row._status) {
+      const icon = document.createElement("span");
+      icon.className = "status-icon";
+      icon.textContent = row._status === "stale" ? "⏱" : "⚠";
+      icon.title = row._hint || "";
+      td.appendChild(icon);
+    }
   }
 
   function renderBody() {
@@ -319,7 +366,7 @@
     tbody.innerHTML = "";
 
     if (currentFilteredRows.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="${COLUMNS.length}" class="empty-state">Keine passenden Aktien gefunden.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${visibleColumns().length}" class="empty-state">Keine passenden Aktien gefunden.</td></tr>`;
     }
 
     currentFilteredRows.forEach(row => {
@@ -337,7 +384,7 @@
         sendValueToStreamlit(row["Symbol"]);
       });
 
-      COLUMNS.forEach(col => {
+      visibleColumns().forEach(col => {
         const td = document.createElement("td");
         if (col.class) td.classList.add(col.class);
         if (isNumeric(col)) td.classList.add("num");
@@ -355,9 +402,10 @@
 
   function applySortAndRender() {
     currentFilteredRows.sort((a, b) => {
-      let valA = a[sortColumn];
-      let valB = b[sortColumn];
-      const numeric = COLUMNS.some(col => col.key === sortColumn && isNumeric(col));
+      const key = sortKeyOf(sortColumn);
+      let valA = a[key];
+      let valB = b[key];
+      const numeric = COLUMNS.some(col => col.key === sortColumn && (isNumeric(col) || col.sortKey));
       const empty = numeric ? (sortAscending ? Infinity : -Infinity) : "";  // missing values always last
       if (valA === undefined || valA === null) valA = empty;
       if (valB === undefined || valB === null) valB = empty;
@@ -388,6 +436,7 @@
   }
 
   document.getElementById("searchInput").addEventListener("input", applyFilter);
+  document.querySelectorAll(".view-toggle button").forEach(btn => btn.addEventListener("click", () => setBlockView(btn.dataset.view)));
 
   const FRAME_HEIGHT = 880;
 
@@ -396,6 +445,8 @@
       const args = event.data.args || {};
       rawRows = args.rows || [];
       if (args.selected_symbol) selectedSymbol = args.selected_symbol;
+      currentFilteredRows = [...rawRows];
+      setBlockView(blockView === "v2" ? "v2" : "v3");
       applyFilter();
       setFrameHeight(Math.min(Math.max(document.body.scrollHeight, 250), FRAME_HEIGHT));
     }

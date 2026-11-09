@@ -213,7 +213,7 @@ def test_table_rows_put_brodel_v2_first_without_v1():
     import app
 
     rows = app.build_signal_table_rows([_app_item("AAA", 80, 20)])
-    keys = list(rows[0].keys())
+    keys = [key for key in rows[0] if not key.startswith("_")]
     assert keys[3:5] == ["Rang-Score", "Punkte-Score"]
     assert "Punkte-Score alt" not in keys
     assert keys[-1] == "Rang"
@@ -221,6 +221,69 @@ def test_table_rows_put_brodel_v2_first_without_v1():
     assert rows[0]["Kursziel"] == 5  # 2.0 points
     assert rows[0]["Rückkauf"] == 3
     assert "ML-Score" not in rows[0]
+
+
+def test_table_rows_carry_rank_blocks_and_a_numeric_rank():
+    import app
+
+    item = _app_item("AAA", 80, 20)
+    item["brodel_score_v3"] = 90.6
+    item["signal_breakdown_v3"] = {"Qualitaet": 24.1, "Momentum": 19.1, "EPS-Revisionen": 19.6,
+                                   "Bewertung": 13.9, "Aktienrueckkauf": 4.9, "Insider": None}
+    item["peer_context"] = {"sector": "Financial Services", "score_basis": "rank", "score_vs_sector": 37.3,
+                            "sector_rank": 10, "sector_count": 43}
+    etf = _app_item("ETF", 0, 5)
+    etf["peer_context"] = {"sector": "Unbekannt", "score_basis": "points", "score_vs_sector": 4.0,
+                           "sector_rank": 2, "sector_count": 9}
+    row, etf_row = app.build_signal_table_rows([item, etf])
+    assert row["R:Qualitaet"] == 24.1 and row["R:Insider"] is None
+    assert row["Rang"] == "10/43" and row["_rang_pos"] == 10  # sorted as a number, not as text
+    assert row["Vs. Sektor"] == 37.3
+    assert etf_row["Vs. Sektor"] is None and etf_row["Rang"] is None  # no points mixed into a Rang-Score column
+
+
+def test_prepare_signal_items_sorts_by_rank_score_first():
+    import app
+
+    low, high, none = _app_item("LOW", 0, 60), _app_item("HIGH", 0, 10), _app_item("NONE", 0, 90)
+    low["brodel_score_v3"], high["brodel_score_v3"] = 40.0, 90.6
+    assert [item["symbol"] for item in app.prepare_signal_items([low, none, high])] == ["HIGH", "LOW", "NONE"]
+    assert app.score_label(high) == "Rang-Score 90.6 · Punkte-Score 10"
+    assert app.score_label(none) == "kein Rang-Score · Punkte-Score 90"
+
+
+def test_rank_score_explanation_shows_the_calculation():
+    import app
+
+    item = _app_item("AAA", 80, 20)
+    item["brodel_score_v3"] = 90.7
+    item["signal_breakdown_v3"] = {"Qualitaet": 24.1, "Momentum": 19.1, "EPS-Revisionen": 19.6,
+                                   "Bewertung": 13.9, "Aktienrueckkauf": 4.9, "Insider": None}
+    text = app.rank_score_explanation(item)
+    assert "81.6 von 90 möglichen Punkten" in text
+    assert "Insider ohne Daten" in text
+    assert "**90.7**" in text
+    assert app.rank_score_explanation(_app_item("B", 0, 0)) is None
+
+
+def test_score_history_contains_rank_score_by_data_day():
+    import app
+
+    def stock(symbol, momentum):
+        item = _app_item(symbol, 10, 10)
+        item["factors_v3"] = {"profit_margin": 0.1, "return_on_equity": 0.1, "momentum_12_1": momentum, "eps_up_ratio": 0.5,
+                              "share_change": 0.0, "forward_pe": 12.0}
+        return item
+
+    history = [
+        {"timestamp": "2026-11-05T10:00:00Z", "items": [_app_item("AAA", 80, 20)]},  # before factors were stored
+        {"timestamp": "2026-11-06T23:59:59Z", "items": [stock("AAA", 0.5), stock("BBB", 0.1)]},
+    ]
+    frame = app.build_score_history_frame(history)
+    first = frame[frame["timestamp"] == pd.Timestamp("2026-11-05")]
+    later = frame[(frame["timestamp"] == pd.Timestamp("2026-11-06")) & (frame["symbol"] == "AAA")]
+    assert first["brodel_score_v3"].isna().all()
+    assert later["brodel_score_v3"].iloc[0] > frame.loc[frame["symbol"] == "BBB", "brodel_score_v3"].iloc[0]
 
 
 def test_prepare_signal_items_sorts_by_v2_and_backfills():

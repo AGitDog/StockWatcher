@@ -463,7 +463,7 @@ def test_fetch_company_extended_fundamentals(mock_ticker_class):
         "trailingPE": 30.5,
         "forwardPE": 28.0,
         "pegRatio": 2.1,
-        "dividendYield": 0.005,
+        "dividendYield": 0.5,  # Yahoo delivers percent since 2025
         "dividendRate": 1.00,
         "currency": "USD",
         "longBusinessSummary": "Apple designs, manufactures, and markets smartphones, tablets, and computers.",

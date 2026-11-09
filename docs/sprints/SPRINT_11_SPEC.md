@@ -45,3 +45,31 @@ Die internen Feldnamen (`brodel_score_v2`, `brodel_score_v3`, …) bleiben unver
 - **Neu:** Aktien mit Rang-Score werden nach Rang-Score mit derselben Region und demselben Sektor verglichen. Das ist dieselbe Gruppe, in der der Rang-Score selbst gebildet wird. BGEO.L steht damit bei 1/43 und +37,3. Aktien ohne Rang-Score (ETFs, dünne Daten) behalten den Vergleich nach Punkte-Score über den ganzen Sektor.
 - Die App berechnet den Vergleich beim Laden neu, deshalb gilt die Änderung auch für schon gespeicherte Tage. Die Tooltips der Tabelle und der Detailansicht nennen die Vergleichsgruppe.
 - **Test:** `test_peer_context_ranks_by_rank_score_within_region_and_sector`. 355 Tests grün.
+
+## 5. Nachtrag 09.11.2026: Prüfung von Tabelle und Detailansicht
+Freigabe im Chat: „Bitte evaluiere nochmals alles, jede Spalte in der großen Tabelle aber auch die Detailansicht … ggf. verbessere selbstständig.“
+
+**Befunde und Korrekturen:**
+
+| Stelle | Fehler | Korrektur |
+|---|---|---|
+| Tabelle, Bausteinspalten | Sortiert wird nach Rang-Score, die Spalten zeigten aber nur Punkte-Score-Bausteine | Umschalter „Bausteine: Rang-Score / Punkte-Score“, Standard Rang-Score (6 Spalten, grün oberes / rot unteres Drittel); die Wahl merkt sich der Browser |
+| Tabelle, „Rang“ | sortierte als Text („10/43“ vor „2/43“) | sortiert nach der Platzzahl, Platz 1 zuerst |
+| Tabelle, „Vs. Sektor“/„Rang“ | Aktien ohne Rang-Score mischten Punkte-Differenzen in die Spalte | dort „–“; Werte immer mit einer Nachkommastelle |
+| Tabelle, Status ⏱/⚠ | hing am Punkte-Score | hängt am Symbol |
+| Marktbeobachtung | Rang-Score und Sektor-Vergleich kamen gespeichert aus dem Snapshot (alte Formel für ältere Tage) | werden beim Laden neu berechnet (0,14 s) |
+| Auswahlliste | sortiert und beschriftet nach Punkte-Score | sortiert wie die Tabelle, Label „Rang-Score 90.6 · Punkte-Score 38“ |
+| Score-Verlauf | ohne Rang-Score, x-Achse = Uhrzeit des Laufs | Rang-Score und Punkte-Score je Datentag; Rang-Score nachgerechnet aus den gespeicherten Kennzahlen (ab 06.11.2026); „Punkte-Score alt“ entfernt |
+| Bausteintabelle | keine Erklärung, wie aus den Punkten der Wert wird | Satz mit der Rechnung, z. B. „81.6 von 90 möglichen Punkten … = 90.6“; Hilfe-Texte an den Spalten |
+| Stärkster Peer | Zahl ohne Score-Namen | „(Rang-Score 72.5)“ |
+| Dividendenrendite | Yahoo liefert seit 2025 Prozent; Werte unter 1 wurden ×100 gerechnet (Apple 0,32 % → 32 %) | Abgleich mit der Rendite der letzten 12 Monate, die immer ein Anteil ist |
+| London-Aktien | Kurs und Dividendenhistorie in Pence, Dividendenrate in Pfund → Dividende falsch beschriftet und jede Steigerungsserie 0 | Rate in Pence umgerechnet; Hinweis auf Pence |
+| Historisches KGV | Kurs in Pence ÷ Gewinn je Aktie in Pfund oder Berichtswährung (Unilever: EUR) | Kurs in die Währung des Gewinns umgerechnet (Pence → Pfund, Wechselkurs zum Stichtag); ohne Kurs bleibt es leer statt falsch |
+| Geschäftsbericht-Zahlen | mit der Kurswährung beschriftet (BGEO.L: „GBp“ statt GEL) | Berichtswährung (`financialCurrency`), Marktkapitalisierung in Pfund |
+| Banken | Brutto- und operative Marge „0,0 %“ | „n/a“, weil Yahoo bei Banken 0 meldet |
+| Dividende im laufenden Jahr | „−33 % Wachstum“, weil das Jahr unvollständig ist | kein Wachstum für das laufende Jahr |
+| Kursziel | Kachel „Aufwärtspotenzial“ mit doppeltem Wert | „Abstand zum Kursziel“, ohne Doppelung |
+
+**Hilfe:** Beispielrechnung des Rang-Scores und Erklärung der Tabellenspalten.
+
+**Tests:** 362 grün, neu: Bausteine und Platzzahl in den Tabellenzeilen, Sortierung nach Rang-Score, Erklärsatz, Rang-Score im Verlauf, beide Yahoo-Formate der Dividendenrendite, Pence-Logik. Geprüft mit echten Daten (AppTest für BGEO.L, Live-Abruf Apple, BGEO.L, Unilever) und einem Screenshot der Tabelle in Edge.

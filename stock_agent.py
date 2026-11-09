@@ -2590,6 +2590,46 @@ def generate_german_company_summary(symbol: str, info: dict[str, Any]) -> str:
     return " ".join(details)
 
 
+MINOR_UNIT_CURRENCIES = {"GBp": ("GBP", 100), "GBX": ("GBP", 100), "ILA": ("ILS", 100), "ZAc": ("ZAR", 100)}
+
+
+def quote_currency_units(currency: str | None) -> tuple[str, int]:
+    """Main currency and divisor for a quote currency: London quotes in pence (GBp), 100 pence = 1 GBP."""
+    value = str(currency or "EUR")
+    return MINOR_UNIT_CURRENCIES.get(value, (value, 1))
+
+
+def dividend_yield_percent(dividend_yield: Any, trailing_yield: Any = None) -> float | None:
+    """Dividend yield in percent.
+
+    Yahoo switched ``dividendYield`` from a fraction (0.005) to percent (0.5). The trailing
+    yield is still a fraction, so it decides which reading fits; without it the value is read as
+    percent, the current format.
+    """
+    raw = _safe_float(dividend_yield)
+    if raw is None:
+        return None
+    trailing = _safe_float(trailing_yield)
+    if trailing and trailing > 0:
+        as_percent, as_fraction = raw, raw * 100
+        reference = trailing * 100
+        return round(as_percent if abs(as_percent - reference) <= abs(as_fraction - reference) else as_fraction, 2)
+    return round(raw, 2)
+
+
+def _fx_close_series(from_currency: str, to_currency: str) -> pd.Series | None:
+    """Daily closes of one unit of ``from_currency`` in ``to_currency`` (5 years), or None."""
+    if from_currency == to_currency:
+        return None
+    hist = _safe_dataframe(lambda: yf.Ticker(f"{from_currency}{to_currency}=X").history(period="5y"))
+    if hist is None or hist.empty or "Close" not in hist:
+        return None
+    series = hist["Close"].dropna()
+    if series.index.tz is not None:
+        series.index = series.index.tz_localize(None)
+    return series if not series.empty else None
+
+
 @lru_cache(maxsize=128)
 def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
     """Fetch extended fundamentals: German company profile, P/E metrics & trend, and dividend history/streak."""
@@ -2597,6 +2637,9 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
     info = _safe_get(lambda: ticker.get_info(), {}) or {}
 
     summary_de = generate_german_company_summary(symbol, info)
+    currency = str(info.get("currency") or "EUR")  # quote currency: price, target, dividends per share
+    main_currency, price_divisor = quote_currency_units(currency)
+    financial_currency = str(info.get("financialCurrency") or main_currency)  # income statement, EPS
     sector = info.get("sector") or "Unbekannt"
     sector_de = SECTOR_TRANSLATIONS.get(sector, sector)
     industry = info.get("industry") or "Unbekannt"
@@ -2610,6 +2653,7 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
     if income_stmt is not None and not income_stmt.empty and "Diluted EPS" in income_stmt.index:
         eps_series = income_stmt.loc["Diluted EPS"].dropna()
         hist = _safe_dataframe(lambda: ticker.history(period="5y"))
+        fx_series = _fx_close_series(main_currency, financial_currency)
         if hist is not None and not hist.empty:
             hist_clean = hist.copy()
             if hist_clean.index.tz is not None:
@@ -2622,7 +2666,13 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
                     eps_float = float(eps_val)
                     nearby = hist_clean[hist_clean.index <= dt]
                     close_val = float(nearby["Close"].iloc[-1]) if not nearby.empty else None
-                    pe_val = round(close_val / eps_float, 1) if (close_val and eps_float > 0) else None
+                    # Price per share in the currency of the EPS (pence to pounds, then FX if needed)
+                    price_in_eps_currency = close_val / price_divisor if close_val else None
+                    if price_in_eps_currency and main_currency != financial_currency:
+                        fx_nearby = fx_series[fx_series.index <= dt] if fx_series is not None else None
+                        rate = float(fx_nearby.iloc[-1]) if fx_nearby is not None and not fx_nearby.empty else None
+                        price_in_eps_currency = price_in_eps_currency * rate if rate else None
+                    pe_val = round(price_in_eps_currency / eps_float, 1) if (price_in_eps_currency and eps_float > 0) else None
                     pe_trend.append({
                         "Jahr": int(dt.year),
                         "EPS": round(eps_float, 2),
@@ -2657,6 +2707,8 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
                     prev_idx = all_years.index(y) - 1
                     prev_val = float(annual_divs.loc[all_years[prev_idx]]) if prev_idx >= 0 else None
                     chg_pct = round(((val - prev_val) / prev_val) * 100, 1) if (prev_val and prev_val > 0) else None
+                    if y >= current_year:
+                        chg_pct = None  # the running year is not complete, a growth rate would mislead
                     
                     div_records.append({
                         "Jahr": int(y),
@@ -2670,13 +2722,14 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
         except Exception:
             pass
 
-    raw_yield = _safe_float(info.get("dividendYield"))
-    if raw_yield is not None:
-        div_yield_pct = round(raw_yield * 100, 2) if raw_yield < 1.0 else round(raw_yield, 2)
-    else:
-        div_yield_pct = None
+    div_yield_pct = dividend_yield_percent(info.get("dividendYield"), info.get("trailingAnnualDividendYield"))
 
-    div_rate = _safe_float(info.get("dividendRate")) or _safe_float(info.get("trailingAnnualDividendRate"))
+    # Yahoo gives the rate in the main currency (GBP), the dividend history in the quote unit (pence)
+    div_rate = _safe_float(info.get("dividendRate"))
+    if div_rate is not None:
+        div_rate = round(div_rate * price_divisor, 4)
+    else:
+        div_rate = _safe_float(info.get("trailingAnnualDividendRate"))
     if div_rate is None and div_records:
         div_rate = div_records[-1]["Dividende"]
 
@@ -2711,8 +2764,6 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
                         break
         except Exception:
             pass
-
-    currency = str(info.get("currency") or "EUR")
 
     # Gross Profit, Gross Margin & Operating Expenses history
     gross_margin_history: list[dict[str, Any]] = []
@@ -2775,10 +2826,11 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
                 })
 
     raw_gm = _safe_float(info.get("grossMargins"))
-    gross_margin_ttm = round(raw_gm * 100, 2) if raw_gm is not None else None
+    # Yahoo reports exactly 0 for banks and insurers, where these margins do not exist
+    gross_margin_ttm = round(raw_gm * 100, 2) if raw_gm else None
 
     raw_om = _safe_float(info.get("operatingMargins"))
-    operating_margin_ttm = round(raw_om * 100, 2) if raw_om is not None else None
+    operating_margin_ttm = round(raw_om * 100, 2) if raw_om else None
 
     # Future valuation & analyst consensus
     target_mean = _safe_float(info.get("targetMeanPrice"))
@@ -2813,6 +2865,8 @@ def fetch_company_extended_fundamentals(symbol: str) -> dict[str, Any]:
         "employees": info.get("fullTimeEmployees"),
         "market_cap": market_cap,
         "currency": currency,
+        "main_currency": main_currency,
+        "financial_currency": financial_currency,
         "trailing_pe": trailing_pe,
         "forward_pe": forward_pe,
         "peg_ratio": peg_ratio,

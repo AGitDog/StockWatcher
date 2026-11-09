@@ -123,30 +123,55 @@ def load_default_watchlist_text() -> tuple[str, str]:
     return preferred_name, loaded_text
 
 
+HISTORY_COLUMNS = ["timestamp", "symbol", "name", "brodel_score_v3", "brodel_score_v2", "brodel_score"]
+
+
 def build_score_history_frame(history: list[dict[str, object]]) -> pd.DataFrame:
+    """One row per stock and data day. The Rang-Score is recomputed per day from the stored factors,
+    so every day uses today's formula; days before the factors were stored have none."""
     rows: list[dict[str, object]] = []
     for snapshot in history:
         timestamp = snapshot.get("timestamp")
         items = snapshot.get("items", []) if isinstance(snapshot, dict) else []
+        items = [item for item in items if isinstance(item, dict)]
+        if any(isinstance(item.get("factors_v3"), dict) for item in items):
+            items = compute_brodel_v3(items)
         for item in items:
             if not snapshot_store.is_fresh_measurement(item):
                 continue  # failed fetch or carried over from an earlier day, no measurement
             rows.append(
                 {
-                    "timestamp": timestamp,
+                    "timestamp": str(timestamp or "")[:10],  # the data day, not the time of the run
                     "symbol": item.get("symbol"),
                     "name": item.get("name"),
+                    "brodel_score_v3": item.get("brodel_score_v3"),
                     "brodel_score_v2": primary_score(ensure_brodel_v2(dict(item))),
                     "brodel_score": item.get("brodel_score", 0),
                 }
             )
 
     if not rows:
-        return pd.DataFrame(columns=["timestamp", "symbol", "name", "brodel_score_v2", "brodel_score"])
+        return pd.DataFrame(columns=HISTORY_COLUMNS)
 
-    frame = pd.DataFrame(rows)
+    frame = pd.DataFrame(rows, columns=HISTORY_COLUMNS)
     frame["timestamp"] = pd.to_datetime(frame["timestamp"], errors="coerce")
-    return frame.sort_values(["timestamp", "symbol"])
+    frame["brodel_score_v3"] = pd.to_numeric(frame["brodel_score_v3"], errors="coerce")
+    return frame.sort_values(["timestamp", "symbol"]).reset_index(drop=True)
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def cached_score_history(watchlist_name: str, latest_stamp: str | None) -> pd.DataFrame:
+    """Score history of a watchlist, rebuilt only when a new snapshot arrived."""
+    return build_score_history_frame(load_signal_snapshot_history(watchlist_name))
+
+
+def rescore_items(items: list[dict]) -> list[dict]:
+    """Rang-Score and sector comparison with the current formula, also for days stored earlier."""
+    items = [item for item in items if isinstance(item, dict)]
+    return add_watchlist_peer_context(compute_brodel_v3(items))
+
+
+V3_TABLE_COLUMNS = ["Qualitaet", "Momentum", "EPS-Revisionen", "Bewertung", "Aktienrueckkauf", "Insider"]
 
 
 V2_TABLE_COLUMNS = [
@@ -164,10 +189,23 @@ V2_TABLE_COLUMNS = [
 ]
 
 
+def score_order(item: dict) -> tuple:
+    """Best first: Rang-Score, stocks without one at the end, ties and the rest by Punkte-Score."""
+    score_v3 = item.get("brodel_score_v3")
+    has_v3 = isinstance(score_v3, (int, float))
+    return (0 if has_v3 else 1, -(score_v3 if has_v3 else 0), -primary_score(item))
+
+
 def prepare_signal_items(items: list[dict]) -> list[dict]:
-    """Make sure every item carries Punkte-Score and sort by it (best first)."""
+    """Make sure every item carries Punkte-Score and sort like the table (Rang-Score first)."""
     prepared = [ensure_brodel_v2(dict(item)) for item in items if isinstance(item, dict)]
-    return sorted(prepared, key=primary_score, reverse=True)
+    return sorted(prepared, key=score_order)
+
+
+def score_label(item: dict) -> str:
+    score_v3 = item.get("brodel_score_v3")
+    rank_text = f"Rang-Score {score_v3:.1f}" if isinstance(score_v3, (int, float)) else "kein Rang-Score"
+    return f"{rank_text} · Punkte-Score {primary_score(item)}"
 
 
 PEER_REGION_LABELS = {"europe": "Europa", "america": "Amerika", "asia": "Asien"}
@@ -195,10 +233,20 @@ def build_signal_table_rows(signal_items: list[dict]) -> list[dict]:
             "Rang-Score": item.get("brodel_score_v3"),
             "Punkte-Score": primary_score(item),
         }
+        breakdown_v3 = item.get("signal_breakdown_v3") or {}
+        for name in V3_TABLE_COLUMNS:
+            row[f"R:{name}"] = breakdown_v3.get(name)
         for label, component_name in V2_TABLE_COLUMNS:
             row[label] = breakdown_v2.get(component_name, {}).get("score", 0)
-        row["Vs. Sektor"] = peer_context.get("score_vs_sector", 0)
-        row["Rang"] = f"{peer_context.get('sector_rank', 1)}/{peer_context.get('sector_count', 1)}"
+        if peer_context.get("score_basis") == "points" or item.get("brodel_score_v3") is None:
+            # no Rang-Score: a points difference would mix two scales in one column
+            row["Vs. Sektor"] = None
+            row["Rang"] = None
+            row["_rang_pos"] = None
+        else:
+            row["Vs. Sektor"] = peer_context.get("score_vs_sector", 0)
+            row["Rang"] = f"{peer_context.get('sector_rank', 1)}/{peer_context.get('sector_count', 1)}"
+            row["_rang_pos"] = peer_context.get("sector_rank", 1)
         if item.get("stale_from"):
             row["_status"] = "stale"
             row["_hint"] = f"Stand vom {item['stale_from']}, heutiger Abruf steht noch aus"
@@ -275,6 +323,25 @@ def v3_block_details(factors: dict) -> dict[str, str]:
     }
 
 
+def rank_score_explanation(item: dict) -> str | None:
+    """The Rang-Score calculation of one stock in one sentence, with the numbers of the table."""
+    score_v3 = item.get("brodel_score_v3")
+    breakdown = item.get("signal_breakdown_v3") or {}
+    if not isinstance(score_v3, (int, float)) or not breakdown:
+        return None
+    known = {name: value for name, value in breakdown.items() if value is not None}
+    points = sum(known.values())
+    possible = sum(BRODEL_V3_WEIGHTS[name] for name in known)
+    missing = [BRODEL_V3_LABELS.get(name, name) for name, value in breakdown.items() if value is None]
+    text = f"So entsteht der Rang-Score: {points:.1f} von {possible} möglichen Punkten"
+    if missing:
+        text += f" ({', '.join(missing)} ohne Daten, zählt nicht mit)"
+    text += (f" → {points:.1f} ÷ {possible} × 100 = **{score_v3:.1f}**. Die Aktie ist damit im gewichteten Mittel "
+             f"besser als etwa {score_v3:.0f} % der Vergleichsaktien aus ihrer Region; Qualität und Bewertung werden nur "
+             "mit dem eigenen Sektor verglichen. Das ist eine Platzierung, keine Prognose.")
+    return text
+
+
 def style_points(frame: pd.DataFrame, columns: list[str]):
     """Green for positive points, red for negative ones, faint for zero."""
     def color(value):
@@ -313,28 +380,28 @@ def execute_signal_calculation(mapping_text: str = ""):
     with st.spinner("Berechne Fruehsignale & Tages-Snapshot..."):
         entries = parse_watchlist_text(st.session_state.watchlist_text)
         symbol_mappings = parse_symbol_mappings(mapping_text or load_mapping_text())
-        
+
         if not entries:
             st.warning("Es wurden keine gueltigen Symbole gefunden.")
             return
-            
+
         progress_bar = st.progress(0, text="Lade Signale...")
         raw_results = []
-        
+
         for i, entry in enumerate(entries):
             progress_bar.progress((i) / len(entries), text=f"Lade Signale für {entry} ({i}/{len(entries)})...")
             item = get_symbol_signal_monitor(entry, symbol_mappings)
             raw_results.append(item)
-        
+
         progress_bar.progress(1.0, text="Berechnung Peer-Kontext...")
-        
+
         enriched_results = add_watchlist_peer_context(compute_brodel_v3(raw_results))
         strategy_results = build_strategy_signals(enriched_results)
-        
+
         trainer = load_trained_weights()
         for item in strategy_results:
             item["ml_score"] = round(trainer.predict_score(item), 2)
-        
+
         st.session_state.signal_monitor_items = prepare_signal_items(strategy_results)
         watchlist_name = st.session_state.get("active_watchlist_name", DEFAULT_WATCHLIST_NAME)
         st.session_state.signal_monitor_watchlist_name = watchlist_name
@@ -355,7 +422,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
         latest_stamp and st.session_state.get("signal_monitor_timestamp") not in (None, latest_stamp)
     ):
         if latest_history:
-            st.session_state.signal_monitor_items = latest_history[-1].get("items", [])
+            st.session_state.signal_monitor_items = rescore_items(latest_history[-1].get("items", []))
             st.session_state.signal_monitor_watchlist_name = active_name
             st.session_state.signal_monitor_timestamp = latest_stamp
 
@@ -365,7 +432,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
         return
 
     history = latest_history
-    score_history = build_score_history_frame(history)
+    score_history = cached_score_history(active_name, latest_stamp)
 
     m_stat1, m_stat2, m_stat3 = st.columns(3)
     m_stat1.caption(f"Watchlist: `{active_name}`")
@@ -374,8 +441,9 @@ def render_watchlist_signal_monitor(mapping_text: str):
 
     st.caption(
         "Sortiert nach dem **Rang-Score** (0 bis 100). Der **Punkte-Score** ist die ältere Methode mit festen Punkten. "
-        "Die Einzelspalten zeigen dessen Punkte je Baustein. Ein Klick auf eine Spaltenüberschrift sortiert neu "
-        "(Maus auf die Spaltenüberschrift zeigt Name und Maximum). "
+        "Rechts oben wählst du, wessen **Bausteine** die Spalten in der Mitte zeigen. "
+        "**Vs. Sektor** und **Rang** vergleichen den Rang-Score mit Aktien aus derselben Region und demselben Sektor. "
+        "Ein Klick auf eine Spaltenüberschrift sortiert neu, die Maus auf der Überschrift zeigt Erklärung und Maximum. "
         "Blasse Zeilen: ⏱ Wert vom Vortag, ⚠ keine Kursdaten beim letzten Abruf."
     )
     table_rows = build_signal_table_rows(signal_items)
@@ -405,15 +473,15 @@ def render_watchlist_signal_monitor(mapping_text: str):
     st.markdown("---")
     st.subheader("🔍 Detail-Analyse")
     st.write("Klicke direkt auf eine Zeile in der Tabelle oben oder wähle eine Aktie aus:")
-    
-    options = [f"{item['symbol']} - {item['name']} (Punkte-Score: {primary_score(item)})" for item in signal_items]
+
+    options = [f"{item['symbol']} - {item['name']} ({score_label(item)})" for item in signal_items]
     selected_option = st.selectbox("Aktie suchen", options=options, index=selected_row_idx if options else None)
-    
+
     if selected_option:
         selected_symbol = selected_option.split(" - ")[0]
         st.session_state["active_selected_symbol"] = selected_symbol
         item = next((i for i in signal_items if i["symbol"] == selected_symbol), None)
-        
+
         if item:
             head_col1, head_col2 = st.columns([3, 1])
             with head_col1:
@@ -438,14 +506,16 @@ def render_watchlist_signal_monitor(mapping_text: str):
             peer_context = item.get("peer_context", {})
             score_v3 = item.get("brodel_score_v3")
             kpi_cols = st.columns(4)
-            kpi_cols[0].metric("Rang-Score", score_v3 if score_v3 is not None else "–", help="Rang aus 6 Bausteinen, 0 bis 100")
-            kpi_cols[1].metric("Punkte-Score", primary_score(item), help="Summe fester Punkte, höchstens 90")
+            kpi_cols[0].metric("Rang-Score", f"{score_v3:.1f}" if score_v3 is not None else "–",
+                               help="0 bis 100: im gewichteten Mittel der 6 Bausteine besser als so viel Prozent der Vergleichsaktien")
+            kpi_cols[1].metric("Punkte-Score", primary_score(item), help="Summe fester Punkte aus 11 Signalen, höchstens 90")
             peer_group = peer_group_text(peer_context)
             kpi_cols[2].metric("Rang im Sektor", f"{peer_context.get('sector_rank', 1)} von {peer_context.get('sector_count', 1)}", help=f"Platz unter {peer_group}")
             kpi_cols[3].metric("Abstand zum Sektor", f"{peer_context.get('score_vs_sector', 0):+.1f}", help=f"Abstand zum Durchschnitt ({peer_context.get('sector_average', 0)}) der {peer_group}")
             top_peer = peer_context.get("top_peer")
-            peer_text = f" · Stärkster Peer: {top_peer['symbol']} ({top_peer['score']})" if top_peer else ""
-            st.caption(f"{peer_context.get('sector', 'Unbekannt')} · {peer_context.get('industry', 'Unbekannt')}{peer_text} · Punkte-Score alt: {item.get('brodel_score', 0)}")
+            peer_score_name = "Punkte-Score" if peer_context.get("score_basis") == "points" else "Rang-Score"
+            peer_text = f" · Stärkster Peer: {top_peer['symbol']} ({peer_score_name} {top_peer['score']})" if top_peer else ""
+            st.caption(f"{peer_context.get('sector', 'Unbekannt')} · {peer_context.get('industry', 'Unbekannt')}{peer_text}")
 
             detail_tab_signals, detail_tab_fundamentals = st.tabs(["🧮 Score-Berechnung", "🏢 Unternehmenswerte"])
 
@@ -461,13 +531,16 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     height=breakdown_table_height(len(breakdown_frame)),
                     column_config={
                         "Baustein": st.column_config.TextColumn("Baustein", width="medium"),
-                        "Punkte 3.0": st.column_config.Column("Rang-Score", width="small"),
-                        "Punkte 2.0": st.column_config.Column("Punkte", width="small"),
-                        "Punkte 1.0": st.column_config.Column("Punkte alt", width="small"),
+                        "Punkte 3.0": st.column_config.Column("Rang-Score", width="small", help="Punkte dieses Bausteins im Rang-Score: Gewicht × Anteil der Vergleichsaktien, die schlechter sind"),
+                        "Punkte 2.0": st.column_config.Column("Punkte", width="small", help="Feste Punkte im Punkte-Score"),
+                        "Punkte 1.0": st.column_config.Column("Punkte alt", width="small", help="Punkte der ersten Version, nur zum Vergleich"),
                         "Detail": st.column_config.TextColumn("Detail", width="large"),
                     },
                 )
 
+                explanation = rank_score_explanation(item)
+                if explanation:
+                    st.caption(explanation)
                 if item.get("next_earnings"):
                     st.caption(f"Nächste Quartalszahlen: {item['next_earnings']}")
 
@@ -475,16 +548,21 @@ def render_watchlist_signal_monitor(mapping_text: str):
                 if not score_history.empty:
                     symbol_history = score_history[score_history["symbol"] == selected_symbol].copy()
                     if not symbol_history.empty:
-                        symbol_history["timestamp"] = pd.to_datetime(symbol_history["timestamp"])
-                        last_100_days = pd.Timestamp.utcnow().normalize() - pd.Timedelta(days=100)
+                        last_100_days = pd.Timestamp.utcnow().tz_localize(None).normalize() - pd.Timedelta(days=100)
                         symbol_history = symbol_history[symbol_history["timestamp"] >= last_100_days]
                         symbol_history = symbol_history.sort_values("timestamp")
-                        
+
                         if len(symbol_history) > 1:
-                            chart_data = symbol_history.set_index("timestamp")[["brodel_score_v2", "brodel_score"]].rename(
-                                columns={"brodel_score_v2": "Punkte-Score", "brodel_score": "Punkte-Score alt"}
+                            chart_data = symbol_history.set_index("timestamp")[["brodel_score_v3", "brodel_score_v2"]].rename(
+                                columns={"brodel_score_v3": "Rang-Score", "brodel_score_v2": "Punkte-Score"}
                             )
+                            chart_data.index.name = "Datenstand"
                             st.line_chart(chart_data)
+                            rank_days = int(chart_data["Rang-Score"].notna().sum())
+                            st.caption(
+                                f"Ein Punkt je Handelstag mit frischen Kursdaten. Den Rang-Score gibt es erst für {rank_days} "
+                                f"{'Tag' if rank_days == 1 else 'Tage'}, weil seine Kennzahlen erst seit dem 06.11.2026 gespeichert werden."
+                            )
                         else:
                             st.info("Nicht genuegend Historien-Daten fuer ein Diagramm (mindestens 2 Snapshots benoetigt).")
                     else:
@@ -509,7 +587,13 @@ def render_watchlist_signal_monitor(mapping_text: str):
                 target_mean = ext.get("target_mean_price")
                 target_med = ext.get("target_median_price")
                 upside = ext.get("upside_pct")
-                curr_str = ext.get("currency", "EUR")
+                curr_str = ext.get("currency", "EUR")  # quote currency: price, target, dividend per share
+                fin_str = ext.get("financial_currency") or curr_str  # currency of the annual report
+                cap_str = ext.get("main_currency") or curr_str  # market capitalisation (pounds, not pence)
+                if curr_str in ("GBp", "GBX"):
+                    st.caption("Kurs, Kursziel und Dividende je Aktie in Pence (GBp, 100 Pence = 1 Pfund).")
+                if fin_str != (ext.get("main_currency") or curr_str):
+                    st.caption(f"Die Zahlen aus dem Geschäftsbericht sind in {fin_str}, der Kurs in {curr_str}.")
 
                 v_cols[0].metric(
                     "Aktueller Kurs",
@@ -521,14 +605,13 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     help="Durchschnittliches Kursziel der Analysten"
                 )
                 v_cols[2].metric(
-                    "Aufwärtspotenzial",
+                    "Abstand zum Kursziel",
                     f"{upside:+.1f} %" if upside is not None else "n/a",
-                    delta=f"{upside:+.1f} %" if upside is not None else None,
-                    help="Prozentualer Abstand zum mittleren Analysten-Kursziel"
+                    help="Prozentualer Abstand zum mittleren Analysten-Kursziel; negativ heißt, der Kurs liegt schon darüber"
                 )
                 imp_mc = ext.get("implied_market_cap")
                 if imp_mc:
-                    imp_str = f"{imp_mc / 1e9:.2f} Mrd. {curr_str}" if imp_mc >= 1e9 else f"{imp_mc / 1e6:.1f} Mio. {curr_str}"
+                    imp_str = f"{imp_mc / 1e9:.2f} Mrd. {cap_str}" if imp_mc >= 1e9 else f"{imp_mc / 1e6:.1f} Mio. {cap_str}"
                 else:
                     imp_str = "n/a"
                 v_cols[3].metric(
@@ -550,7 +633,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     help="Bruttomarge der letzten 12 Monate (Gross Margin TTM)"
                 )
                 if latest_gp is not None:
-                    gp_str = f"{latest_gp / 1e9:.2f} Mrd. {curr_str}" if abs(latest_gp) >= 1e9 else f"{latest_gp / 1e6:.1f} Mio. {curr_str}"
+                    gp_str = f"{latest_gp / 1e9:.2f} Mrd. {fin_str}" if abs(latest_gp) >= 1e9 else f"{latest_gp / 1e6:.1f} Mio. {fin_str}"
                 else:
                     gp_str = "n/a"
                 m_cols[1].metric(
@@ -559,7 +642,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     help="Gross Profit des letzten vollständigen Geschäftsjahres"
                 )
                 if latest_rev is not None:
-                    rev_str = f"{latest_rev / 1e9:.2f} Mrd. {curr_str}" if abs(latest_rev) >= 1e9 else f"{latest_rev / 1e6:.1f} Mio. {curr_str}"
+                    rev_str = f"{latest_rev / 1e9:.2f} Mrd. {fin_str}" if abs(latest_rev) >= 1e9 else f"{latest_rev / 1e6:.1f} Mio. {fin_str}"
                 else:
                     rev_str = "n/a"
                 m_cols[2].metric(
@@ -576,15 +659,15 @@ def render_watchlist_signal_monitor(mapping_text: str):
                         gp_fmt = f"{row['Bruttogewinn'] / 1e9:.2f} Mrd." if row['Bruttogewinn'] and abs(row['Bruttogewinn']) >= 1e9 else (f"{row['Bruttogewinn'] / 1e6:.1f} Mio." if row['Bruttogewinn'] else "-")
                         gm_display_rows.append({
                             "Jahr": str(row["Jahr"]),
-                            f"Umsatz ({curr_str})": rev_fmt,
-                            f"Bruttogewinn ({curr_str})": gp_fmt,
+                            f"Umsatz ({fin_str})": rev_fmt,
+                            f"Bruttogewinn ({fin_str})": gp_fmt,
                             "Bruttomarge (%)": f"{row['Bruttomarge']:.1f} %" if row['Bruttomarge'] is not None else "n/a",
                             "_margin_raw": row["Bruttomarge"],
                         })
                     gm_df = pd.DataFrame(gm_display_rows)
                     gmc1, gmc2 = st.columns([1, 1])
                     with gmc1:
-                        st.dataframe(gm_df[["Jahr", f"Umsatz ({curr_str})", f"Bruttogewinn ({curr_str})", "Bruttomarge (%)"]], use_container_width=True, hide_index=True)
+                        st.dataframe(gm_df[["Jahr", f"Umsatz ({fin_str})", f"Bruttogewinn ({fin_str})", "Bruttomarge (%)"]], use_container_width=True, hide_index=True)
                     with gmc2:
                         chart_df = gm_df.dropna(subset=["_margin_raw"]).set_index("Jahr")[["_margin_raw"]]
                         chart_df.columns = ["Bruttomarge (%)"]
@@ -614,7 +697,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
                 )
 
                 if latest_ebit is not None:
-                    ebit_str = f"{latest_ebit / 1e9:.2f} Mrd. {curr_str}" if abs(latest_ebit) >= 1e9 else f"{latest_ebit / 1e6:.1f} Mio. {curr_str}"
+                    ebit_str = f"{latest_ebit / 1e9:.2f} Mrd. {fin_str}" if abs(latest_ebit) >= 1e9 else f"{latest_ebit / 1e6:.1f} Mio. {fin_str}"
                 else:
                     ebit_str = "n/a"
                 op_cols[1].metric(
@@ -626,7 +709,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
                 )
 
                 if latest_opex is not None:
-                    opex_str = f"{latest_opex / 1e9:.2f} Mrd. {curr_str}" if abs(latest_opex) >= 1e9 else f"{latest_opex / 1e6:.1f} Mio. {curr_str}"
+                    opex_str = f"{latest_opex / 1e9:.2f} Mrd. {fin_str}" if abs(latest_opex) >= 1e9 else f"{latest_opex / 1e6:.1f} Mio. {fin_str}"
                 else:
                     opex_str = "n/a"
                 op_cols[2].metric(
@@ -638,7 +721,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
                 )
 
                 if latest_fe is not None:
-                    fe_str = f"{latest_fe / 1e9:.2f} Mrd. {curr_str}" if abs(latest_fe) >= 1e9 else f"{latest_fe / 1e6:.1f} Mio. {curr_str}"
+                    fe_str = f"{latest_fe / 1e9:.2f} Mrd. {fin_str}" if abs(latest_fe) >= 1e9 else f"{latest_fe / 1e6:.1f} Mio. {fin_str}"
                 else:
                     fe_str = "n/a"
                 op_cols[3].metric(
@@ -650,7 +733,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
                 )
 
                 if latest_sga is not None:
-                    sga_str = f"{latest_sga / 1e9:.2f} Mrd. {curr_str}" if abs(latest_sga) >= 1e9 else f"{latest_sga / 1e6:.1f} Mio. {curr_str}"
+                    sga_str = f"{latest_sga / 1e9:.2f} Mrd. {fin_str}" if abs(latest_sga) >= 1e9 else f"{latest_sga / 1e6:.1f} Mio. {fin_str}"
                 else:
                     sga_str = "n/a"
                 op_cols[4].metric(
@@ -672,14 +755,14 @@ def render_watchlist_signal_monitor(mapping_text: str):
                         opex_f = f"{row['OpEx'] / 1e9:.2f} Mrd." if row['OpEx'] and abs(row['OpEx']) >= 1e9 else (f"{row['OpEx'] / 1e6:.1f} Mio." if row['OpEx'] else "-")
                         fe_f = f"{row['FE'] / 1e9:.2f} Mrd." if row['FE'] and abs(row['FE']) >= 1e9 else (f"{row['FE'] / 1e6:.1f} Mio." if row['FE'] else "-")
                         sga_f = f"{row['SGA'] / 1e9:.2f} Mrd." if row['SGA'] and abs(row['SGA']) >= 1e9 else (f"{row['SGA'] / 1e6:.1f} Mio." if row['SGA'] else "-")
-                        
+
                         oc_display_rows.append({
                             "Jahr": str(row["Jahr"]),
-                            f"Umsatz ({curr_str})": rev_f,
-                            f"EBIT ({curr_str})": ebit_f,
-                            f"OpEx ({curr_str})": opex_f,
-                            f"F&E ({curr_str})": fe_f,
-                            f"SG&A ({curr_str})": sga_f,
+                            f"Umsatz ({fin_str})": rev_f,
+                            f"EBIT ({fin_str})": ebit_f,
+                            f"OpEx ({fin_str})": opex_f,
+                            f"F&E ({fin_str})": fe_f,
+                            f"SG&A ({fin_str})": sga_f,
                             "Op. Marge (%)": f"{row['Operative_Marge']:.1f} %" if row.get("Operative_Marge") is not None else "n/a",
                             "OpEx-Quote (%)": f"{row['OpEx_Quote']:.1f} %" if row.get("OpEx_Quote") is not None else "n/a",
                         })
@@ -689,8 +772,8 @@ def render_watchlist_signal_monitor(mapping_text: str):
                         if fe_val_m > 0 or sga_val_m > 0:
                             chart_rows.append({
                                 "Jahr": str(row["Jahr"]),
-                                f"F&E (Mio. {curr_str})": fe_val_m,
-                                f"SG&A (Mio. {curr_str})": sga_val_m,
+                                f"F&E (Mio. {fin_str})": fe_val_m,
+                                f"SG&A (Mio. {fin_str})": sga_val_m,
                             })
 
                     oc_df = pd.DataFrame(oc_display_rows)
@@ -700,7 +783,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     with occ2:
                         if chart_rows:
                             chart_df = pd.DataFrame(chart_rows).set_index("Jahr")
-                            st.caption(f"Aufwandssplit F&E vs. SG&A (in Mio. {curr_str}):")
+                            st.caption(f"Aufwandssplit F&E vs. SG&A (in Mio. {fin_str}):")
                             st.bar_chart(chart_df)
                         else:
                             st.info("Keine detaillierte Aufteilung in F&E / SG&A verfügbar.")
@@ -745,11 +828,13 @@ def render_watchlist_signal_monitor(mapping_text: str):
 
                 d_cols[0].metric(
                     "Dividendenrendite",
-                    f"{d_yield:.2f} %" if d_yield is not None else "0.00 %",
+                    f"{d_yield:.2f} %" if d_yield is not None else "k. A.",
+                    help="Erwartete Jahresdividende geteilt durch den aktuellen Kurs",
                 )
                 d_cols[1].metric(
-                    "Dividende (Zahlung)",
-                    f"{d_rate:.2f} {curr_str}" if d_rate is not None else "0.00",
+                    "Dividende je Aktie (Jahr)",
+                    f"{d_rate:.2f} {curr_str}" if d_rate is not None else "k. A.",
+                    help="Erwartete Jahresdividende je Aktie",
                 )
                 if d_streak > 0:
                     d_cols[2].metric(
@@ -766,7 +851,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
 
                 div_hist = ext.get("dividend_history", [])
                 if div_hist:
-                    st.caption("Dividenden-Verlauf der letzten 15 Jahre (Rendite & Ausschuettung):")
+                    st.caption(f"Dividenden-Verlauf der letzten 15 Jahre in {curr_str} je Aktie. Das laufende Jahr ist noch nicht vollständig, deshalb ohne Wachstum:")
                     div_df = pd.DataFrame(div_hist)
                     div_c1, div_c2 = st.columns([2, 1])
                     with div_c1:
@@ -1064,7 +1149,7 @@ def render_help_tab():
             "Vergleiche möglichst Aktien aus ähnlichen Branchen und Märkten. Ein Score sollte erst dann zu einer Handelsidee werden, wenn mindestens folgende Punkte zusammenpassen: Trend oder klarer Katalysator, ausreichende Liquidität, plausibles Chance-Risiko-Verhältnis und ein definierter Ausstieg."
         )
         st.warning("Ein fehlender Datenpunkt wird nicht automatisch zu einem positiven Signal. Prüfe in der Detailanalyse, ob ein Score durch echte Daten oder durch neutrale Standardwerte zustande kommt.")
-    
+
     st.markdown("---")
     st.markdown("### Rang-Score: wie er rechnet")
     with st.expander("Rang-Score gegen Punkte-Score", expanded=True):
@@ -1082,6 +1167,17 @@ def render_help_tab():
             "**Nicht mehr dabei:** Preis/Volumen, Technik, Kursziele, News, Event-Druck und Short Interest. "
             "Sie zeigten in unseren Tests keinen Nutzen, sind nicht rückwirkend prüfbar oder messen eher Aufmerksamkeit als Qualität. "
             "Die Marktlage (Makro-Overlay) gehört ebenfalls nicht in den Score."
+        )
+        st.markdown(
+            "**Beispiel:** Qualität 24,1 + Momentum 19,1 + EPS-Revisionen 19,6 + Bewertung 13,9 + Rückkauf 4,9 = 81,6 Punkte. "
+            "Insider fehlt, also sind nur 90 Punkte möglich: 81,6 ÷ 90 × 100 = **90,6**. "
+            "Die Aktie ist damit im Mittel besser als rund 91 % ihrer Vergleichsaktien. Der Wert ist eine Platzierung am jeweiligen Tag, keine Kursprognose.\n\n"
+            "**In der Tabelle der Marktbeobachtung:**\n"
+            "- **Bausteine:** Rechts oben schaltest du um, ob die Spalten die 6 Bausteine des Rang-Scores oder die 11 des Punkte-Scores zeigen. "
+            "Grün heißt oberes Drittel der Vergleichsaktien, rot unteres Drittel.\n"
+            "- **Rang:** Platz nach Rang-Score unter den Aktien derselben Region und desselben Sektors, zum Beispiel 1/43 = beste von 43 europäischen Finanzwerten.\n"
+            "- **Vs. Sektor:** Rang-Score minus Durchschnitt dieser Gruppe. +37 heißt 37 Punkte über dem Schnitt.\n"
+            "- Aktien ohne Rang-Score (ETFs, zu wenige Daten) haben dort ein „–“."
         )
         st.warning(
             "Die Gewichte sind fachlich begründete Startwerte, kein Messergebnis. Ob der Rang-Score besser ist als der Punkte-Score, ist nicht bewiesen. "
