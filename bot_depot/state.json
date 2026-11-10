@@ -20,47 +20,133 @@
   "order_expiry_days": 7
  },
  "started": "2026-11-06",
- "last_run": "2026-11-08T02:42:22Z",
+ "last_run": "2026-11-10T05:21:22Z",
  "portfolios": {
   "bot": {
    "label": "Brodel 2.0 ab 60",
    "use_stop": true,
    "rule": "threshold",
-   "cash": 55000.0,
-   "positions": [],
-   "pending": [
+   "cash": 246.41029936225823,
+   "positions": [
     {
      "symbol": "JKHY",
      "name": "Jack Henry & Associates, Inc.",
-     "score": 63,
+     "score_at_buy": 63,
      "sector": "Technology",
-     "order_day": "2026-11-06",
-     "reserved": 5000.0,
-     "status": "open"
+     "entry_day": "2026-11-09",
+     "entry_price": 173.19000244140625,
+     "shares": 32,
+     "cost_eur": 4972.69,
+     "high_close": 173.19000244140625,
+     "stop": 147.211502,
+     "last_price": 171.1999969482422,
+     "last_day": "2026-11-09",
+     "currency": "USD",
+     "last_value_eur": 4914.56
     },
+    {
+     "symbol": "ACGL",
+     "name": "Arch Capital Group Ltd.",
+     "score_at_buy": 61,
+     "sector": "Financial Services",
+     "entry_day": "2026-11-09",
+     "entry_price": 105.47000122070312,
+     "shares": 52,
+     "cost_eur": 4920.98,
+     "high_close": 108.12000274658203,
+     "stop": 91.902002,
+     "last_price": 108.12000274658203,
+     "last_day": "2026-11-09",
+     "currency": "USD",
+     "last_value_eur": 5043.6
+    },
+    {
+     "symbol": "CPAY",
+     "name": "Corpay, Inc.",
+     "score_at_buy": 61,
+     "sector": "Technology",
+     "entry_day": "2026-11-09",
+     "entry_price": 459.6199951171875,
+     "shares": 12,
+     "cost_eur": 4948.79,
+     "high_close": 459.6199951171875,
+     "stop": 390.676996,
+     "last_price": 457.9700012207031,
+     "last_day": "2026-11-09",
+     "currency": "USD",
+     "last_value_eur": 4930.03
+    },
+    {
+     "symbol": "FTV",
+     "name": "Fortive Corporation",
+     "score_at_buy": 60,
+     "sector": "Technology",
+     "entry_day": "2026-11-09",
+     "entry_price": 66.30999755859375,
+     "shares": 84,
+     "cost_eur": 4997.77,
+     "high_close": 67.0999984741211,
+     "stop": 57.034999,
+     "last_price": 67.0999984741211,
+     "last_day": "2026-11-09",
+     "currency": "USD",
+     "last_value_eur": 5056.3
+    },
+    {
+     "symbol": "GEHC",
+     "name": "GE HealthCare Technologies Inc.",
+     "score_at_buy": 60,
+     "sector": "Healthcare",
+     "entry_day": "2026-11-09",
+     "entry_price": 83.0,
+     "shares": 67,
+     "cost_eur": 4989.66,
+     "high_close": 84.02999877929688,
+     "stop": 71.425499,
+     "last_price": 84.02999877929688,
+     "last_day": "2026-11-09",
+     "currency": "USD",
+     "last_value_eur": 5050.57
+    },
+    {
+     "symbol": "PYPL",
+     "name": "PayPal Holdings, Inc.",
+     "score_at_buy": 60,
+     "sector": "Financial Services",
+     "entry_day": "2026-11-09",
+     "entry_price": 59.724998474121094,
+     "shares": 93,
+     "cost_eur": 4983.76,
+     "high_close": 60.04999923706055,
+     "stop": 51.042499,
+     "last_price": 60.04999923706055,
+     "last_day": "2026-11-09",
+     "currency": "USD",
+     "last_value_eur": 5009.88
+    },
+    {
+     "symbol": "SU.TO",
+     "name": "Suncor Energy Inc.",
+     "score_at_buy": 60,
+     "sector": "Energy",
+     "entry_day": "2026-11-09",
+     "entry_price": 95.94999694824219,
+     "shares": 81,
+     "cost_eur": 4939.93,
+     "high_close": 95.94999694824219,
+     "stop": 81.557497,
+     "last_price": 95.1500015258789,
+     "last_day": "2026-11-09",
+     "currency": "CAD",
+     "last_value_eur": 4897.75
+    }
+   ],
+   "pending": [
     {
      "symbol": "SSE.L",
      "name": "SSE plc",
      "score": 62,
      "sector": "Utilities",
-     "order_day": "2026-11-06",
-     "reserved": 5000.0,
-     "status": "open"
-    },
-    {
-     "symbol": "ACGL",
-     "name": "Arch Capital Group Ltd.",
-     "score": 61,
-     "sector": "Financial Services",
-     "order_day": "2026-11-06",
-     "reserved": 5000.0,
-     "status": "open"
-    },
-    {
-     "symbol": "CPAY",
-     "name": "Corpay, Inc.",
-     "score": 61,
-     "sector": "Technology",
      "order_day": "2026-11-06",
      "reserved": 5000.0,
      "status": "open"
@@ -75,85 +161,305 @@
      "status": "open"
     },
     {
-     "symbol": "FTV",
-     "name": "Fortive Corporation",
-     "score": 60,
-     "sector": "Technology",
-     "order_day": "2026-11-06",
-     "reserved": 5000.0,
-     "status": "open"
-    },
-    {
-     "symbol": "GEHC",
-     "name": "GE HealthCare Technologies Inc.",
-     "score": 60,
-     "sector": "Healthcare",
-     "order_day": "2026-11-06",
-     "reserved": 5000.0,
-     "status": "open"
-    },
-    {
-     "symbol": "PYPL",
-     "name": "PayPal Holdings, Inc.",
-     "score": 60,
+     "symbol": "EG",
+     "name": "Everest Group, Ltd.",
+     "score": 68,
      "sector": "Financial Services",
-     "order_day": "2026-11-06",
+     "order_day": "2026-11-09",
      "reserved": 5000.0,
      "status": "open"
     },
     {
-     "symbol": "SU.TO",
-     "name": "Suncor Energy Inc.",
-     "score": 60,
+     "symbol": "RPRX",
+     "name": "Royalty Pharma plc",
+     "score": 67,
+     "sector": "Healthcare",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "STE",
+     "name": "STERIS plc",
+     "score": 66,
+     "sector": "Healthcare",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "VRTX",
+     "name": "Vertex Pharmaceuticals Incorporated",
+     "score": 65,
+     "sector": "Healthcare",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "WST",
+     "name": "West Pharmaceutical Services, Inc.",
+     "score": 65,
+     "sector": "Healthcare",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "ROP",
+     "name": "Roper Technologies, Inc.",
+     "score": 64,
+     "sector": "Technology",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "TRV",
+     "name": "The Travelers Companies, Inc.",
+     "score": 64,
+     "sector": "Financial Services",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "WSM",
+     "name": "Williams-Sonoma, Inc.",
+     "score": 64,
+     "sector": "Consumer Cyclical",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "ADP",
+     "name": "Automatic Data Processing, Inc.",
+     "score": 63,
+     "sector": "Technology",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "EOG",
+     "name": "EOG Resources, Inc.",
+     "score": 63,
      "sector": "Energy",
-     "order_day": "2026-11-06",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "JBL",
+     "name": "Jabil Inc.",
+     "score": 63,
+     "sector": "Technology",
+     "order_day": "2026-11-09",
      "reserved": 5000.0,
      "status": "open"
     }
    ],
-   "trades": [],
+   "trades": [
+    {
+     "symbol": "JKHY",
+     "name": "Jack Henry & Associates, Inc.",
+     "side": "Kauf",
+     "reason": "Score 63",
+     "day": "2026-11-09",
+     "price": 173.19,
+     "shares": 32,
+     "value_eur": 4972.69
+    },
+    {
+     "symbol": "ACGL",
+     "name": "Arch Capital Group Ltd.",
+     "side": "Kauf",
+     "reason": "Score 61",
+     "day": "2026-11-09",
+     "price": 105.47,
+     "shares": 52,
+     "value_eur": 4920.98
+    },
+    {
+     "symbol": "CPAY",
+     "name": "Corpay, Inc.",
+     "side": "Kauf",
+     "reason": "Score 61",
+     "day": "2026-11-09",
+     "price": 459.62,
+     "shares": 12,
+     "value_eur": 4948.79
+    },
+    {
+     "symbol": "FTV",
+     "name": "Fortive Corporation",
+     "side": "Kauf",
+     "reason": "Score 60",
+     "day": "2026-11-09",
+     "price": 66.31,
+     "shares": 84,
+     "value_eur": 4997.77
+    },
+    {
+     "symbol": "GEHC",
+     "name": "GE HealthCare Technologies Inc.",
+     "side": "Kauf",
+     "reason": "Score 60",
+     "day": "2026-11-09",
+     "price": 83.0,
+     "shares": 67,
+     "value_eur": 4989.66
+    },
+    {
+     "symbol": "PYPL",
+     "name": "PayPal Holdings, Inc.",
+     "side": "Kauf",
+     "reason": "Score 60",
+     "day": "2026-11-09",
+     "price": 59.725,
+     "shares": 93,
+     "value_eur": 4983.76
+    },
+    {
+     "symbol": "SU.TO",
+     "name": "Suncor Energy Inc.",
+     "side": "Kauf",
+     "reason": "Score 60",
+     "day": "2026-11-09",
+     "price": 95.95,
+     "shares": 81,
+     "value_eur": 4939.93
+    }
+   ],
    "cooldown": {},
-   "last_decision": "2026-11-07"
+   "last_decision": "2026-11-09"
   },
   "no_stop": {
    "label": "Brodel 2.0 ab 60 ohne Stop-Loss",
    "use_stop": false,
    "rule": "threshold",
-   "cash": 55000.0,
-   "positions": [],
-   "pending": [
+   "cash": 246.41029936225823,
+   "positions": [
     {
      "symbol": "JKHY",
      "name": "Jack Henry & Associates, Inc.",
-     "score": 63,
+     "score_at_buy": 63,
      "sector": "Technology",
-     "order_day": "2026-11-06",
-     "reserved": 5000.0,
-     "status": "open"
+     "entry_day": "2026-11-09",
+     "entry_price": 173.19000244140625,
+     "shares": 32,
+     "cost_eur": 4972.69,
+     "high_close": 173.19000244140625,
+     "stop": 147.211502,
+     "last_price": 171.1999969482422,
+     "last_day": "2026-11-09",
+     "currency": "USD",
+     "last_value_eur": 4914.56
     },
+    {
+     "symbol": "ACGL",
+     "name": "Arch Capital Group Ltd.",
+     "score_at_buy": 61,
+     "sector": "Financial Services",
+     "entry_day": "2026-11-09",
+     "entry_price": 105.47000122070312,
+     "shares": 52,
+     "cost_eur": 4920.98,
+     "high_close": 108.12000274658203,
+     "stop": 89.649501,
+     "last_price": 108.12000274658203,
+     "last_day": "2026-11-09",
+     "currency": "USD",
+     "last_value_eur": 5043.6
+    },
+    {
+     "symbol": "CPAY",
+     "name": "Corpay, Inc.",
+     "score_at_buy": 61,
+     "sector": "Technology",
+     "entry_day": "2026-11-09",
+     "entry_price": 459.6199951171875,
+     "shares": 12,
+     "cost_eur": 4948.79,
+     "high_close": 459.6199951171875,
+     "stop": 390.676996,
+     "last_price": 457.9700012207031,
+     "last_day": "2026-11-09",
+     "currency": "USD",
+     "last_value_eur": 4930.03
+    },
+    {
+     "symbol": "FTV",
+     "name": "Fortive Corporation",
+     "score_at_buy": 60,
+     "sector": "Technology",
+     "entry_day": "2026-11-09",
+     "entry_price": 66.30999755859375,
+     "shares": 84,
+     "cost_eur": 4997.77,
+     "high_close": 67.0999984741211,
+     "stop": 56.363498,
+     "last_price": 67.0999984741211,
+     "last_day": "2026-11-09",
+     "currency": "USD",
+     "last_value_eur": 5056.3
+    },
+    {
+     "symbol": "GEHC",
+     "name": "GE HealthCare Technologies Inc.",
+     "score_at_buy": 60,
+     "sector": "Healthcare",
+     "entry_day": "2026-11-09",
+     "entry_price": 83.0,
+     "shares": 67,
+     "cost_eur": 4989.66,
+     "high_close": 84.02999877929688,
+     "stop": 70.55,
+     "last_price": 84.02999877929688,
+     "last_day": "2026-11-09",
+     "currency": "USD",
+     "last_value_eur": 5050.57
+    },
+    {
+     "symbol": "PYPL",
+     "name": "PayPal Holdings, Inc.",
+     "score_at_buy": 60,
+     "sector": "Financial Services",
+     "entry_day": "2026-11-09",
+     "entry_price": 59.724998474121094,
+     "shares": 93,
+     "cost_eur": 4983.76,
+     "high_close": 60.04999923706055,
+     "stop": 50.766249,
+     "last_price": 60.04999923706055,
+     "last_day": "2026-11-09",
+     "currency": "USD",
+     "last_value_eur": 5009.88
+    },
+    {
+     "symbol": "SU.TO",
+     "name": "Suncor Energy Inc.",
+     "score_at_buy": 60,
+     "sector": "Energy",
+     "entry_day": "2026-11-09",
+     "entry_price": 95.94999694824219,
+     "shares": 81,
+     "cost_eur": 4939.93,
+     "high_close": 95.94999694824219,
+     "stop": 81.557497,
+     "last_price": 95.1500015258789,
+     "last_day": "2026-11-09",
+     "currency": "CAD",
+     "last_value_eur": 4897.75
+    }
+   ],
+   "pending": [
     {
      "symbol": "SSE.L",
      "name": "SSE plc",
      "score": 62,
      "sector": "Utilities",
-     "order_day": "2026-11-06",
-     "reserved": 5000.0,
-     "status": "open"
-    },
-    {
-     "symbol": "ACGL",
-     "name": "Arch Capital Group Ltd.",
-     "score": 61,
-     "sector": "Financial Services",
-     "order_day": "2026-11-06",
-     "reserved": 5000.0,
-     "status": "open"
-    },
-    {
-     "symbol": "CPAY",
-     "name": "Corpay, Inc.",
-     "score": 61,
-     "sector": "Technology",
      "order_day": "2026-11-06",
      "reserved": 5000.0,
      "status": "open"
@@ -168,52 +474,251 @@
      "status": "open"
     },
     {
-     "symbol": "FTV",
-     "name": "Fortive Corporation",
-     "score": 60,
-     "sector": "Technology",
-     "order_day": "2026-11-06",
-     "reserved": 5000.0,
-     "status": "open"
-    },
-    {
-     "symbol": "GEHC",
-     "name": "GE HealthCare Technologies Inc.",
-     "score": 60,
-     "sector": "Healthcare",
-     "order_day": "2026-11-06",
-     "reserved": 5000.0,
-     "status": "open"
-    },
-    {
-     "symbol": "PYPL",
-     "name": "PayPal Holdings, Inc.",
-     "score": 60,
+     "symbol": "EG",
+     "name": "Everest Group, Ltd.",
+     "score": 68,
      "sector": "Financial Services",
-     "order_day": "2026-11-06",
+     "order_day": "2026-11-09",
      "reserved": 5000.0,
      "status": "open"
     },
     {
-     "symbol": "SU.TO",
-     "name": "Suncor Energy Inc.",
-     "score": 60,
+     "symbol": "RPRX",
+     "name": "Royalty Pharma plc",
+     "score": 67,
+     "sector": "Healthcare",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "STE",
+     "name": "STERIS plc",
+     "score": 66,
+     "sector": "Healthcare",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "VRTX",
+     "name": "Vertex Pharmaceuticals Incorporated",
+     "score": 65,
+     "sector": "Healthcare",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "WST",
+     "name": "West Pharmaceutical Services, Inc.",
+     "score": 65,
+     "sector": "Healthcare",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "ROP",
+     "name": "Roper Technologies, Inc.",
+     "score": 64,
+     "sector": "Technology",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "TRV",
+     "name": "The Travelers Companies, Inc.",
+     "score": 64,
+     "sector": "Financial Services",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "WSM",
+     "name": "Williams-Sonoma, Inc.",
+     "score": 64,
+     "sector": "Consumer Cyclical",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "ADP",
+     "name": "Automatic Data Processing, Inc.",
+     "score": 63,
+     "sector": "Technology",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "EOG",
+     "name": "EOG Resources, Inc.",
+     "score": 63,
      "sector": "Energy",
-     "order_day": "2026-11-06",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "JBL",
+     "name": "Jabil Inc.",
+     "score": 63,
+     "sector": "Technology",
+     "order_day": "2026-11-09",
      "reserved": 5000.0,
      "status": "open"
     }
    ],
-   "trades": [],
+   "trades": [
+    {
+     "symbol": "JKHY",
+     "name": "Jack Henry & Associates, Inc.",
+     "side": "Kauf",
+     "reason": "Score 63",
+     "day": "2026-11-09",
+     "price": 173.19,
+     "shares": 32,
+     "value_eur": 4972.69
+    },
+    {
+     "symbol": "ACGL",
+     "name": "Arch Capital Group Ltd.",
+     "side": "Kauf",
+     "reason": "Score 61",
+     "day": "2026-11-09",
+     "price": 105.47,
+     "shares": 52,
+     "value_eur": 4920.98
+    },
+    {
+     "symbol": "CPAY",
+     "name": "Corpay, Inc.",
+     "side": "Kauf",
+     "reason": "Score 61",
+     "day": "2026-11-09",
+     "price": 459.62,
+     "shares": 12,
+     "value_eur": 4948.79
+    },
+    {
+     "symbol": "FTV",
+     "name": "Fortive Corporation",
+     "side": "Kauf",
+     "reason": "Score 60",
+     "day": "2026-11-09",
+     "price": 66.31,
+     "shares": 84,
+     "value_eur": 4997.77
+    },
+    {
+     "symbol": "GEHC",
+     "name": "GE HealthCare Technologies Inc.",
+     "side": "Kauf",
+     "reason": "Score 60",
+     "day": "2026-11-09",
+     "price": 83.0,
+     "shares": 67,
+     "value_eur": 4989.66
+    },
+    {
+     "symbol": "PYPL",
+     "name": "PayPal Holdings, Inc.",
+     "side": "Kauf",
+     "reason": "Score 60",
+     "day": "2026-11-09",
+     "price": 59.725,
+     "shares": 93,
+     "value_eur": 4983.76
+    },
+    {
+     "symbol": "SU.TO",
+     "name": "Suncor Energy Inc.",
+     "side": "Kauf",
+     "reason": "Score 60",
+     "day": "2026-11-09",
+     "price": 95.95,
+     "shares": 81,
+     "value_eur": 4939.93
+    }
+   ],
    "cooldown": {},
-   "last_decision": "2026-11-07"
+   "last_decision": "2026-11-09"
   },
   "rank": {
    "label": "Brodel 3.0 beste 2 %",
    "use_stop": true,
    "rule": "rank",
-   "cash": 75000.0,
-   "positions": [],
+   "cash": 50740.741958465675,
+   "positions": [
+    {
+     "symbol": "SNDK",
+     "name": "Sandisk Corporation",
+     "score_at_buy": 86.6,
+     "sector": "Technology",
+     "entry_day": "2026-11-09",
+     "entry_price": 856.4400024414062,
+     "shares": 6,
+     "cost_eur": 4610.77,
+     "high_close": 886.510009765625,
+     "stop": 753.533508,
+     "last_price": 886.510009765625,
+     "last_day": "2026-11-09",
+     "currency": "USD",
+     "last_value_eur": 4771.62
+    },
+    {
+     "symbol": "HALO",
+     "name": "Halozyme Therapeutics, Inc.",
+     "score_at_buy": 86.0,
+     "sector": "Healthcare",
+     "entry_day": "2026-11-09",
+     "entry_price": 103.9800033569336,
+     "shares": 53,
+     "cost_eur": 4944.75,
+     "high_close": 103.9800033569336,
+     "stop": 88.383003,
+     "last_price": 102.91999816894531,
+     "last_day": "2026-11-09",
+     "currency": "USD",
+     "last_value_eur": 4893.36
+    },
+    {
+     "symbol": "FIX",
+     "name": "Comfort Systems USA, Inc.",
+     "score_at_buy": 82.7,
+     "sector": "Industrials",
+     "entry_day": "2026-11-09",
+     "entry_price": 1053.6400146484375,
+     "shares": 5,
+     "cost_eur": 4727.0,
+     "high_close": 1113.22998046875,
+     "stop": 946.245483,
+     "last_price": 1113.22998046875,
+     "last_day": "2026-11-09",
+     "currency": "USD",
+     "last_value_eur": 4993.28
+    },
+    {
+     "symbol": "EXEL",
+     "name": "Exelixis, Inc.",
+     "score_at_buy": 81.9,
+     "sector": "Healthcare",
+     "entry_day": "2026-11-09",
+     "entry_price": 70.20999908447266,
+     "shares": 79,
+     "cost_eur": 4976.74,
+     "high_close": 71.73999786376953,
+     "stop": 60.978998,
+     "last_price": 71.73999786376953,
+     "last_day": "2026-11-09",
+     "currency": "USD",
+     "last_value_eur": 5084.17
+    }
+   ],
    "pending": [
     {
      "symbol": "BGEO.L",
@@ -225,45 +730,95 @@
      "status": "open"
     },
     {
-     "symbol": "SNDK",
-     "name": "Sandisk Corporation",
-     "score": 86.6,
+     "symbol": "8035.T",
+     "name": "Tokyo Electron Limited",
+     "score": 87.3,
      "sector": "Technology",
-     "order_day": "2026-11-07",
+     "order_day": "2026-11-09",
      "reserved": 5000.0,
      "status": "open"
     },
     {
-     "symbol": "HALO",
-     "name": "Halozyme Therapeutics, Inc.",
-     "score": 86.0,
-     "sector": "Healthcare",
-     "order_day": "2026-11-07",
+     "symbol": "TSM",
+     "name": "Taiwan Semiconductor Manufacturing Company Limited",
+     "score": 83.3,
+     "sector": "Technology",
+     "order_day": "2026-11-09",
      "reserved": 5000.0,
      "status": "open"
     },
     {
-     "symbol": "FIX",
-     "name": "Comfort Systems USA, Inc.",
-     "score": 82.7,
-     "sector": "Industrials",
-     "order_day": "2026-11-07",
-     "reserved": 5000.0,
-     "status": "open"
-    },
-    {
-     "symbol": "EXEL",
-     "name": "Exelixis, Inc.",
+     "symbol": "4021.T",
+     "name": "Nissan Chemical Corporation",
      "score": 81.9,
-     "sector": "Healthcare",
-     "order_day": "2026-11-07",
+     "sector": "Basic Materials",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "MO",
+     "name": "Altria Group, Inc.",
+     "score": 81.1,
+     "sector": "Consumer Defensive",
+     "order_day": "2026-11-09",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "MU",
+     "name": "Micron Technology, Inc.",
+     "score": 81.0,
+     "sector": "Technology",
+     "order_day": "2026-11-09",
      "reserved": 5000.0,
      "status": "open"
     }
    ],
-   "trades": [],
+   "trades": [
+    {
+     "symbol": "SNDK",
+     "name": "Sandisk Corporation",
+     "side": "Kauf",
+     "reason": "Score 86.6",
+     "day": "2026-11-09",
+     "price": 856.44,
+     "shares": 6,
+     "value_eur": 4610.77
+    },
+    {
+     "symbol": "HALO",
+     "name": "Halozyme Therapeutics, Inc.",
+     "side": "Kauf",
+     "reason": "Score 86.0",
+     "day": "2026-11-09",
+     "price": 103.98,
+     "shares": 53,
+     "value_eur": 4944.75
+    },
+    {
+     "symbol": "FIX",
+     "name": "Comfort Systems USA, Inc.",
+     "side": "Kauf",
+     "reason": "Score 82.7",
+     "day": "2026-11-09",
+     "price": 1053.64,
+     "shares": 5,
+     "value_eur": 4727.0
+    },
+    {
+     "symbol": "EXEL",
+     "name": "Exelixis, Inc.",
+     "side": "Kauf",
+     "reason": "Score 81.9",
+     "day": "2026-11-09",
+     "price": 70.21,
+     "shares": 79,
+     "value_eur": 4976.74
+    }
+   ],
    "cooldown": {},
-   "last_decision": "2026-11-07"
+   "last_decision": "2026-11-09"
   }
  },
  "etf": {
@@ -287,11 +842,18 @@
    "bot": 100000.0,
    "no_stop": 100000.0,
    "rank": 100000.0
+  },
+  {
+   "day": "2026-11-09",
+   "etf": 100000.0,
+   "bot": 100149.1,
+   "no_stop": 100149.1,
+   "rank": 100483.17
   }
  ],
  "coverage": {
-  "day": "2026-11-07",
-  "fresh": 0.983,
-  "scored": 0.993
+  "day": "2026-11-09",
+  "fresh": 0.991,
+  "scored": 0.991
  }
 }
