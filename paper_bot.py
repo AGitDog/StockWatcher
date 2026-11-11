@@ -15,6 +15,11 @@ Rules (agreed in chat, 05.11.2026):
 A second bot depot uses Brodel 3.0 and the same stop rules, but buys the best 2 % of the day
 (at most 5 orders a day, at most 25 % per sector, nothing in the week before results).
 
+Two more Rang-Score depots (since 11.11.2026, same rules as the Rang-Score depot):
+- "Kaufpause": no new orders while the MSCI World ETF closes below its 200-day average.
+- "Score-Ausstieg": a position whose Rang-Score is below 40 on 5 decision days in a row is
+  sold at the next open, whatever the price did.
+
 Comparison portfolios: the first rules without stop-loss, and a MSCI World ETF.
 State lives in ``bot_depot/state.json`` (committed by the workflow).
 
@@ -59,13 +64,19 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "sector_cap": 0.25,
     "earnings_block_days": 7,
     "order_expiry_days": 7,
+    "regime_ma_days": 200,
+    "exit_score": 40,
+    "exit_days": 5,
 }
 
 PORTFOLIOS = {
     "bot": {"label": "Punkte-Score ab 60", "use_stop": True, "rule": "threshold"},
     "no_stop": {"label": "Punkte-Score ab 60 ohne Stop-Loss", "use_stop": False, "rule": "threshold"},
     "rank": {"label": "Rang-Score beste 2 %", "use_stop": True, "rule": "rank"},
+    "rank_regime": {"label": "Rang-Score mit Kaufpause", "use_stop": True, "rule": "rank", "regime_filter": True},
+    "rank_exit": {"label": "Rang-Score mit Score-Ausstieg", "use_stop": True, "rule": "rank", "score_exit": True},
 }
+PORTFOLIO_FLAGS = ("use_stop", "rule", "regime_filter", "score_exit")
 
 # exchange suffix -> (currency, price divisor); London quotes in pence
 SUFFIX_CURRENCY = {
@@ -141,18 +152,26 @@ def new_state(now: datetime, config: dict[str, Any] | None = None) -> dict[str, 
         "etf": {"symbol": ETF_SYMBOL, "cash": cfg["capital"], "shares": 0.0, "bought_on": None, "last_value": cfg["capital"]},
         "equity": [],
     }
-    for key, meta in PORTFOLIOS.items():
-        state["portfolios"][key] = {
-            "label": meta["label"],
-            "use_stop": meta["use_stop"],
-            "rule": meta["rule"],
-            "cash": cfg["capital"],
-            "positions": [],
-            "pending": [],
-            "trades": [],
-            "cooldown": {},
-        }
+    for key in PORTFOLIOS:
+        state["portfolios"][key] = _new_portfolio(key, cfg, state["started"])
     return state
+
+
+def _new_portfolio(key: str, cfg: dict[str, Any], started: str) -> dict[str, Any]:
+    meta = PORTFOLIOS[key]
+    portfolio = {"label": meta["label"], "started": started, "cash": cfg["capital"],
+                 "positions": [], "pending": [], "trades": [], "cooldown": {}}
+    portfolio.update({flag: meta[flag] for flag in PORTFOLIO_FLAGS if flag in meta})
+    return portfolio
+
+
+def ensure_portfolios(state: dict[str, Any], now: datetime) -> list[str]:
+    """Add depots that did not exist when the state was created; they start with fresh capital today."""
+    state["config"] = {**DEFAULT_CONFIG, **state.get("config", {})}
+    added = [key for key in PORTFOLIOS if key not in state["portfolios"]]
+    for key in added:
+        state["portfolios"][key] = _new_portfolio(key, state["config"], snapshot_day(now))
+    return added
 
 
 def load_state(path: Path = STATE_FILE) -> dict[str, Any] | None:
@@ -192,9 +211,43 @@ def _sell(pf: dict, position: dict, day: date, price: float, reason: str, fx: di
     return True
 
 
+def market_above_average(frame: pd.DataFrame | None, day: date, ma_days: int) -> dict[str, Any] | None:
+    """Last ETF close up to ``day`` against its ``ma_days``-day average; None while the history is too short."""
+    if frame is None or frame.empty:
+        return None
+    closes = frame["Close"].dropna()
+    closes = closes[[pd.Timestamp(i).date() <= day for i in closes.index]]
+    if len(closes) < ma_days:
+        return None
+    close, average = float(closes.iloc[-1]), float(closes.iloc[-ma_days:].mean())
+    return {"day": pd.Timestamp(closes.index[-1]).date().isoformat(), "close": round(close, 2),
+            "average": round(average, 2), "above": close >= average}
+
+
+def update_weak_days(pf: dict, snapshot: dict | None, cfg: dict, decision_day: date) -> list[str]:
+    """Count decision days in a row with a Rang-Score below ``exit_score``; mark positions to sell at the next open."""
+    items = snapshot_store.fresh_items(snapshot.get("items", [])) if snapshot else []
+    scores = {item["symbol"]: item["brodel_score_v3"] for item in items if item.get("symbol") and item.get("brodel_score_v3") is not None}
+    marked = []
+    for position in pf["positions"]:
+        score = scores.get(position["symbol"])
+        if score is None:
+            continue  # no fresh score today: the count stays
+        position["weak_days"] = position.get("weak_days", 0) + 1 if score < cfg["exit_score"] else 0
+        position["last_score"] = score
+        if position["weak_days"] >= cfg["exit_days"] and not position.get("exit_day"):
+            position["exit_day"] = decision_day.isoformat()
+            marked.append(position["symbol"])
+    return marked
+
+
 def process_position(pf: dict, position: dict, bars: list[tuple[date, pd.Series]], fx: dict, cfg: dict) -> bool:
     """Walk new daily bars; returns False when the position was closed."""
     for day, bar in bars:
+        if position.get("exit_day") and day > date.fromisoformat(position["exit_day"]):
+            reason = f"Rang-Score {cfg['exit_days']} Tage unter {cfg['exit_score']} (Verkauf zur Eröffnung)"
+            if _sell(pf, position, day, float(bar["Open"]), reason, fx, cfg):
+                return False
         if pf["use_stop"]:
             stop = position["stop"]
             if float(bar["Open"]) <= stop:
@@ -344,6 +397,9 @@ def step(state: dict, snapshot: dict | None, bars: dict[str, pd.DataFrame], fx: 
     data_ok = fresh_share >= cfg.get("min_coverage", 0.0)
     state["coverage"] = {"day": decision_day.isoformat(), "fresh": round(fresh_share, 3), "scored": round(scored_share, 3)}
     summary["coverage"] = state["coverage"]
+    regime = market_above_average(bars.get(state["etf"]["symbol"]), cutoff, cfg["regime_ma_days"])
+    state["regime"] = regime
+    summary["regime"] = regime
 
     for key, pf in state["portfolios"].items():
         # 1. fill orders of earlier days at the next open
@@ -376,7 +432,11 @@ def step(state: dict, snapshot: dict | None, bars: dict[str, pd.DataFrame], fx: 
         # 3. new orders from today's snapshot (once per decision day)
         if pf.get("last_decision") != decision_day.isoformat():
             placed = []
-            if pf.get("rule") == "rank":
+            if pf.get("score_exit"):
+                summary[f"{key}_exits"] = update_weak_days(pf, snapshot, cfg, decision_day)
+            if pf.get("regime_filter") and regime is not None and not regime["above"]:
+                summary[f"{key}_paused"] = True  # ETF below its average: no new orders today
+            elif pf.get("rule") == "rank":
                 if data_ok and scored_share >= cfg.get("min_coverage", 0.0):
                     placed = place_orders(
                         pf, rank_candidates(snapshot, cfg, decision_day), decision_day, cfg,
@@ -445,6 +505,7 @@ def run(
 ) -> dict:
     now = now or datetime.now(timezone.utc)
     state = load_state(state_path) or new_state(now)
+    ensure_portfolios(state, now)
     if snapshot is None:
         history = load_signal_snapshot_history(WATCHLIST_NAME)
         snapshot = history[-1] if history else None
@@ -457,6 +518,8 @@ def run(
         [date.fromisoformat(state["started"])]
         + [date.fromisoformat(p["last_day"]) for pf in state["portfolios"].values() for p in pf["positions"]]
         + [date.fromisoformat(o["order_day"]) for pf in state["portfolios"].values() for o in pf["pending"]]
+        # the 200-day average of the ETF needs about 290 calendar days of closes
+        + [decision_cutoff(now) - timedelta(days=int(state["config"]["regime_ma_days"] * 1.6))]
     ) - timedelta(days=10)
     data = loader(symbols + fx_symbols, oldest)
     fx = {s: data[s] for s in fx_symbols if s in data}

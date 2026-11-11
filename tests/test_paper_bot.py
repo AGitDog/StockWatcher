@@ -237,8 +237,9 @@ def test_bot_tab_renders(tmp_path, monkeypatch):
     at = AppTest.from_function(script, default_timeout=60)
     at.run()
     assert not at.exception
+    import app
     assert any("Trades" in s.value for s in at.subheader)
-    assert len(at.metric) == 4
+    assert len(at.metric) == len(app.BOT_SERIES)
 
 
 def _ranked(symbol, score, **extra):
@@ -311,3 +312,111 @@ def test_london_stamp_duty_and_japan_lots():
 def test_etf_starts_with_the_first_orders():
     state = bot.new_state(_at("2026-11-06", 2))  # delayed run of the 5th
     assert state["started"] == "2026-11-05"
+
+
+# ── Rang-Score depots with regime pause and score exit (11.11.2026) ─────────
+
+def _etf_bars(start, days, step):
+    """Daily ETF closes starting at 100 and moving by ``step`` per day."""
+    dates = pd.bdate_range(start, periods=days)
+    closes = [100.0 + step * i for i in range(days)]
+    return _bars([(d.date().isoformat(), c, c, c) for d, c in zip(dates, closes)])
+
+
+def test_market_above_average_needs_full_history():
+    rising = _etf_bars("2025-10-01", 260, 0.1)
+    assert bot.market_above_average(rising, date(2026, 11, 2), 200)["above"]
+    falling = _etf_bars("2025-10-01", 260, -0.1)
+    regime = bot.market_above_average(falling, date(2026, 11, 2), 200)
+    assert not regime["above"] and regime["close"] < regime["average"]
+    assert bot.market_above_average(rising.iloc[:150], date(2026, 11, 2), 200) is None
+    assert bot.market_above_average(None, date(2026, 11, 2), 200) is None
+
+
+def test_regime_depot_pauses_buys_below_the_200_day_line_and_keeps_stops():
+    state = _state()
+    items = [_ranked(f"R{i:03d}.DE", 50.0 + i * 0.1) for i in range(100)]
+    falling = {bot.ETF_SYMBOL: _etf_bars("2025-10-01", 280, -0.1)}
+    summary = bot.step(state, _snapshot("2026-11-02", items), falling, {}, _at("2026-11-02"))
+    assert summary["regime"]["above"] is False and summary["rank_regime_paused"]
+    assert state["portfolios"]["rank_regime"]["pending"] == []
+    assert [o["symbol"] for o in state["portfolios"]["rank"]["pending"]] == ["R099.DE", "R098.DE"]
+    assert [o["symbol"] for o in state["portfolios"]["rank_exit"]["pending"]] == ["R099.DE", "R098.DE"]
+
+    rising = {bot.ETF_SYMBOL: _etf_bars("2025-10-01", 281, 0.1)}
+    bot.step(state, _snapshot("2026-11-03", items), rising, {}, _at("2026-11-03"))
+    assert "rank_regime_paused" not in bot.step(state, _snapshot("2026-11-04", items), rising, {}, _at("2026-11-04"))
+    assert [o["symbol"] for o in state["portfolios"]["rank_regime"]["pending"]][:2] == ["R099.DE", "R098.DE"]
+
+
+def test_regime_depot_without_etf_history_buys_like_the_rank_depot():
+    state = _state()
+    items = [_ranked(f"R{i:03d}.DE", 50.0 + i * 0.1) for i in range(100)]
+    summary = bot.step(state, _snapshot("2026-11-02", items), {}, {}, _at("2026-11-02"))
+    assert summary["regime"] is None
+    assert len(state["portfolios"]["rank_regime"]["pending"]) == 2
+
+
+def test_score_exit_sells_after_five_weak_days_at_the_next_open():
+    state = _state()
+    items = [_ranked(f"R{i:03d}.DE", 50.0 + i * 0.1) for i in range(100)]
+    bot.step(state, _snapshot("2026-11-02", items), {}, {}, _at("2026-11-02"))
+    pf = state["portfolios"]["rank_exit"]
+    bars = {"R099.DE": _bars([("2026-11-03", 100, 99, 101)]), "R098.DE": _bars([("2026-11-03", 50, 49, 51)])}
+    bot.step(state, None, bars, {}, _at("2026-11-03"))
+    assert {p["symbol"] for p in pf["positions"]} == {"R099.DE", "R098.DE"}
+
+    weak = [_ranked("R099.DE", 20.0), _ranked("R098.DE", 80.0)] + [_ranked(f"X{i:03d}.DE", 50.0) for i in range(98)]
+    days = ["2026-11-04", "2026-11-05", "2026-11-06", "2026-11-09", "2026-11-10"]
+    for n, day in enumerate(days, start=1):
+        bars = {s: _bars([(day, 100, 99, 100)]) for s in ("R099.DE", "R098.DE")}
+        bot.step(state, _snapshot(day, weak), bars, {}, _at(day))
+        weak_pos = next(p for p in pf["positions"] if p["symbol"] == "R099.DE")
+        assert weak_pos["weak_days"] == n and weak_pos["last_score"] == 20.0
+    assert weak_pos["exit_day"] == "2026-11-10"
+    assert next(p for p in pf["positions"] if p["symbol"] == "R098.DE")["weak_days"] == 0
+
+    bars = {s: _bars([("2026-11-11", 97, 96, 99)]) for s in ("R099.DE", "R098.DE")}
+    bot.step(state, None, bars, {}, _at("2026-11-11"))
+    assert [p["symbol"] for p in pf["positions"]] == ["R098.DE"]
+    sale = [t for t in pf["trades"] if t["side"] == "Verkauf"][0]
+    assert sale["symbol"] == "R099.DE" and sale["price"] == 97 and "5 Tage unter 40" in sale["reason"]
+    assert "weak_days" not in state["portfolios"]["rank"]["positions"][0]  # only the exit depot counts
+
+
+def test_score_exit_count_resets_on_a_good_day_and_holds_without_data():
+    pf = {"positions": [{"symbol": "A.DE"}], "cooldown": {}, "trades": []}
+    cfg = {"exit_score": 40, "exit_days": 5}
+    for day in range(3):
+        bot.update_weak_days(pf, _snapshot("2026-11-02", [_ranked("A.DE", 10.0)]), cfg, date(2026, 11, 2 + day))
+    assert pf["positions"][0]["weak_days"] == 3
+    bot.update_weak_days(pf, _snapshot("2026-11-05", [_ranked("B.DE", 10.0)]), cfg, date(2026, 11, 5))  # no score for A
+    assert pf["positions"][0]["weak_days"] == 3
+    bot.update_weak_days(pf, _snapshot("2026-11-06", [_ranked("A.DE", 45.0)]), cfg, date(2026, 11, 6))
+    assert pf["positions"][0]["weak_days"] == 0 and "exit_day" not in pf["positions"][0]
+
+
+def test_old_state_gets_the_new_depots_with_fresh_capital(tmp_path):
+    state = _state()
+    for key in ("rank_regime", "rank_exit"):
+        del state["portfolios"][key]
+    del state["config"]["exit_days"]
+    bot.save_state(state, tmp_path / "state.json")
+    loaded = bot.load_state(tmp_path / "state.json")
+    assert bot.ensure_portfolios(loaded, _at("2026-11-11")) == ["rank_regime", "rank_exit"]
+    added = loaded["portfolios"]["rank_regime"]
+    assert added["cash"] == 100_000 and added["started"] == "2026-11-11" and added["regime_filter"] is True
+    assert loaded["config"]["exit_days"] == 5
+    assert bot.ensure_portfolios(loaded, _at("2026-11-11")) == []
+
+
+def test_run_loads_enough_etf_history_for_the_average(tmp_path):
+    seen = {}
+
+    def loader(symbols, start):
+        seen["symbols"], seen["start"] = symbols, start
+        return {}
+
+    bot.run(now=_at("2026-11-11"), state_path=tmp_path / "state.json", loader=loader, snapshot=_snapshot("2026-11-11", []))
+    assert bot.ETF_SYMBOL in seen["symbols"]
+    assert (date(2026, 11, 11) - seen["start"]).days >= 290

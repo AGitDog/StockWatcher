@@ -340,7 +340,7 @@ def test_help_explains_brodel_v3_with_the_real_weights():
     assert [int(row["Punkte"]) for row in rows] == list(BRODEL_V3_WEIGHTS.values())
     source = (Path(__file__).parent.parent / "app.py").read_text(encoding="utf-8")
     assert '"Rang-Score", "Punkte-Score", "Spieldepots"' in source  # help tabs
-    assert "Trades: drei Spieldepots im Vergleich" in source
+    assert "Trades: fünf Spieldepots im Vergleich" in source
 
 
 def test_macro_overlay_of_old_snapshots_is_removed():

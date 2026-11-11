@@ -93,7 +93,7 @@ Die App bietet zusätzlich eine Alert-Funktion für:
 Die Anwendung gliedert sich in 3 fokussierte Tabs:
 - **🏠 Start:** erklärt das System und zeigt Datenstand, Spieldepots und die besten Aktien.
 - **📊 Marktbeobachtung:** Rangliste nach Rang-Score und Punkte-Score, Detailansicht je Aktie, Score-Verlauf.
-- **💼 Trades:** drei Spieldepots (Paper-Trading mit Stop-Loss) gegen einen MSCI-World-ETF.
+- **💼 Trades:** fünf Spieldepots (Paper-Trading mit Stop-Loss, Kaufpause unter der 200-Tage-Linie, Score-Ausstieg) gegen einen MSCI-World-ETF.
 - **❓ Hilfe:** Berechnung der Scores im Detail.
 - **🔬 Forschung:** Historische Rebalancing-Simulation, Score-Range-Backtest, ML-Gewichtungstraining und Datenpflege.
 - **Hilfe & Methodik:** Dokumentation der 10 Signalkomponenten, Schwellwerte und Handlungslogik.

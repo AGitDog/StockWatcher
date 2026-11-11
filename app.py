@@ -1279,6 +1279,10 @@ def _help_trades() -> None:
         {"Depot": "Punkte-Score ab 60 ohne Stop-Loss", "Kauft": "dieselben Aktien", "Verkauft": "nie, zeigt, ob der Stop-Loss hilft"},
         {"Depot": "Rang-Score beste 2 %", "Kauft": "die besten 2 % des Tages, höchstens 5 pro Tag und 25 % je Sektor, nichts in der Woche vor Quartalszahlen",
          "Verkauft": "per Stop-Loss"},
+        {"Depot": "Rang-Score mit Kaufpause", "Kauft": "wie Rang-Score, aber nicht, solange der MSCI-World-ETF unter seinem 200-Tage-Durchschnitt liegt",
+         "Verkauft": "per Stop-Loss"},
+        {"Depot": "Rang-Score mit Score-Ausstieg", "Kauft": "wie Rang-Score",
+         "Verkauft": "per Stop-Loss, oder wenn der Rang-Score 5 Tage in Folge unter 40 liegt"},
         {"Depot": "MSCI World ETF", "Kauft": "einmal am Start", "Verkauft": "nie, die Messlatte"},
     ]))
     st.markdown(
@@ -1715,6 +1719,8 @@ def render_backtest_tab():
 
 BOT_SERIES = {
     "rank": "Rang-Score beste 2 %",
+    "rank_regime": "Rang-Score mit Kaufpause",
+    "rank_exit": "Rang-Score mit Score-Ausstieg",
     "bot": "Punkte-Score ab 60",
     "no_stop": "Punkte-Score ohne Stop-Loss",
     "etf": "MSCI World ETF",
@@ -1749,6 +1755,10 @@ def build_bot_position_rows(portfolio: dict, config: dict) -> list[dict]:
             row["Stop-Loss"] = round(stop, 2)
             row["Abstand zum Stop %"] = round((last / stop - 1) * 100, 1) if stop else None
             row["Stop-Abstand"] = f"{paper_bot.stop_distance(position, config) * 100:.0f} %"
+        if portfolio.get("score_exit"):
+            row["Rang-Score heute"] = position.get("last_score")
+            row[f"Tage unter {config['exit_score']}"] = position.get("weak_days", 0)
+            row["Verkauf"] = "zur nächsten Eröffnung" if position.get("exit_day") else ""
         rows.append(row)
     return sorted(rows, key=lambda r: r["Plus/Minus %"], reverse=True)
 
@@ -1772,7 +1782,7 @@ def build_bot_trade_rows(portfolio: dict) -> list[dict]:
 
 
 def render_bot_tab():
-    st.subheader("💼 Trades: drei Spieldepots im Vergleich")
+    st.subheader("💼 Trades: fünf Spieldepots im Vergleich")
     state = paper_bot.load_state()
     cfg = (state or {}).get("config", paper_bot.DEFAULT_CONFIG)
     with st.expander("Regeln des Bots", expanded=state is None):
@@ -1781,6 +1791,10 @@ def render_bot_tab():
             f"- **Depot Punkte-Score:** kauft jede Aktie ab **{cfg['buy_threshold']} Punkten**, die höchsten zuerst.\n"
             f"- **Depot Rang-Score:** kauft die besten **{cfg['top_share'] * 100:.0f} % des Tages**, höchstens {cfg['max_buys_per_day']} Käufe pro Tag "
             f"und {cfg['sector_cap'] * 100:.0f} % des Depots je Sektor, keine Aktie in der Woche vor ihren Quartalszahlen.\n"
+            f"- **Rang-Score mit Kaufpause:** dieselben Regeln, aber keine neuen Käufe, solange der MSCI-World-ETF unter seinem "
+            f"{cfg['regime_ma_days']}-Tage-Durchschnitt schließt. Gehaltene Aktien bleiben mit ihrem Stop-Loss im Depot.\n"
+            f"- **Rang-Score mit Score-Ausstieg:** dieselben Regeln, zusätzlich wird eine Aktie zur nächsten Eröffnung verkauft, "
+            f"wenn ihr Rang-Score an {cfg['exit_days']} Entscheidungstagen in Folge unter {cfg['exit_score']} liegt. Tage ohne frischen Score zählen nicht.\n"
             f"- **Beide:** je **{cfg['position_budget']:,.0f} €**, höchstens **{cfg['max_positions']} Aktien**, Kauf zur Eröffnung am nächsten Handelstag "
             f"(1 € Gebühr, London {cfg['uk_stamp_duty'] * 100:.1f} % Stempelsteuer, Tokio in 100er-Stückelung).\n"
             f"- **Datenprüfung:** Neue Käufe nur, wenn mindestens {cfg['min_coverage'] * 100:.0f} % der Tagesdaten frisch sind.\n"
@@ -1799,11 +1813,17 @@ def render_bot_tab():
 
     last = state["equity"][-1] if state["equity"] else {}
     capital = cfg["capital"]
-    cols = st.columns(len(BOT_SERIES))
-    for col, (key, label) in zip(cols, BOT_SERIES.items()):
+    cols = st.columns(3)
+    for index, (key, label) in enumerate(BOT_SERIES.items()):
         value = last.get(key, capital)
-        col.metric(label, f"{value:,.0f} €", f"{(value / capital - 1) * 100:+.2f} %")
-    st.caption(f"Gestartet am {state['started']}, letzter Lauf {state['last_run']}, bewertet mit Schlusskursen bis {last.get('day', '-')}.")
+        cols[index % 3].metric(label, f"{value:,.0f} €", f"{(value / capital - 1) * 100:+.2f} %")
+    st.caption(f"Gestartet am {state['started']}, letzter Lauf {state['last_run']}, bewertet mit Schlusskursen bis {last.get('day', '-')}. "
+               + ", ".join(f"{pf['label']} seit {pf['started']}" for pf in state["portfolios"].values() if pf.get("started", state["started"]) != state["started"]))
+    regime = state.get("regime")
+    if regime:
+        st.caption(f"Marktlage am {regime['day']}: MSCI World ETF {regime['close']:.2f} € "
+                   f"{'über' if regime['above'] else 'unter'} dem {cfg['regime_ma_days']}-Tage-Durchschnitt ({regime['average']:.2f} €), "
+                   f"Kaufpause {'aus' if regime['above'] else 'an'}.")
     coverage = state.get("coverage") or {}
     if coverage and coverage.get("fresh", 0) < cfg["min_coverage"]:
         st.warning(f"Am {coverage['day']} waren nur {coverage['fresh'] * 100:.0f} % der Daten frisch. An diesem Tag gab es keine neuen Käufe.")
@@ -1879,7 +1899,7 @@ def start_page_summary() -> dict:
     return summary
 
 
-DEPOT_LABELS = {"bot": "Punkte-Score ab 60", "no_stop": "Punkte-Score ohne Stop-Loss", "rank": "Rang-Score beste 2 %"}
+DEPOT_LABELS = {key: label for key, label in BOT_SERIES.items() if key != "etf"}
 
 
 def best_depot(depots: dict) -> tuple[str, float]:
@@ -1918,7 +1938,7 @@ def render_start_page(prefs: dict | None) -> None:
     with col3:
         st.markdown("#### 3. Ehrlich prüfen")
         st.markdown(
-            "Drei **Spieldepots** mit je 100.000 € kaufen nach festen Regeln, zwei davon verkaufen per Stop-Loss. "
+            "Fünf **Spieldepots** mit je 100.000 € kaufen nach festen Regeln, vier davon verkaufen per Stop-Loss. "
             "Ein MSCI-World-ETF ist die Messlatte. Erst nach etwa 12 Monaten zeigt sich, ob sich der Aufwand lohnt."
         )
 
