@@ -37,3 +37,10 @@ def test_start_page_text_is_current():
     start = source[source.index("def render_start_page"):source.index("def render_app")]
     assert "die ältere Methode" not in start and "1.375" not in start
     assert "zwei davon verkaufen per Stop-Loss" in start
+
+
+def test_bot_chart_labels_name_the_scores():
+    import app
+
+    for label in app.BOT_SERIES.values():
+        assert "2.0" not in label and "3.0" not in label, label

@@ -52,3 +52,4 @@
 - Hinweis am Ende einheitlich: „Rang-Score 9.3 von 20: besser als 46 % der Vergleichsaktien“, beim Insider „Rang-Score 5.0 von 10: keine Käufe = neutral, nur Käufe zählen, Verkäufe nicht“.
 - Bei Aktien mit Insider-Daten von Tracefour steht unter der Tabelle eine Zeile mit Link, weil die Lizenz CC BY 4.0 die Nennung verlangt.
 - Tests: `test_breakdown_detail_has_no_source_and_no_version_names`, angepasste Tests in `test_brodel_v2.py` und `test_finnhub_cache.py`.
+- Nachtrag: Spieldepot-Diagramm „Punkte-Score ohne Stop-Loss“ statt „2.0 ohne Stop-Loss“, Hilfe zu Kurszielen nennt Yahoo (Kursziele) und Finnhub (Empfehlungen).

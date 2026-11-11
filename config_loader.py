@@ -17,7 +17,7 @@ def get_secret(*keys: str, default: Any = None) -> Any:
     The lookup order is:
     1. Streamlit secrets (st.secrets) if available.
     2. Environment variables. Nested keys are joined with an underscore, e.g.
-       ``alphavantage_api_key`` for ``["alphavantage", "api_key"]``.
+       ``finnhub_api_key`` for ``["finnhub", "api_key"]``.
     3. A local ``.env`` file loaded via python-dotenv, if installed.
 
     Parameters

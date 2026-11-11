@@ -1217,7 +1217,7 @@ def _help_points_score() -> None:
         st.markdown("- Kursziel mindestens 20 % über dem Kurs: **+10**, mindestens 10 %: **+5**, darüber: **+2**.")
         st.markdown("- Bei mindestens 5 Analysten: Kaufempfehlungen ab 80 %: **+5**, ab 60 %: **+3**.")
         st.markdown("- Die Summe (höchstens 15) wird auf ein Drittel gekürzt, also höchstens **5** Punkte.")
-        st.write("**Datenquelle:** Finnhub mit Fallback auf Yahoo Finance")
+        st.write("**Datenquelle:** Kursziele von Yahoo Finance, Empfehlungen von Finnhub mit Fallback auf Yahoo Finance")
         st.warning("Analysten hinken dem Kurs oft hinterher. Fällt eine Aktie stark, sieht das Kurspotenzial plötzlich groß aus. In den Snapshots liefen Aktien mit hohem Kursziel-Potenzial nach 3 Monaten sogar schlechter.")
 
     with st.expander("📰 News-Sentiment (max. 15)"):
@@ -1740,7 +1740,7 @@ def render_backtest_tab():
 BOT_SERIES = {
     "rank": "Rang-Score beste 2 %",
     "bot": "Punkte-Score ab 60",
-    "no_stop": "2.0 ohne Stop-Loss",
+    "no_stop": "Punkte-Score ohne Stop-Loss",
     "etf": "MSCI World ETF",
 }
 
