@@ -290,7 +290,8 @@ def build_breakdown_rows(item: dict) -> list[dict]:
             "Punkte 2.0": component_v2.get("score", 0),
             "Punkte 1.0": component_v1.get("score", 0) if name in BRODEL_V1_MAX_POINTS else None,
             "Detail": _with_v3_note(component_v2.get("summary") or component_v1.get("summary", ""),
-                                    BRODEL_SHARED_BLOCKS.get(name), breakdown_v3.get(BRODEL_SHARED_BLOCKS.get(name))),
+                                    BRODEL_SHARED_BLOCKS.get(name), breakdown_v3.get(BRODEL_SHARED_BLOCKS.get(name)),
+                                    item.get("factors_v3") or {}),
         })
     details = v3_block_details(item.get("factors_v3") or {})
     for name in ("Qualitaet", "Bewertung", "Momentum"):
@@ -309,13 +310,26 @@ def build_breakdown_rows(item: dict) -> list[dict]:
     return sorted(rows, key=order)
 
 
-def _with_v3_note(detail: str, block: str | None, points: float | None) -> str:
+INSIDER_SOURCE_NOTES = {
+    "BaFin": "Quelle BaFin-Datei",
+    "Yahoo": "Quelle Yahoo",
+    "Finnhub/Yahoo": "Quelle SEC-Meldungen",
+}
+
+
+def _with_v3_note(detail: str, block: str | None, points: float | None, factors: dict | None = None) -> str:
     """Add how the Rang-Score reads a block that also exists in the Punkte-Score."""
     if block is None or points is None:
         return detail
     weight = BRODEL_V3_WEIGHTS[block]
     if block == "Insider":
-        level = {0.5: "keine Käufe = neutral", 0.75: "kleine Käufe", 1.0: "Käufe ab 100.000 $"}.get(round(points / weight, 2), "")
+        factors = factors or {}
+        if factors.get("insider_buy_usd") is None:
+            level = "keine Daten für dieses Land = neutral wie keine Käufe"
+        else:
+            level = {0.5: "keine Käufe = neutral", 0.75: "kleine Käufe", 1.0: "Käufe ab 100.000 $"}.get(round(points / weight, 2), "")
+            source = INSIDER_SOURCE_NOTES.get(factors.get("insider_source"))
+            level = f"{level}, {source}" if source else level
         note = f"Rang-Score: {points:.1f} von {weight} ({level}). Nur Käufe zählen, Verkäufe nicht"
     else:
         note = f"Rang-Score: {points:.1f} von {weight} = besser als {points / weight * 100:.0f} % der Vergleichsaktien"
@@ -580,7 +594,7 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     height=breakdown_table_height(len(breakdown_frame)),
                     column_config={
                         "Baustein": st.column_config.TextColumn("Baustein", width="medium"),
-                        "Punkte 3.0": st.column_config.Column("Rang-Score", width="small", help="Punkte dieses Bausteins im Rang-Score: Gewicht × Anteil der Vergleichsaktien, die schlechter sind. Grün oberes, rot unteres Drittel, ohne Farbe Mitte. Insider: keine Käufe = 5 von 10 (neutral)"),
+                        "Punkte 3.0": st.column_config.Column("Rang-Score", width="small", help="Punkte dieses Bausteins im Rang-Score: Gewicht × Anteil der Vergleichsaktien, die schlechter sind. Grün oberes, rot unteres Drittel, ohne Farbe Mitte. Insider: keine Käufe oder keine Daten = 5 von 10 (neutral)"),
                         "Punkte 2.0": st.column_config.Column("Punkte", width="small", help="Feste Punkte im Punkte-Score"),
                         "Punkte 1.0": st.column_config.Column("Punkte alt", width="small", help="Punkte der ersten Version, nur zum Vergleich"),
                         "Detail": st.column_config.TextColumn("Detail", width="large"),
@@ -1166,7 +1180,7 @@ BRODEL_V3_EXPLANATIONS = {
     "EPS-Revisionen": "Anteil der Analysten-Hochstufungen an allen Änderungen",
     "Bewertung": "Gewinn und Free Cashflow im Verhältnis zum Preis",
     "Aktienrueckkauf": "Rückgang der Aktienzahl in den letzten 12 Monaten",
-    "Insider": "Nur USA: Käufe am offenen Markt in 90 Tagen. Keine Käufe 5, unter 100.000 $ 7,5, ab 100.000 $ 10 Punkte",
+    "Insider": "Käufe am offenen Markt in 90 Tagen (USA, Großbritannien, Deutschland mit BaFin-Datei). Keine Käufe oder keine Daten 5, unter 100.000 $ 7,5, ab 100.000 $ 10 Punkte",
 }
 
 
@@ -1211,16 +1225,19 @@ def render_help_tab():
         st.markdown(
             "**Verglichen wird innerhalb derselben Region** (Asien, Europa, Amerika). Qualität und Bewertung werden zusätzlich innerhalb des Sektors verglichen, "
             "denn eine Bank hat von Natur aus andere Kennzahlen als ein Softwarehaus.\n\n"
-            "**Fehlt ein Baustein**, zum Beispiel Insider-Daten außerhalb der USA, wird über die übrigen gerechnet. "
-            "Eine Aktie braucht mindestens 4 Bausteine, sonst bekommt sie keinen Wert. ETFs und Indizes bleiben außen vor.\n\n"
+            "**Fehlt ein Baustein**, wird über die übrigen gerechnet. Eine Aktie braucht mindestens 4 Bausteine mit echten Daten, "
+            "sonst bekommt sie keinen Wert. ETFs und Indizes bleiben außen vor.\n\n"
+            "**Ausnahme Insider:** Insider-Käufe gibt es kostenlos nur für die USA, Großbritannien und (mit einer von Hand geladenen "
+            "BaFin-Datei) Deutschland. Wo Daten fehlen, zählt der Baustein wie „keine Käufe“, also neutral 5 von 10. "
+            "Würde er wegfallen, hätten starke Aktien ohne Daten einen Vorteil: Bei ihnen zöge kein neutraler Wert den Schnitt zur Mitte.\n\n"
             "**Nicht mehr dabei:** Preis/Volumen, Technik, Kursziele, News, Event-Druck und Short Interest. "
             "Sie zeigten in unseren Tests keinen Nutzen, sind nicht rückwirkend prüfbar oder messen eher Aufmerksamkeit als Qualität. "
             "Die Marktlage (Makro-Overlay) gehört ebenfalls nicht in den Score."
         )
         st.markdown(
-            "**Beispiel:** Qualität 24,1 + Momentum 19,1 + EPS-Revisionen 19,6 + Bewertung 13,9 + Rückkauf 4,9 = 81,6 Punkte. "
-            "Insider fehlt, also sind nur 90 Punkte möglich: 81,6 ÷ 90 × 100 = **90,6**. "
-            "Die Aktie ist damit im Mittel besser als rund 91 % ihrer Vergleichsaktien. Der Wert ist eine Platzierung am jeweiligen Tag, keine Kursprognose.\n\n"
+            "**Beispiel:** Qualität 24,1 + Momentum 19,1 + EPS-Revisionen 19,6 + Bewertung 13,9 + Rückkauf 4,9 + Insider 5 (neutral) = 86,6 von 100 Punkten, "
+            "also ein Rang-Score von **86,6**. Fehlt ein Baustein wie Rückkauf, zählen nur die übrigen: 81,7 von 90 möglichen Punkten ergeben 90,8. "
+            "Die Aktie ist damit im Mittel besser als rund 87 % ihrer Vergleichsaktien. Der Wert ist eine Platzierung am jeweiligen Tag, keine Kursprognose.\n\n"
             "**In der Tabelle der Marktbeobachtung:**\n"
             "- **Bausteine:** Rechts oben schaltest du um, ob die Spalten die 6 Bausteine des Rang-Scores oder die 11 des Punkte-Scores zeigen. "
             "Grün heißt oberes Drittel der Vergleichsaktien, rot unteres Drittel.\n"
@@ -1331,7 +1348,9 @@ def render_help_tab():
         st.write("**Was es misst:** Kaufen Vorstände und Direktoren mit eigenem Geld Aktien ihrer Firma?")
         st.markdown("- Insider-Stimmung der letzten 3 Monate: viele Käufe **+10**, mehrere **+6**, ein Kauf **+4**.")
         st.markdown("- Mehr als doppelt so viele Verkäufe wie Käufe: **−3** (nicht unter 0).")
-        st.write("**Datenquelle:** Finnhub (Insider Sentiment aus SEC-Form-4-Meldungen) mit Fallback auf Yahoo Finance")
+        st.write("**Datenquelle:** Finnhub (Insider Sentiment aus SEC-Form-4-Meldungen) mit Fallback auf Yahoo Finance. "
+                 "Finnhub liefert die Netto-Veränderung je Monat, deshalb steht im Detail „Käufe über 100 Aktien“ statt einer Anzahl. "
+                 "Aktienrückkäufe der Firma selbst zählen nicht als Insider-Kauf.")
         st.info("Insider verkaufen aus vielen Gründen (Steuern, Hauskauf), aber sie kaufen meist nur aus einem: Sie glauben an steigende Kurse.")
 
     with st.expander("💪 Relative Stärke (alt: max. 5 | neu: max. 5)"):

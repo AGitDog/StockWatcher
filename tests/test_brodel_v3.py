@@ -26,10 +26,10 @@ def test_best_stock_scores_highest_and_range_is_0_to_100():
     result = compute_brodel_v3(items)
     scores = [item["brodel_score_v3"] for item in result]
     assert scores == sorted(scores)
-    assert scores[-1] == pytest.approx(100.0)
+    assert scores[-1] == pytest.approx(95.0)  # best everywhere, insider neutral 5 of 10
     assert 0 < scores[0] < 15
     assert result[-1]["signal_breakdown_v3"]["Qualitaet"] == 25
-    assert result[-1]["signal_breakdown_v3"]["Insider"] is None  # no data outside the US
+    assert result[-1]["signal_breakdown_v3"]["Insider"] == 5.0  # no data counts as neutral, like no purchase
     assert "brodel_score_v3" not in items[0]  # input stays unchanged
 
 
@@ -176,3 +176,18 @@ def test_finnhub_brake_allows_55_calls_per_minute():
         assert len(slept) == 1 and now[0] >= 60
     finally:
         finnhub_cache._call_times.clear()
+
+
+def test_missing_insider_data_is_neutral_and_gives_no_advantage():
+    """A strong stock without insider data must not beat an equally strong one that has no purchases."""
+    us = [_item(f"U{i}", float(i), insider_buy_usd=0.0) for i in range(1, 11)]
+    europe = [_item(f"E{i}.DE", float(i)) for i in range(1, 11)]  # no insider source
+    by_symbol = {item["symbol"]: item for item in compute_brodel_v3(us + europe)}
+    assert by_symbol["U10"]["brodel_score_v3"] == by_symbol["E10.DE"]["brodel_score_v3"]
+    assert by_symbol["E10.DE"]["signal_breakdown_v3"]["Insider"] == 5.0
+
+
+def test_neutral_insider_does_not_count_towards_the_minimum_blocks():
+    thin = {"symbol": "THIN", "sector": "Tech",
+            "factors_v3": {"momentum_12_1": 0.5, "eps_up_ratio": 0.5, "share_change": 0.0, "insider_buy_usd": 0.0}}
+    assert "brodel_score_v3" not in compute_brodel_v3([thin] + [_item(f"S{i}", float(i)) for i in range(10)])[0]

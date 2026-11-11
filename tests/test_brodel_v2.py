@@ -471,6 +471,7 @@ def test_breakdown_marks_insider_without_buys_as_neutral():
     item["signal_breakdown"]["Insider-Aktivitaet"] = {"name": "Insider-Aktivitaet", "score": 0, "summary": "[Finnhub] 0 Kaeufe, 4 Verkaeufe"}
     item["signal_breakdown_v3"] = {"Qualitaet": 22.0, "Momentum": 4.0, "EPS-Revisionen": 15.0,
                                    "Bewertung": 7.5, "Aktienrueckkauf": 6.0, "Insider": 5.0}
+    item["factors_v3"] = {"insider_buy_usd": 0.0, "insider_source": "Finnhub/Yahoo"}
     rows = app.build_breakdown_rows(item)
     by_name = {row["Baustein"]: row for row in rows}
     insider = by_name["Insider-Aktivität"]["Detail"]
@@ -484,3 +485,14 @@ def test_breakdown_marks_insider_without_buys_as_neutral():
     assert "d9534f" in styles["Momentum (neu in 3.0)"][column]  # 4 of 20
     assert app.v3_weight_for_label("Aktienrückkauf") == 10
     app.style_breakdown(pd.DataFrame(rows)).to_html()  # renders without error
+
+
+def test_breakdown_says_when_insider_data_is_missing():
+    import app
+
+    item = _app_item("MC.PA", 20, 20)
+    item["signal_breakdown_v3"] = {"Qualitaet": 22.0, "Momentum": 4.0, "EPS-Revisionen": 15.0,
+                                   "Bewertung": 7.5, "Aktienrueckkauf": 6.0, "Insider": 5.0}
+    item["factors_v3"] = {"insider_buy_usd": None}
+    by_name = {row["Baustein"]: row for row in app.build_breakdown_rows(item)}
+    assert "keine Daten für dieses Land = neutral" in by_name["Insider-Aktivität"]["Detail"]

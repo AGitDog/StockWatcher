@@ -24,9 +24,10 @@ BRODEL_V3_WEIGHTS = {
     "Aktienrueckkauf": 10,
     "Insider": 10,
 }
-MIN_BLOCKS = 4  # fewer known blocks: no score (ETFs, indices, stocks with thin data)
+MIN_BLOCKS = 4  # fewer known blocks besides Insider: no score (ETFs, indices, stocks with thin data)
 MIN_GROUP_SIZE = 8  # smaller sector groups are ranked within the whole region
 INSIDER_LARGE_BUY_USD = 100_000
+INSIDER_NEUTRAL = 0.5  # no purchase, and also no data: only a real purchase moves the block
 
 
 def _ranks(frame: pd.DataFrame, column: str, ascending: bool = True, groups: list[str] | None = None) -> pd.Series:
@@ -46,13 +47,22 @@ def _earnings_yield(forward_pe: Any) -> float | None:
     return 1 / forward_pe if forward_pe > 0 else -1.0
 
 
-def _insider_rank(value: Any) -> float | None:
-    """Purchases are a bonus. No purchase is neutral, because most stocks have none."""
-    if value is None:
-        return None
-    if value >= INSIDER_LARGE_BUY_USD:
+def _insider_rank(value: Any) -> float:
+    """Purchases are a bonus. No purchase is neutral, because most stocks have none.
+
+    Missing data is neutral too (since 11.11.2026). Before, the block was left out for stocks
+    without a source (Europe, Asia), so a strong stock there kept its high average while a
+    strong US stock was pulled towards the middle by the neutral 5 of 10.
+    """
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return INSIDER_NEUTRAL
+    if number != number:  # NaN
+        return INSIDER_NEUTRAL
+    if number >= INSIDER_LARGE_BUY_USD:
         return 1.0
-    return 0.75 if value > 0 else 0.5
+    return 0.75 if number > 0 else INSIDER_NEUTRAL
 
 
 def compute_brodel_v3(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -97,12 +107,12 @@ def compute_brodel_v3(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     blocks["Momentum"] = _ranks(frame, "momentum")
     blocks["EPS-Revisionen"] = _ranks(frame, "eps")
     blocks["Aktienrueckkauf"] = _ranks(frame, "shares", ascending=False)  # fewer shares is better
+    known_blocks = blocks.notna().sum(axis=1)  # real data only; the neutral insider value does not count
     blocks["Insider"] = frame["insider"]
 
     weights = pd.Series(BRODEL_V3_WEIGHTS)[list(blocks.columns)]
     known_weight = blocks.notna().mul(weights).sum(axis=1)
     score = blocks.mul(weights).sum(axis=1).div(known_weight) * 100
-    known_blocks = blocks.notna().sum(axis=1)
 
     for index in frame.index:
         if known_blocks[index] < MIN_BLOCKS:

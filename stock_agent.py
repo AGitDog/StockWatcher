@@ -1089,11 +1089,23 @@ def collect_v3_factors(
     market_cap = _safe_float(info.get("marketCap"))
     import finnhub_cache
 
-    insider = None
-    if "." not in str(symbol) and not str(symbol).startswith("^"):  # US filings only
+    import insider_sources
+
+    insider, insider_source = None, None
+    text_symbol = str(symbol)
+    if "." not in text_symbol and not text_symbol.startswith("^"):  # US: SEC Form 4 via Finnhub or Yahoo
         insider = insider_signal.get("buy_value_usd")
         if insider is None:
             insider = finnhub_cache.get_insider_buy_value(symbol)
+        insider_source = "Finnhub/Yahoo" if insider is not None else None
+    elif text_symbol.endswith(".L"):  # UK: Yahoo's table, values in pounds
+        local_value = insider_signal.get("buy_value_usd")  # Yahoo fallback value, here in the table currency
+        insider = insider_sources.to_usd(local_value, quote_currency_units(info.get("currency"))[0])
+        insider_source = "Yahoo" if insider is not None else None
+    elif text_symbol.endswith(".DE"):  # Germany: BaFin CSV stored by hand
+        eur = insider_sources.bafin_buy_value_eur([info.get("longName"), info.get("shortName")])
+        insider = insider_sources.to_usd(eur, "EUR")
+        insider_source = "BaFin" if insider is not None else None
     return {
         "profit_margin": _safe_float(info.get("profitMargins")),
         "return_on_equity": _safe_float(info.get("returnOnEquity")),
@@ -1103,6 +1115,7 @@ def collect_v3_factors(
         "momentum_12_1": momentum_12_1(history),
         "eps_up_ratio": up / (up + down) if up + down >= 2 else None,
         "share_change": buyback_signal.get("share_change"),
+        "insider_source": insider_source,
         "insider_buy_usd": insider,
     }
 
@@ -2012,14 +2025,9 @@ def insider_buy_value(transactions: pd.DataFrame | None, days: int = 90) -> floa
 
     Awards, gifts and sales do not count. None means the table could not be loaded.
     """
-    if transactions is None:
-        return None
-    if transactions.empty or not {"Text", "Value", "Start Date"} <= set(transactions.columns):
-        return 0.0
-    dates = pd.to_datetime(transactions["Start Date"], errors="coerce")
-    recent = dates >= pd.Timestamp.now() - pd.Timedelta(days=days)
-    bought = transactions["Text"].astype(str).str.lower().str.startswith("purchase")
-    return float(pd.to_numeric(transactions.loc[recent & bought, "Value"], errors="coerce").sum())
+    import insider_sources
+
+    return insider_sources.yahoo_buy_value(transactions, days=days)
 
 
 def _summarize_insider_signal(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]:
@@ -2066,11 +2074,13 @@ def _summarize_insider_signal(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]
             columns = {str(col).lower(): col for col in transactions.columns}
             text_col = columns.get("text") or columns.get("transaction")
             if text_col:
+                import insider_sources
+
                 for _, row in transactions.head(20).iterrows():
                     text_val = str(row.get(text_col, "")).lower()
-                    if any(kw in text_val for kw in ("purchase", "buy", "kauf")):
+                    if insider_sources.is_open_market_buy(text_val):  # company buybacks are no insider buys
                         purchase_count += 1
-                    elif any(kw in text_val for kw in ("sale", "sell", "verkauf", "disposition")):
+                    elif any(kw in text_val for kw in ("sale", "sold", "sell", "verkauf", "disposition")):
                         sell_count += 1
 
     score = 0
@@ -2086,6 +2096,11 @@ def _summarize_insider_signal(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]
 
     if purchase_count == 0 and sell_count == 0:
         summary = f"[{provider}] Keine Insider-Transaktionen erkannt."
+    elif provider == "Finnhub":
+        # Finnhub gives net share changes per month; the counts above are levels, not numbers of trades
+        buys = {4: "Käufe über 100 Aktien", 2: "kleine Käufe"}.get(int(purchase_count), "keine Käufe")
+        sells = {4: "Verkäufe über 100 Aktien", 1: "kleine Verkäufe"}.get(int(sell_count), "keine Verkäufe")
+        summary = f"[Finnhub] 3 Monate netto: {buys}, {sells}"
     else:
         summary = f"[{provider}] {int(purchase_count)} Kaeufe, {int(sell_count)} Verkaeufe"
         if purchase_count >= 4:
