@@ -14,7 +14,6 @@ from stock_agent import (
     parse_watchlist_text,
     parse_symbol_mappings,
     add_watchlist_peer_context,
-    BRODEL_V1_MAX_POINTS,
     BRODEL_V2_MAX_POINTS,
     BUYBACK_COMPONENT_NAME,
     ensure_brodel_v2,
@@ -276,7 +275,7 @@ def breakdown_table_height(row_count: int) -> int:
 
 
 def build_breakdown_rows(item: dict) -> list[dict]:
-    """One table for all versions: components of 2.0 and 1.0 plus the blocks that are new in 3.0."""
+    """One table: components of the Punkte-Score plus the blocks that are new in the Rang-Score."""
     breakdown_v1 = item.get("signal_breakdown", {}) or {}
     breakdown_v2 = item.get("signal_breakdown_v2", {}) or {}
     breakdown_v3 = item.get("signal_breakdown_v3", {}) or {}
@@ -288,7 +287,6 @@ def build_breakdown_rows(item: dict) -> list[dict]:
             "Baustein": BRODEL_COMPONENT_LABELS.get(name, name),
             "Punkte 3.0": breakdown_v3.get(BRODEL_SHARED_BLOCKS.get(name)),
             "Punkte 2.0": component_v2.get("score", 0),
-            "Punkte 1.0": component_v1.get("score", 0) if name in BRODEL_V1_MAX_POINTS else None,
             "Detail": _with_v3_note(component_v2.get("summary") or component_v1.get("summary", ""),
                                     BRODEL_SHARED_BLOCKS.get(name), breakdown_v3.get(BRODEL_SHARED_BLOCKS.get(name)),
                                     item.get("factors_v3") or {}),
@@ -299,7 +297,6 @@ def build_breakdown_rows(item: dict) -> list[dict]:
             "Baustein": f"{BRODEL_V3_LABELS.get(name, name)} (neu in 3.0)",
             "Punkte 3.0": breakdown_v3.get(name),
             "Punkte 2.0": None,
-            "Punkte 1.0": None,
             "Detail": details[name],
         })
 
@@ -400,7 +397,7 @@ def _rank_points_style(row: pd.Series) -> list[str]:
 
 def style_breakdown(frame: pd.DataFrame):
     """Rang-Score column by share of its weight (it is never negative), the point columns by sign."""
-    point_columns = [column for column in ("Punkte 2.0", "Punkte 1.0") if column in frame]
+    point_columns = [column for column in ("Punkte 2.0",) if column in frame]
     styler = style_points(frame, point_columns)
     if "Punkte 3.0" in frame:
         styler = styler.apply(_rank_points_style, axis=1).format(
@@ -599,7 +596,6 @@ def render_watchlist_signal_monitor(mapping_text: str):
                         "Baustein": st.column_config.TextColumn("Baustein", width="medium"),
                         "Punkte 3.0": st.column_config.Column("Rang-Score", width="small", help="Punkte dieses Bausteins im Rang-Score: Gewicht × Anteil der Vergleichsaktien, die schlechter sind. Grün oberes, rot unteres Drittel, ohne Farbe Mitte. Insider: keine Käufe oder keine Daten = 5 von 10 (neutral)"),
                         "Punkte 2.0": st.column_config.Column("Punkte", width="small", help="Feste Punkte im Punkte-Score"),
-                        "Punkte 1.0": st.column_config.Column("Punkte alt", width="small", help="Punkte der ersten Version, nur zum Vergleich"),
                         "Detail": st.column_config.TextColumn("Detail", width="large"),
                     },
                 )
@@ -1605,7 +1601,7 @@ def render_truth_machine_section():
             st.markdown(f"- {caveat}")
 
 
-BRODEL_CHECK_VERSIONS = [("Punkte-Score", "brodel_score_v2"), ("Punkte-Score alt", "brodel_score")]
+BRODEL_CHECK_VERSIONS = [("Punkte-Score", "brodel_score_v2")]
 
 
 def build_brodel_check_rows(results: dict[str, dict]) -> list[dict]:
@@ -1627,7 +1623,7 @@ def render_brodel_check_section():
     st.subheader("🔬 Aktien-Score auf dem Prüfstand")
     st.write(
         "Misst, ob ein hoher Aktien-Score in den gespeicherten Snapshots tatsächlich höhere Folgerenditen gebracht hat. "
-        "Gemessen werden **Punkte-Score** und zum Vergleich **Punkte-Score alt** auf denselben Tagen. "
+        "Gemessen wird der **Punkte-Score**. "
         "Überlappende Zeitfenster werden für den belastbaren t-Wert herausgerechnet."
     )
     st.caption(

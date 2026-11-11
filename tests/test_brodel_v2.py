@@ -301,15 +301,14 @@ def test_prepare_signal_items_sorts_by_v2_and_backfills():
     assert "brodel_score_v2" not in old_item  # input is not modified
 
 
-def test_breakdown_rows_show_both_versions():
+def test_breakdown_rows_show_points_without_old_version():
     import app
 
     rows = app.build_breakdown_rows(_app_item("AAA", 80, 20))
     by_name = {row["Baustein"]: row for row in rows}
     assert by_name["Kursziele & Konsens"]["Punkte 2.0"] == 5
-    assert by_name["Kursziele & Konsens"]["Punkte 1.0"] == 15
     assert by_name["Aktienrückkauf"]["Punkte 2.0"] == 3
-    assert by_name["Aktienrückkauf"]["Punkte 1.0"] is None  # new in 2.0
+    assert all("Punkte 1.0" not in row for row in rows)  # old version is no longer shown
     assert not any("Max" in key for key in rows[0])
     assert rows[0]["Punkte 2.0"] == max(row["Punkte 2.0"] or 0 for row in rows)  # strongest first
     assert all(row["Punkte 3.0"] is None for row in rows)  # no 3.0 value yet
@@ -372,13 +371,13 @@ def test_score_history_frame_contains_both_versions():
     assert frame.loc[0, "brodel_score"] == 80
 
 
-def test_brodel_check_rows_list_v2_before_v1():
+def test_brodel_check_rows_only_current_points_score():
     import app
 
     summary = {"mean_ic": 0.05, "n": 3, "t_stat": 1.2}
     results = {label: {"summary": summary, "summary_independent": summary} for label, _ in app.BRODEL_CHECK_VERSIONS}
     rows = app.build_brodel_check_rows(results)
-    assert [row["Score"] for row in rows] == ["Punkte-Score", "Punkte-Score alt"]
+    assert [row["Score"] for row in rows] == ["Punkte-Score"]
     assert rows[0]["Mittlerer Rank-IC"] == "+0.050"
 
 

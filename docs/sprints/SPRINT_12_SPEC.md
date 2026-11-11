@@ -71,3 +71,9 @@ Freigabe im Chat: „Ja, dann gehe alle an, die möglich sind. Mehr Daten heißt
 - Erster Live-Lauf am 11.11.2026: alle Quellen ✅.
 
 **Tests:** 401 grün.
+
+## 8. Nachtrag 11.11.2026: „Punkte alt“ entfernt
+Freigabe im Chat: „Punkte alt ist nur noch aus historischen Gründen drin, wird aber nicht benutzt. Wenn das korrekt ist, bitte entfernen.“
+- Geprüft: Die erste Punkte-Version wurde nur noch angezeigt (Spalte „Punkte alt“ in der Detailtabelle, Zeile „Punkte-Score alt“ im Score-Prüfstand). Rang-Score, Punkte-Score, Paper-Bot und Rang-Depot nutzen sie nicht.
+- Entfernt: beide Anzeigen. Die gespeicherten Rohwerte (`signal_breakdown`, `brodel_score`) bleiben, weil der Punkte-Score älterer Snapshots daraus nachgerechnet wird.
+- Tests: `test_brodel_v2.py` prüft, dass die Spalte fehlt und der Prüfstand nur den Punkte-Score misst. 401 grün.
