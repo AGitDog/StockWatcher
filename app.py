@@ -289,7 +289,8 @@ def build_breakdown_rows(item: dict) -> list[dict]:
             "Punkte 3.0": breakdown_v3.get(BRODEL_SHARED_BLOCKS.get(name)),
             "Punkte 2.0": component_v2.get("score", 0),
             "Punkte 1.0": component_v1.get("score", 0) if name in BRODEL_V1_MAX_POINTS else None,
-            "Detail": component_v2.get("summary") or component_v1.get("summary", ""),
+            "Detail": _with_v3_note(component_v2.get("summary") or component_v1.get("summary", ""),
+                                    BRODEL_SHARED_BLOCKS.get(name), breakdown_v3.get(BRODEL_SHARED_BLOCKS.get(name))),
         })
     details = v3_block_details(item.get("factors_v3") or {})
     for name in ("Qualitaet", "Bewertung", "Momentum"):
@@ -306,6 +307,31 @@ def build_breakdown_rows(item: dict) -> list[dict]:
         return (-v3 if v3 is not None else 1.0, -v2 if v2 is not None else 1000.0)
 
     return sorted(rows, key=order)
+
+
+def _with_v3_note(detail: str, block: str | None, points: float | None) -> str:
+    """Add how the Rang-Score reads a block that also exists in the Punkte-Score."""
+    if block is None or points is None:
+        return detail
+    weight = BRODEL_V3_WEIGHTS[block]
+    if block == "Insider":
+        level = {0.5: "keine Käufe = neutral", 0.75: "kleine Käufe", 1.0: "Käufe ab 100.000 $"}.get(round(points / weight, 2), "")
+        note = f"Rang-Score: {points:.1f} von {weight} ({level}). Nur Käufe zählen, Verkäufe nicht"
+    else:
+        note = f"Rang-Score: {points:.1f} von {weight} = besser als {points / weight * 100:.0f} % der Vergleichsaktien"
+    return f"{detail} · {note}" if detail else note
+
+
+def v3_weight_for_label(label: str) -> int | None:
+    """Weight of the Rang-Score block shown in a breakdown row, by its visible label."""
+    for name, weight in BRODEL_V3_WEIGHTS.items():
+        shown = BRODEL_V3_LABELS.get(name, name)
+        if label in (shown, f"{shown} (neu in 3.0)"):
+            return weight
+    for component, block in BRODEL_SHARED_BLOCKS.items():
+        if label == BRODEL_COMPONENT_LABELS.get(component, component):
+            return BRODEL_V3_WEIGHTS[block]
+    return None
 
 
 def v3_block_details(factors: dict) -> dict[str, str]:
@@ -340,6 +366,29 @@ def rank_score_explanation(item: dict) -> str | None:
              f"besser als etwa {score_v3:.0f} % der Vergleichsaktien aus ihrer Region; Qualität und Bewertung werden nur "
              "mit dem eigenen Sektor verglichen. Das ist eine Platzierung, keine Prognose.")
     return text
+
+
+def _rank_points_style(row: pd.Series) -> list[str]:
+    """Rang-Score points are a share of the weight: green upper third, red lower third, neutral between."""
+    styles = []
+    for column, value in row.items():
+        weight = v3_weight_for_label(row.get("Baustein", "")) if column == "Punkte 3.0" else None
+        if column != "Punkte 3.0" or pd.isna(value) or not weight:
+            styles.append("")
+            continue
+        share = value / weight
+        styles.append("color: #2e9e5b; font-weight: 600" if share >= 2 / 3 else "color: #d9534f; font-weight: 600" if share <= 1 / 3 else "")
+    return styles
+
+
+def style_breakdown(frame: pd.DataFrame):
+    """Rang-Score column by share of its weight (it is never negative), the point columns by sign."""
+    point_columns = [column for column in ("Punkte 2.0", "Punkte 1.0") if column in frame]
+    styler = style_points(frame, point_columns)
+    if "Punkte 3.0" in frame:
+        styler = styler.apply(_rank_points_style, axis=1).format(
+            lambda value: "–" if pd.isna(value) else f"{value:.1f}", subset=["Punkte 3.0"])
+    return styler
 
 
 def style_points(frame: pd.DataFrame, columns: list[str]):
@@ -525,13 +574,13 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     st.caption("Für diese Aktie gibt es noch keinen Rang-Score: Ihr nächster Lauf steht aus oder es fehlen Daten. ETFs und Indizes bekommen keinen Wert.")
                 breakdown_frame = pd.DataFrame(build_breakdown_rows(item))
                 st.dataframe(
-                    style_points(breakdown_frame, ["Punkte 3.0", "Punkte 2.0", "Punkte 1.0"]),
+                    style_breakdown(breakdown_frame),
                     use_container_width=True,
                     hide_index=True,
                     height=breakdown_table_height(len(breakdown_frame)),
                     column_config={
                         "Baustein": st.column_config.TextColumn("Baustein", width="medium"),
-                        "Punkte 3.0": st.column_config.Column("Rang-Score", width="small", help="Punkte dieses Bausteins im Rang-Score: Gewicht × Anteil der Vergleichsaktien, die schlechter sind"),
+                        "Punkte 3.0": st.column_config.Column("Rang-Score", width="small", help="Punkte dieses Bausteins im Rang-Score: Gewicht × Anteil der Vergleichsaktien, die schlechter sind. Grün oberes, rot unteres Drittel, ohne Farbe Mitte. Insider: keine Käufe = 5 von 10 (neutral)"),
                         "Punkte 2.0": st.column_config.Column("Punkte", width="small", help="Feste Punkte im Punkte-Score"),
                         "Punkte 1.0": st.column_config.Column("Punkte alt", width="small", help="Punkte der ersten Version, nur zum Vergleich"),
                         "Detail": st.column_config.TextColumn("Detail", width="large"),

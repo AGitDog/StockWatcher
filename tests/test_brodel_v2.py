@@ -462,3 +462,25 @@ def test_visitor_prefs_component_stores_only_in_the_browser():
     html = (Path(__file__).parent.parent / "components" / "visitor_prefs" / "index.html").read_text(encoding="utf-8")
     assert "localStorage" in html and "stockwatcher.skip_start" in html
     assert "fetch(" not in html and "XMLHttpRequest" not in html
+
+
+def test_breakdown_marks_insider_without_buys_as_neutral():
+    import app
+
+    item = _app_item("NVDA", 20, 20)
+    item["signal_breakdown"]["Insider-Aktivitaet"] = {"name": "Insider-Aktivitaet", "score": 0, "summary": "[Finnhub] 0 Kaeufe, 4 Verkaeufe"}
+    item["signal_breakdown_v3"] = {"Qualitaet": 22.0, "Momentum": 4.0, "EPS-Revisionen": 15.0,
+                                   "Bewertung": 7.5, "Aktienrueckkauf": 6.0, "Insider": 5.0}
+    rows = app.build_breakdown_rows(item)
+    by_name = {row["Baustein"]: row for row in rows}
+    insider = by_name["Insider-Aktivität"]["Detail"]
+    assert "0 Kaeufe, 4 Verkaeufe" in insider and "keine Käufe = neutral" in insider and "Verkäufe nicht" in insider
+    assert "besser als 75 %" in by_name["EPS-Revisionen"]["Detail"]
+
+    styles = {row["Baustein"]: style for row, style in zip(rows, [app._rank_points_style(pd.Series(r)) for r in rows])}
+    column = list(rows[0]).index("Punkte 3.0")
+    assert styles["Insider-Aktivität"][column] == ""  # 5 of 10 is the middle, not green
+    assert "2e9e5b" in styles["Qualität (neu in 3.0)"][column]  # 22 of 25
+    assert "d9534f" in styles["Momentum (neu in 3.0)"][column]  # 4 of 20
+    assert app.v3_weight_for_label("Aktienrückkauf") == 10
+    app.style_breakdown(pd.DataFrame(rows)).to_html()  # renders without error

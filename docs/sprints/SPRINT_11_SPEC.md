@@ -73,3 +73,8 @@ Freigabe im Chat: „Bitte evaluiere nochmals alles, jede Spalte in der großen 
 **Hilfe:** Beispielrechnung des Rang-Scores und Erklärung der Tabellenspalten.
 
 **Tests:** 362 grün, neu: Bausteine und Platzzahl in den Tabellenzeilen, Sortierung nach Rang-Score, Erklärsatz, Rang-Score im Verlauf, beide Yahoo-Formate der Dividendenrendite, Pence-Logik. Geprüft mit echten Daten (AppTest für BGEO.L, Live-Abruf Apple, BGEO.L, Unilever) und einem Screenshot der Tabelle in Edge.
+
+## 6. Nachtrag 11.11.2026: Insider-Baustein neutral anzeigen
+- **Befund:** NVDA mit „0 Käufe, 4 Verkäufe“ zeigte im Rang-Score eine grüne „+5“. Der Wert ist richtig, denn keine Käufe sind neutral (0,5 × 10) und Verkäufe zählen bewusst nicht. Die Anzeige wirkte aber positiv.
+- **Neu:** Die Rang-Score-Spalte der Bausteintabelle hat kein Vorzeichen mehr. Sie ist eingefärbt nach dem Anteil am Gewicht: grün oberes, rot unteres Drittel, sonst ohne Farbe. Gleiche Bausteine zeigen im Detail, wie der Rang-Score sie liest, z. B. „Rang-Score: 5.0 von 10 (keine Käufe = neutral). Nur Käufe zählen, Verkäufe nicht“ oder „14.9 von 20 = besser als 74 % der Vergleichsaktien“.
+- **Test:** `test_breakdown_marks_insider_without_buys_as_neutral`. 363 Tests grün.
