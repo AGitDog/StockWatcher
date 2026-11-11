@@ -312,6 +312,9 @@ def build_breakdown_rows(item: dict) -> list[dict]:
 
 INSIDER_SOURCE_NOTES = {
     "BaFin": "Quelle BaFin-Datei",
+    "SIX": "Quelle SIX-Meldungen",
+    "AMF": "Quelle AMF-Meldungen",
+    "AFM": "Quelle AFM-Register",
     "Yahoo": "Quelle Yahoo",
     "Finnhub/Yahoo": "Quelle SEC-Meldungen",
 }
@@ -1180,7 +1183,7 @@ BRODEL_V3_EXPLANATIONS = {
     "EPS-Revisionen": "Anteil der Analysten-Hochstufungen an allen Änderungen",
     "Bewertung": "Gewinn und Free Cashflow im Verhältnis zum Preis",
     "Aktienrueckkauf": "Rückgang der Aktienzahl in den letzten 12 Monaten",
-    "Insider": "Käufe am offenen Markt in 90 Tagen (USA, Großbritannien, Deutschland mit BaFin-Datei). Keine Käufe oder keine Daten 5, unter 100.000 $ 7,5, ab 100.000 $ 10 Punkte",
+    "Insider": "Käufe am offenen Markt in 90 Tagen (USA, Europa, Kanada; nicht Japan und Indien). Keine Käufe oder keine Daten 5, unter 100.000 $ 7,5, ab 100.000 $ 10 Punkte",
 }
 
 
@@ -1227,8 +1230,10 @@ def render_help_tab():
             "denn eine Bank hat von Natur aus andere Kennzahlen als ein Softwarehaus.\n\n"
             "**Fehlt ein Baustein**, wird über die übrigen gerechnet. Eine Aktie braucht mindestens 4 Bausteine mit echten Daten, "
             "sonst bekommt sie keinen Wert. ETFs und Indizes bleiben außen vor.\n\n"
-            "**Ausnahme Insider:** Insider-Käufe gibt es kostenlos nur für die USA, Großbritannien und (mit einer von Hand geladenen "
-            "BaFin-Datei) Deutschland. Wo Daten fehlen, zählt der Baustein wie „keine Käufe“, also neutral 5 von 10. "
+            "**Ausnahme Insider:** Insider-Käufe kommen aus den Meldungen der Börsenaufsichten: USA (SEC), Schweiz (SIX), "
+            "Frankreich (AMF), Niederlande (AFM), Großbritannien, Kanada, Spanien und weitere über Yahoo, Deutschland über eine von Hand "
+            "geladene BaFin-Datei. Für Japan und Indien gibt es keine freie Quelle. Wo Daten fehlen, zählt der Baustein wie „keine Käufe“, also neutral 5 von 10. "
+            "Eine wöchentliche Prüfung meldet, wenn eine Quelle ausfällt oder ihr Format ändert. "
             "Würde er wegfallen, hätten starke Aktien ohne Daten einen Vorteil: Bei ihnen zöge kein neutraler Wert den Schnitt zur Mitte.\n\n"
             "**Nicht mehr dabei:** Preis/Volumen, Technik, Kursziele, News, Event-Druck und Short Interest. "
             "Sie zeigten in unseren Tests keinen Nutzen, sind nicht rückwirkend prüfbar oder messen eher Aufmerksamkeit als Qualität. "

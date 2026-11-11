@@ -1092,20 +1092,16 @@ def collect_v3_factors(
     import insider_sources
 
     insider, insider_source = None, None
-    text_symbol = str(symbol)
-    if "." not in text_symbol and not text_symbol.startswith("^"):  # US: SEC Form 4 via Finnhub or Yahoo
+    if str(symbol).startswith("^"):
+        pass  # indices have no insiders
+    elif insider_sources.market_of(symbol) == "US":  # SEC Form 4 via Finnhub or Yahoo
         insider = insider_signal.get("buy_value_usd")
         if insider is None:
-            insider = finnhub_cache.get_insider_buy_value(symbol)
+            insider = finnhub_cache.get_insider_buy_value(str(symbol).replace(".", "-"))
         insider_source = "Finnhub/Yahoo" if insider is not None else None
-    elif text_symbol.endswith(".L"):  # UK: Yahoo's table, values in pounds
-        local_value = insider_signal.get("buy_value_usd")  # Yahoo fallback value, here in the table currency
-        insider = insider_sources.to_usd(local_value, quote_currency_units(info.get("currency"))[0])
-        insider_source = "Yahoo" if insider is not None else None
-    elif text_symbol.endswith(".DE"):  # Germany: BaFin CSV stored by hand
-        eur = insider_sources.bafin_buy_value_eur([info.get("longName"), info.get("shortName")])
-        insider = insider_sources.to_usd(eur, "EUR")
-        insider_source = "BaFin" if insider is not None else None
+    else:
+        # Yahoo's fallback value is in the currency of its table, not USD, despite the field name
+        insider, insider_source = insider_sources.insider_value_usd(symbol, info, insider_signal.get("buy_value_usd"))
     return {
         "profit_margin": _safe_float(info.get("profitMargins")),
         "return_on_equity": _safe_float(info.get("returnOnEquity")),

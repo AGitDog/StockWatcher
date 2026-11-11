@@ -47,3 +47,27 @@ Die gekauften Positionen bleiben. Neue Käufe folgen ab dem Nachtlauf vom 11.11.
 
 ## 6. Tests
 372 grün. Neu: `tests/test_insider_sources.py` (Wortlaut, Rückkäufe, Namensabgleich, BaFin-Datei, Dollar-Umrechnung, Quelle je Land). Dazu Neutral-Regel und Mindestbausteine in `test_brodel_v3.py` und die Detailzeile ohne Daten in `test_brodel_v2.py`. Live geprüft: HSBA.L mit 654.000 $ Insider-Käufen (Quelle Yahoo).
+
+## 7. Nachtrag 11.11.2026: alle freien Quellen und eine wöchentliche Prüfung
+Freigabe im Chat: „Ja, dann gehe alle an, die möglich sind. Mehr Daten heißt auch bessere Daten. Und ganz wichtig: Implementiere für alles Tests, die das Ganze regelmäßig überprüfen.“
+
+| Markt | Aktien | Quelle | Ergebnis |
+|---|---|---|---|
+| Schweiz | 20 | SIX `management_transactions` (JSON, ein Abruf pro Lauf) | ✅ Käufe von Aktien durch natürliche Personen, ohne Optionen, Vesting, Mitarbeiterpläne; Korrekturen ersetzen die Erstmeldung, Doppelmeldungen zählen einmal |
+| Frankreich | 39 | AMF BDIF: Liste (JSON) + PDF je Meldung (`pypdf`) | ✅ „Acquisition“ von „Action“ ohne Options- und Gratisaktien-Programm; ausgelesene PDFs in `insider_data/amf_cache.json` |
+| Niederlande | 6 | AFM-Register MAR 19: Suche + Detailseite | ✅ „Koop“ von „Gewoon aandeel“ ohne Optionsprogramm; Cache `insider_data/afm_cache.json`. Das Register enthält z. B. keine ASML-Meldungen |
+| Kanada, Spanien, Australien, Italien u. a. | ~70 | Yahoo | ✅ zusätzlich der SEDI-Wortlaut „Acquisition in the public market“ |
+| Indien | 50 | NSE | ❌ ohne Browser-Sitzung nur veraltete Daten (2021–2024, Wert 0). Die Bot-Sperre zu umgehen, kommt nicht in Frage. Neutral |
+| Japan | 224 | – | ❌ kein öffentliches Register für Vorstandskäufe. Neutral |
+
+- **Ein Einstieg:** `insider_sources.insider_value_usd(symbol, info, yahoo_value)` wählt die Quelle je Markt. Fällt die Behördenquelle aus, springt Yahoo ein, sonst gilt neutral. Ein Fehler in einer Quelle führt nie zum Abbruch des Laufs.
+- **Höflich und threadsicher:** 0,3 s Pause je Abruf. SIX- und AMF-Liste werden einmal pro Lauf geladen (Lock), die Caches sind mit einem Lock geschützt. Meldungen älter als 120 Tage fallen aus den Caches.
+- **Nachtlauf:** committet zusätzlich `insider_data/`. Neue Abhängigkeit `pypdf`.
+- **BRK.B** gilt als US-Aktie (Aktienklasse, keine Börse).
+
+### Regelmäßige Prüfung
+- **Unit-Tests** (`tests/test_insider_sources.py`, `tests/test_insider_check.py`): jede Quelle mit Beispieldaten im echten Format (`tests/fixtures/insider/`), Filter für Rückkäufe, Optionen, Korrekturen, Doppelmeldungen, Zeitfenster, Namensabgleich, Währungen, Cache, Ausfall einer Quelle. `tests/conftest.py` sperrt in allen Tests Netzabrufe und Live-Wechselkurse.
+- **Wöchentlicher Live-Check** (`insider_check.py`, Workflow `insider_sources_check.yml`, montags 07:00 UTC und von Hand): fragt jede Quelle echt ab und liest die Antwort mit dem Code des Nachtlaufs. Geprüft werden SIX, AMF (PDF lesbar), AFM (Detail lesbar), Yahoo, Finnhub und die Wechselkurse. Dazu kommt die Abdeckung im letzten Snapshot: Jeder Markt mit Quelle braucht Daten. Fällt eine Quelle aus oder ändert ihr Format, schlägt der Lauf fehl, und GitHub schickt eine E-Mail. Ist die BaFin-Datei älter als 3 Wochen, gibt es nur eine Warnung.
+- Erster Live-Lauf am 11.11.2026: alle Quellen ✅.
+
+**Tests:** 401 grün.

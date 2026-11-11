@@ -85,7 +85,7 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
-        git add -A signal_history/ bot_depot/
+        git add -A signal_history/ bot_depot/ insider_data/
         git status
         if ! git diff --staged --quiet; then
           git commit -m "Auto-update signal snapshots (${{ matrix.group }})"
@@ -122,7 +122,7 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
-        git add -A signal_history/ bot_depot/
+        git add -A signal_history/ bot_depot/ insider_data/
         if ! git diff --staged --quiet; then
           git commit -m "Paper bot: daily step"
           for attempt in 1 2 3; do
