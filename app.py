@@ -1063,7 +1063,7 @@ BRODEL_V3_EXPLANATIONS = {
 
 HELP_SCORE_ROWS = [
     {"Score": "Rang-Score", "Skala": "0 bis 100", "Frage": "Wie gut ist die Aktie im Vergleich zu ähnlichen Aktien?",
-     "Bausteine": "6", "Genutzt von": "Spieldepot „Rang-Score beste 2 %“, Startseite"},
+     "Bausteine": "6", "Genutzt von": "die drei Rang-Score-Spieldepots, Startseite"},
     {"Score": "Punkte-Score", "Skala": "−30 bis 90", "Frage": "Wie viele feste Punkte sammelt die Aktie bei 11 Signalen?",
      "Bausteine": "11", "Genutzt von": "Spieldepots „Punkte-Score ab 60“, Score-Prüfstand"},
 ]
@@ -1289,6 +1289,20 @@ def _help_trades() -> None:
         "**Stop-Loss:** 15 % unter dem Kaufkurs. Er steigt mit dem höchsten Schlusskurs mit und sinkt nie. "
         "Liegt der Höchststand 25 % über dem Kaufkurs, rückt er auf 10 % Abstand. Die genauen Regeln stehen auf der Seite **Trades**."
     )
+    with st.expander("Was die zwei jüngeren Rang-Score-Depots prüfen (seit 11.11.2026)"):
+        st.markdown(
+            "Das Rang-Score-Depot kauft jeden Tag die besten 2 %, auch mitten in einem Börsencrash, und hält Aktien, "
+            "deren Score längst eingebrochen ist, solange der Stop nicht reißt. Zwei Depots mit denselben Regeln testen je eine Gegenmaßnahme, "
+            "damit sich die Wirkung sauber vom Score selbst trennen lässt:\n\n"
+            "- **Kaufpause:** Liegt der MSCI-World-ETF unter seinem 200-Tage-Durchschnitt, gibt es keine neuen Käufe. "
+            "Der Durchschnitt der letzten 200 Handelstage ist eine einfache Wetterfahne für die Börse. Die Pause schützt vor dem Nachkaufen in fallende Kurse. "
+            "Solange der Markt über der Linie liegt, kauft das Depot genau wie das Rang-Score-Depot.\n"
+            "- **Score-Ausstieg:** Liegt der Rang-Score einer gehaltenen Aktie an 5 Entscheidungstagen in Folge unter 40, also in der unteren Hälfte, "
+            "wird sie zur nächsten Eröffnung verkauft. So wird Kapital frei, bevor der Kurs 15 % fällt. Tage ohne frischen Score zählen nicht, "
+            "ein Tag ab 40 setzt den Zähler zurück.\n\n"
+            "Beide starteten am 11.11.2026 mit frischen 100.000 €, ihre Linien im Verlauf beginnen dort. "
+            "Ein Vergleich ist erst nach einer Korrektur aussagekräftig, denn in steigenden Märkten verhalten sich alle drei Rang-Score-Depots fast gleich."
+        )
 
 
 def _help_research() -> None:

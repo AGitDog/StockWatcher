@@ -44,3 +44,14 @@ def test_bot_chart_labels_name_the_scores():
 
     for label in app.BOT_SERIES.values():
         assert "2.0" not in label and "3.0" not in label, label
+
+
+def test_help_explains_the_two_newer_rank_depots():
+    from streamlit.testing.v1 import AppTest
+
+    at = AppTest.from_string("import app\napp._help_trades()\n")
+    at.run(timeout=60)
+    assert not at.exception
+    text = "\n".join(m.value for m in at.markdown) + "\n".join(str(t.value) for t in at.table)
+    for term in ("Kaufpause", "Score-Ausstieg", "200-Tage-Durchschnitt", "5 Entscheidungstagen", "11.11.2026"):
+        assert term in text, term
