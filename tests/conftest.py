@@ -3,6 +3,25 @@ import pytest
 
 import insider_sources
 
+
+def pytest_addoption(parser):
+    parser.addoption("--live", action="store_true", default=False,
+                     help="also run tests/live: real calls to every data source (the Sunday check)")
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--live"):
+        return
+    skip = pytest.mark.skip(reason="live test: run with --live")
+    for item in items:
+        if "live" in item.keywords:
+            item.add_marker(skip)
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "live: real network calls, only with --live")
+
+
 FAKE_USD_RATES = {"USD": 1.0, "EUR": 1.1, "GBP": 1.3, "CHF": 1.2, "CAD": 0.7}
 
 

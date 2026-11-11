@@ -76,7 +76,6 @@ jobs:
       env:
         FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
         ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
-        FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
       run: python update_signals.py --group "${{ matrix.group }}"
 

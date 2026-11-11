@@ -393,7 +393,6 @@ def test_workflows_inject_api_secrets():
     required_secrets = [
         "FINNHUB_API_KEY",
         "ALPHAVANTAGE_API_KEY",
-        "FRED_API_KEY",
         "GOOGLE_API_KEY",
     ]
     for name in ["update_signals.yml", "daily_run.yml"]:
@@ -459,16 +458,13 @@ def test_macro_overlay_uses_cache():
     # Reset cache
     stock_agent._macro_multiplier_cache = {}
 
-    with patch.object(stock_agent, "_safe_dataframe", return_value=None):
-        with patch("stock_agent.fred_cache") as mock_fred:
-            mock_fred.get_yield_curve_spread.return_value = None
+    with patch.object(stock_agent, "_safe_dataframe", return_value=None) as fetch:
+        result1 = stock_agent._get_macro_multiplier()
+        result2 = stock_agent._get_macro_multiplier()
 
-            result1 = stock_agent._get_macro_multiplier()
-            result2 = stock_agent._get_macro_multiplier()
-
-            # fred_cache should only be called once (cached on second call)
-            assert mock_fred.get_yield_curve_spread.call_count == 1
-            assert result1 == result2
+        # SPY and VIX are loaded once (cached on second call)
+        assert fetch.call_count == 2
+        assert result1 == result2
 
     # Cleanup
     stock_agent._macro_multiplier_cache = {}

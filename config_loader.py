@@ -81,8 +81,6 @@ def get_secret(*keys: str, default: Any = None) -> Any:
         env_candidates.append("ALPHAVANTAGE_API_KEY")
     if keys[0].lower() == "finnhub":
         env_candidates.append("FINNHUB_API_KEY")
-    if keys[0].lower() == "fred":
-        env_candidates.append("FRED_API_KEY")
     if keys[0].lower() == "gemini":
         env_candidates.extend(["GEMINI_API_KEY", "GOOGLE_API_KEY"])
 

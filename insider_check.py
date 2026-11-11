@@ -6,6 +6,7 @@ fails the check, so GitHub sends a mail before the Rang-Score silently loses its
 
 Run: ``python insider_check.py`` (exit code 1 if a source is broken). The latest snapshot is
 also checked: every market with a source should have insider data for some of its stocks.
+Since 11.11.2026 these probes run inside the Sunday check (``system_check.py``).
 """
 from __future__ import annotations
 

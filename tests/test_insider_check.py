@@ -51,9 +51,8 @@ def test_snapshot_coverage_finds_a_market_that_lost_its_source():
 def test_workflow_runs_the_check_weekly():
     from pathlib import Path
 
-    workflow = (Path(__file__).parent.parent / ".github" / "workflows" / "insider_sources_check.yml").read_text(encoding="utf-8")
-    assert "cron:" in workflow and "python insider_check.py" in workflow
-    assert "tests/test_insider_sources.py" in workflow
+    workflow = (Path(__file__).parent.parent / ".github" / "workflows" / "weekly_check.yml").read_text(encoding="utf-8")
+    assert "cron:" in workflow and "python system_check.py" in workflow  # the insider probes run in the Sunday check
     nightly = (Path(__file__).parent.parent / ".github" / "workflows" / "update_signals.yml").read_text(encoding="utf-8")
     assert nightly.count("insider_data/") == 2  # the caches are committed by the group jobs and the bot job
 

@@ -1171,7 +1171,7 @@ def _help_rank_score() -> None:
         st.markdown(
             "Es zählen nur Käufe am offenen Markt, keine Rückkäufe der Firma, Optionen oder Mitarbeiteraktien. "
             "Die deutschen Daten stellt [Tracefour](https://tracefour.com/de) bereit. "
-            "Eine Prüfung jeden Montag meldet, wenn eine Quelle ausfällt oder ihr Format ändert."
+            "Der Wochencheck am Sonntag meldet, wenn eine Quelle ausfällt oder ihr Format ändert."
         )
     with st.expander("Die Spalten in der Marktbeobachtung"):
         st.markdown(
@@ -1329,7 +1329,8 @@ def _help_data_sources() -> None:
         "Ein zweiter Lauf am nächsten Morgen springt ein, falls der erste ausfällt.\n"
         "- **Gedrosselte Daten:** Liefert Yahoo für eine Aktie nichts, wird sie im selben Lauf erneut abgefragt. "
         "Die Startseite zeigt, wie viele Aktien frische Daten haben.\n"
-        "- **Prüfung der Insider-Quellen:** jeden Montag automatisch."
+        "- **Wochencheck:** Jeden Sonntag prüft GitHub alle Verbindungen dieser Tabelle, die Läufe der Woche und die App. "
+        "Bei einem Fehler kommt eine E-Mail mit einem Bericht als GitHub-Issue."
     )
     st.caption("Zwischengespeicherte Daten sparen Abrufe, können aber etwas älter sein als der Snapshot.")
 

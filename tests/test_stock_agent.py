@@ -713,11 +713,9 @@ def test_apply_macro_overlay_bull_market(mock_ticker_class):
         
     mock_ticker_class.side_effect = side_effect
     
-    with patch("stock_agent.fred_cache") as mock_fred:
-        mock_fred.get_yield_curve_spread.return_value = None
-        # Base score 10 * 1.1 = 11
-        score = _apply_macro_overlay(10)
-        assert score == 11
+    # Base score 10 * 1.1 = 11
+    score = _apply_macro_overlay(10)
+    assert score == 11
 
     stock_agent._macro_multiplier_cache = {}  # Cleanup
 
@@ -747,11 +745,9 @@ def test_apply_macro_overlay_bear_market_high_vix(mock_ticker_class):
         
     mock_ticker_class.side_effect = side_effect
     
-    with patch("stock_agent.fred_cache") as mock_fred:
-        mock_fred.get_yield_curve_spread.return_value = None
-        # Base score 10 * 0.8 (SPY) * 0.9 (VIX) = 7.2 -> 7
-        score = _apply_macro_overlay(10)
-        assert score == 7
+    # Base score 10 * 0.8 (SPY) * 0.9 (VIX) = 7.2 -> 7
+    score = _apply_macro_overlay(10)
+    assert score == 7
 
     stock_agent._macro_multiplier_cache = {}  # Cleanup
 

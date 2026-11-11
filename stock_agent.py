@@ -17,7 +17,6 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import requests
 import yfinance as yf
-import fred_cache
 import snapshot_store
 
 try:
@@ -809,7 +808,7 @@ def _summarize_technical_indicators(history: pd.DataFrame | None) -> dict[str, A
 
 
 # ── Macro Overlay Cache ──────────────────────────────────────────────────────
-# SPY, VIX, and FRED data are loaded ONCE per run and reused for all symbols.
+# SPY and VIX data are loaded ONCE per run and reused for all symbols.
 _macro_cache_lock = threading.Lock()
 _macro_multiplier_cache: dict[str, Any] = {}
 _MACRO_CACHE_TTL = 3600  # 1 hour
@@ -841,11 +840,6 @@ def _get_macro_multiplier() -> float:
             vix_close = float(vix["Close"].iloc[-1])
             if vix_close > 25:
                 multiplier *= 0.9
-
-        # Yield Curve Overlay
-        yield_spread = fred_cache.get_yield_curve_spread()
-        if yield_spread is not None and yield_spread < 0:
-            multiplier *= 0.95
 
         with _macro_cache_lock:
             _macro_multiplier_cache = {"multiplier": multiplier, "timestamp": now}
