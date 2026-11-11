@@ -13,7 +13,7 @@ def test_points_overview_follows_the_code():
 
 def test_help_is_split_into_tabs_and_lists_all_sources():
     text = _rendered_help_text("render_help_tab")
-    for term in ("Die Seiten", "Tracefour", "SIX", "AMF", "AFM", "Alpha Vantage", "Finnhub", "Stop-Loss", "MSCI World ETF"):
+    for term in ("Die Seiten", "Tracefour", "SIX", "AMF", "AFM", "Finnhub", "Stop-Loss", "MSCI World ETF"):
         assert term in text, term
     assert "FRED" not in text  # only fed the removed macro overlay
     assert "Die drei Tabs" not in text  # the app has five pages

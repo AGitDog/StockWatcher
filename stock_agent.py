@@ -1693,26 +1693,15 @@ def _summarize_eps_revisions(ticker: yf.Ticker) -> dict[str, Any]:
 def _summarize_price_targets(ticker: yf.Ticker, info: dict[str, Any], history: pd.DataFrame | None) -> dict[str, Any]:
     import finnhub_cache
     symbol = ticker.ticker
-    fh_targets, fh_recoms = finnhub_cache.get_analyst_data(symbol)
+    fh_recoms = finnhub_cache.get_recommendations(symbol)
 
     current_price = _get_current_price(info, history)
-    target_mean = None
-    target_high = None
-    target_low = None
-
-    # Try Finnhub first for targets
-    if fh_targets and "targetMean" in fh_targets and fh_targets["targetMean"]:
-        target_mean = _safe_float(fh_targets.get("targetMean"))
-        target_high = _safe_float(fh_targets.get("targetHigh"))
-        target_low = _safe_float(fh_targets.get("targetLow"))
-        
-    # Fallback to yfinance for targets
-    if target_mean is None:
-        targets = _safe_get(lambda: ticker.get_analyst_price_targets(), {})
-        if isinstance(targets, dict):
-            target_mean = _safe_float(targets.get("mean"))
-            target_high = _safe_float(targets.get("high"))
-            target_low = _safe_float(targets.get("low"))
+    target_mean = target_high = target_low = None
+    targets = _safe_get(lambda: ticker.get_analyst_price_targets(), {})
+    if isinstance(targets, dict):
+        target_mean = _safe_float(targets.get("mean"))
+        target_high = _safe_float(targets.get("high"))
+        target_low = _safe_float(targets.get("low"))
 
     if current_price is None or target_mean is None or current_price <= 0:
         return {"name": "Kursziele & Konsens", "score": 0, "summary": "Kursziel-Daten vorhanden, aber nicht sauber vergleichbar."}
@@ -1766,8 +1755,7 @@ def _summarize_price_targets(ticker: yf.Ticker, info: dict[str, Any], history: p
     if target_low is not None and target_high is not None:
         range_text = f" (Spanne {target_low:.2f} bis {target_high:.2f})"
 
-    provider = "Finnhub" if (fh_targets and "targetMean" in fh_targets) else "YFinance"
-    summary = f"[{provider}] Mittel {target_mean:.2f} vs. Kurs {current_price:.2f} = {target_gap_percent:.1f}% Potenzial{range_text}"
+    summary = f"Mittel {target_mean:.2f} vs. Kurs {current_price:.2f} = {target_gap_percent:.1f}% Potenzial{range_text}"
     if analyst_count > 0:
         summary += f" | Konsens: {buy_ratio*100:.0f}% Buys ({int(analyst_count)} Analysten)"
 
@@ -2085,18 +2073,18 @@ def _summarize_insider_signal(ticker: yf.Ticker, is_etf: bool) -> dict[str, Any]
         score = max(0, score - 3)
 
     if purchase_count == 0 and sell_count == 0:
-        summary = f"[{provider}] Keine Insider-Transaktionen erkannt."
+        summary = "Keine Insider-Transaktionen erkannt."
     elif provider == "Finnhub":
         # Finnhub gives net share changes per month; the counts above are levels, not numbers of trades
         buys = {4: "Käufe über 100 Aktien", 2: "kleine Käufe"}.get(int(purchase_count), "keine Käufe")
         sells = {4: "Verkäufe über 100 Aktien", 1: "kleine Verkäufe"}.get(int(sell_count), "keine Verkäufe")
-        summary = f"[Finnhub] 3 Monate netto: {buys}, {sells}"
+        summary = f"3 Monate netto: {buys}, {sells}"
     else:
-        summary = f"[{provider}] {int(purchase_count)} Kaeufe, {int(sell_count)} Verkaeufe"
+        summary = f"{int(purchase_count)} Käufe, {int(sell_count)} Verkäufe"
         if purchase_count >= 4:
             summary += " - starkes Insider-Kaufsignal"
         elif purchase_count >= 2:
-            summary += " - mehrfache Insiderkaeufe"
+            summary += " - mehrfache Insiderkäufe"
 
     return {"name": "Insider-Aktivitaet", "score": score, "summary": summary, "buy_value_usd": buy_value_usd}
 
@@ -2167,33 +2155,14 @@ def _summarize_short_interest(info: dict[str, Any], history: pd.DataFrame | None
 
 def _summarize_fundamentals(ticker: yf.Ticker, info: dict[str, Any]) -> dict[str, Any]:
     """Berechnet einen Score basierend auf P/E, PEG, Debt/Equity, FCF Yield und Gewinnmarge."""
-    import alpha_vantage_cache
     score = 0
     components = []
-    
-    symbol = ticker.ticker
-    av_data = alpha_vantage_cache.get_fundamentals(symbol)
-    
-    # Try Alpha Vantage first, fallback to yfinance info
-    if av_data and av_data.get("PERatio") and av_data.get("PERatio") != "None":
-        forward_pe = _safe_float(av_data.get("PERatio"))
-        peg_ratio = _safe_float(av_data.get("PEGRatio"))
-        profit_margin = _safe_float(av_data.get("ProfitMargin"))
-        
-        # AV doesn't provide debtToEquity and freeCashflow directly in OVERVIEW in a simple usable way
-        # so we merge from yfinance if available
-        debt_equity = _safe_float(info.get("debtToEquity"))
-        fcf = _safe_float(info.get("freeCashflow"))
-        mcap = _safe_float(av_data.get("MarketCapitalization")) or _safe_float(info.get("marketCap"))
-        provider = "AV"
-    else:
-        forward_pe = _safe_float(info.get("forwardPE"))
-        peg_ratio = _safe_float(info.get("pegRatio"))
-        debt_equity = _safe_float(info.get("debtToEquity"))
-        fcf = _safe_float(info.get("freeCashflow"))
-        mcap = _safe_float(info.get("marketCap"))
-        profit_margin = _safe_float(info.get("profitMargins"))
-        provider = "YF"
+    forward_pe = _safe_float(info.get("forwardPE"))
+    peg_ratio = _safe_float(info.get("pegRatio"))
+    debt_equity = _safe_float(info.get("debtToEquity"))
+    fcf = _safe_float(info.get("freeCashflow"))
+    mcap = _safe_float(info.get("marketCap"))
+    profit_margin = _safe_float(info.get("profitMargins"))
 
     if forward_pe is not None and forward_pe > 0:
         if forward_pe < 15:
@@ -2238,7 +2207,7 @@ def _summarize_fundamentals(ticker: yf.Ticker, info: dict[str, Any]) -> dict[str
             components.append(f"Marge {profit_margin*100:.1f}%")
 
     score = max(-2, min(10, score))
-    summary = f"[{provider}] Stark: " + ", ".join(components) if components else f"[{provider}] Fundamentaldaten unauffaellig."
+    summary = "Stark: " + ", ".join(components) if components else "Fundamentaldaten unauffällig."
 
     return {"name": "Fundamentale Bewertung", "score": score, "summary": summary}
 

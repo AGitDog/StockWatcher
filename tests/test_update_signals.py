@@ -392,7 +392,6 @@ def test_workflows_inject_api_secrets():
     """Beide Workflows muessen die API-Keys als Umgebungsvariablen übergeben."""
     required_secrets = [
         "FINNHUB_API_KEY",
-        "ALPHAVANTAGE_API_KEY",
         "GOOGLE_API_KEY",
     ]
     for name in ["update_signals.yml", "daily_run.yml"]:

@@ -77,8 +77,6 @@ def get_secret(*keys: str, default: Any = None) -> Any:
         "_".join(keys).upper() + "_API_KEY",
     ]
     # Also try common legacy names for backwards compatibility
-    if keys[0].lower() == "alphavantage":
-        env_candidates.append("ALPHAVANTAGE_API_KEY")
     if keys[0].lower() == "finnhub":
         env_candidates.append("FINNHUB_API_KEY")
     if keys[0].lower() == "gemini":

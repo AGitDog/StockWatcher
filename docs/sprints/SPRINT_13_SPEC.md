@@ -40,3 +40,15 @@
 
 ## 4. Tests
 `tests/test_system_check.py`: zweiter Versuch, Absturz als Fehler, letzte Woche, Snapshots mit einem schlechten Tag, Bot-Werte, Probleme im Nachtlauf, App-Weiterleitung, Bericht und Exit-Code, jede Quelle hat eine Probe, der Workflow ersetzt die Montags-Prüfung, FRED ist aus allen Workflows entfernt. 431 grün, 24 Live-Tests übersprungen.
+
+## 5. Tote Abrufe entfernt
+- **Finnhub-Kursziele:** `finnhub_cache.get_analyst_data` heißt jetzt `get_recommendations` und holt nur noch die Empfehlungen. Der Endpunkt `price-target` antwortet im kostenlosen Plan immer mit 403 und kostete pro Aktie einen Platz im Limit. Kursziele kommen nur noch von Yahoo, wie bisher im Ergebnis.
+- **Alpha Vantage:** `alpha_vantage_cache.py`, die Tests, die Probe im Wochencheck, `ALPHAVANTAGE_API_KEY` in den Workflows und in `config_loader` entfernt. `OVERVIEW` ist nur noch im Bezahl-Abo; im Snapshot vom 10.11. stammte kein Wert von Alpha Vantage. Die Fundamentaldaten kommen aus Yahoo.
+
+## 6. Tabelle „Bausteine“ in der Score-Berechnung
+- Spalten heißen wie die Scores: **Rang-Score** und **Punkte-Score** (intern vorher „Punkte 3.0“/„Punkte 2.0“). Der Zusatz „(neu in 3.0)“ an Qualität, Bewertung und Momentum entfällt; ihr Punkte-Score ist „–“.
+- Detail-Spalte ohne Datenquelle: Kennungen `[YF]`, `[YFinance]`, `[Finnhub]`, `[AV]` werden entfernt (`clean_detail`, gilt auch für alte Snapshots), ebenso der Quellen-Hinweis beim Insider-Baustein. Der Nachtlauf schreibt die Kennungen nicht mehr.
+- Umlaute in den Detail-Texten (Rückkauf, Käufe, über, bärisch …) über eine feste Wortliste.
+- Hinweis am Ende einheitlich: „Rang-Score 9.3 von 20: besser als 46 % der Vergleichsaktien“, beim Insider „Rang-Score 5.0 von 10: keine Käufe = neutral, nur Käufe zählen, Verkäufe nicht“.
+- Bei Aktien mit Insider-Daten von Tracefour steht unter der Tabelle eine Zeile mit Link, weil die Lizenz CC BY 4.0 die Nennung verlangt.
+- Tests: `test_breakdown_detail_has_no_source_and_no_version_names`, angepasste Tests in `test_brodel_v2.py` und `test_finnhub_cache.py`.

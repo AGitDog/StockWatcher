@@ -306,13 +306,13 @@ def test_breakdown_rows_show_points_without_old_version():
 
     rows = app.build_breakdown_rows(_app_item("AAA", 80, 20))
     by_name = {row["Baustein"]: row for row in rows}
-    assert by_name["Kursziele & Konsens"]["Punkte 2.0"] == 5
-    assert by_name["Aktienrückkauf"]["Punkte 2.0"] == 3
+    assert by_name["Kursziele & Konsens"]["Punkte-Score"] == 5
+    assert by_name["Aktienrückkauf"]["Punkte-Score"] == 3
     assert all("Punkte 1.0" not in row for row in rows)  # old version is no longer shown
     assert not any("Max" in key for key in rows[0])
-    assert rows[0]["Punkte 2.0"] == max(row["Punkte 2.0"] or 0 for row in rows)  # strongest first
-    assert all(row["Punkte 3.0"] is None for row in rows)  # no 3.0 value yet
-    assert by_name["Qualität (neu in 3.0)"]["Punkte 2.0"] is None
+    assert rows[0]["Punkte-Score"] == max(row["Punkte-Score"] or 0 for row in rows)  # strongest first
+    assert all(row["Rang-Score"] is None for row in rows)  # no Rang-Score yet
+    assert by_name["Qualität"]["Punkte-Score"] is None
 
 
 def test_breakdown_rows_show_brodel_v3():
@@ -323,13 +323,13 @@ def test_breakdown_rows_show_brodel_v3():
                                    "Bewertung": 9.0, "Aktienrueckkauf": 9.5, "Insider": None}
     item["factors_v3"] = {"profit_margin": 0.25, "forward_pe": 14.2, "momentum_12_1": 0.31}
     rows = app.build_breakdown_rows(item)
-    assert rows[0]["Baustein"] == "Qualität (neu in 3.0)" and rows[0]["Punkte 3.0"] == 20.0
+    assert rows[0]["Baustein"] == "Qualität" and rows[0]["Rang-Score"] == 20.0
     assert "Marge 25.0 %" in rows[0]["Detail"]
     by_name = {row["Baustein"]: row for row in rows}
-    assert by_name["EPS-Revisionen"]["Punkte 3.0"] == 18.0
-    assert by_name["Aktienrückkauf"]["Punkte 3.0"] == 9.5
-    assert "+31.0 %" in by_name["Momentum (neu in 3.0)"]["Detail"]
-    assert by_name["Relative Stärke"]["Punkte 3.0"] is None
+    assert by_name["EPS-Revisionen"]["Rang-Score"] == 18.0
+    assert by_name["Aktienrückkauf"]["Rang-Score"] == 9.5
+    assert "+31.0 %" in by_name["Momentum"]["Detail"]
+    assert by_name["Relative Stärke"]["Rang-Score"] is None
 
 
 def test_help_explains_brodel_v3_with_the_real_weights():
@@ -476,14 +476,14 @@ def test_breakdown_marks_insider_without_buys_as_neutral():
     rows = app.build_breakdown_rows(item)
     by_name = {row["Baustein"]: row for row in rows}
     insider = by_name["Insider-Aktivität"]["Detail"]
-    assert "0 Kaeufe, 4 Verkaeufe" in insider and "keine Käufe = neutral" in insider and "Verkäufe nicht" in insider
+    assert "0 Käufe, 4 Verkäufe" in insider and "keine Käufe = neutral" in insider and "Verkäufe nicht" in insider
     assert "besser als 75 %" in by_name["EPS-Revisionen"]["Detail"]
 
     styles = {row["Baustein"]: style for row, style in zip(rows, [app._rank_points_style(pd.Series(r)) for r in rows])}
-    column = list(rows[0]).index("Punkte 3.0")
+    column = list(rows[0]).index("Rang-Score")
     assert styles["Insider-Aktivität"][column] == ""  # 5 of 10 is the middle, not green
-    assert "2e9e5b" in styles["Qualität (neu in 3.0)"][column]  # 22 of 25
-    assert "d9534f" in styles["Momentum (neu in 3.0)"][column]  # 4 of 20
+    assert "2e9e5b" in styles["Qualität"][column]  # 22 of 25
+    assert "d9534f" in styles["Momentum"][column]  # 4 of 20
     assert app.v3_weight_for_label("Aktienrückkauf") == 10
     app.style_breakdown(pd.DataFrame(rows)).to_html()  # renders without error
 
@@ -497,3 +497,23 @@ def test_breakdown_says_when_insider_data_is_missing():
     item["factors_v3"] = {"insider_buy_usd": None}
     by_name = {row["Baustein"]: row for row in app.build_breakdown_rows(item)}
     assert "keine Daten für dieses Land = neutral" in by_name["Insider-Aktivität"]["Detail"]
+
+
+def test_breakdown_detail_has_no_source_and_no_version_names():
+    import app
+
+    item = _app_item("SAP.DE", 20, 20)
+    item["signal_breakdown"]["Insider-Aktivitaet"] = {"name": "Insider-Aktivitaet", "score": 4, "summary": "[Finnhub] 2 Kaeufe, 0 Verkaeufe"}
+    item["signal_breakdown"]["Fundamentale Bewertung"] = {"name": "Fundamentale Bewertung", "score": 2, "summary": "[YF] Fundamentaldaten unauffaellig."}
+    item["signal_breakdown_v3"] = {"Qualitaet": 22.0, "Momentum": 4.0, "EPS-Revisionen": 15.0,
+                                   "Bewertung": 7.5, "Aktienrueckkauf": 6.0, "Insider": 7.5}
+    item["factors_v3"] = {"insider_buy_usd": 20_000.0, "insider_source": "Tracefour"}
+    rows = app.build_breakdown_rows(item)
+    assert set(rows[0]) == {"Baustein", "Rang-Score", "Punkte-Score", "Detail"}
+    text = " ".join(f"{row['Baustein']} {row['Detail']}" for row in rows)
+    for gone in ("3.0", "2.0", "[Finnhub]", "[YF]", "Quelle", "Tracefour", "Kaeufe", "unauffaellig"):
+        assert gone not in text, gone
+    by_name = {row["Baustein"]: row for row in rows}
+    assert by_name["Insider-Aktivität"]["Detail"] == "2 Käufe, 0 Verkäufe · Rang-Score 7.5 von 10: kleine Käufe, nur Käufe zählen, Verkäufe nicht"
+    assert by_name["EPS-Revisionen"]["Detail"].endswith("Rang-Score 15.0 von 20: besser als 75 % der Vergleichsaktien")
+    assert app.clean_detail("Aktienanzahl 12M: -2.0% - Rueckkauf (bullisch)") == "Aktienanzahl 12M: -2.0% - Rückkauf (bullisch)"

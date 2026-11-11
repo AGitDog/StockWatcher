@@ -93,7 +93,7 @@ def test_report_and_exit_code(monkeypatch):
 
 def test_every_source_has_a_probe():
     names = " ".join(f"{area} {name}" for area, name, _, _ in system_check.LIVE_PROBES + system_check.OFFLINE_CHECKS)
-    for source in ("Yahoo", "Finnhub", "Alpha Vantage", "Gemini", "Indizes", "Tracefour", "SIX", "AMF", "AFM",
+    for source in ("Yahoo", "Finnhub", "Gemini", "Indizes", "Tracefour", "SIX", "AMF", "AFM",
                    "Nachtlauf", "App", "Snapshots", "Paper-Bot", "Insider-Abdeckung"):
         assert source in names, source
     assert len(system_check.PAGE_MARKERS) == len(__import__("app").PAGES)

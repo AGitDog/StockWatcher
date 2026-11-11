@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 import os
+import re
 from pathlib import Path
 from typing import Callable
 
@@ -276,7 +277,7 @@ def breakdown_table_height(row_count: int) -> int:
 
 
 def build_breakdown_rows(item: dict) -> list[dict]:
-    """One table: components of the Punkte-Score plus the blocks that are new in the Rang-Score."""
+    """One table: components of the Punkte-Score plus the blocks that only the Rang-Score has."""
     breakdown_v1 = item.get("signal_breakdown", {}) or {}
     breakdown_v2 = item.get("signal_breakdown_v2", {}) or {}
     breakdown_v3 = item.get("signal_breakdown_v3", {}) or {}
@@ -286,37 +287,44 @@ def build_breakdown_rows(item: dict) -> list[dict]:
         component_v1 = breakdown_v1.get(name, {})
         rows.append({
             "Baustein": BRODEL_COMPONENT_LABELS.get(name, name),
-            "Punkte 3.0": breakdown_v3.get(BRODEL_SHARED_BLOCKS.get(name)),
-            "Punkte 2.0": component_v2.get("score", 0),
-            "Detail": _with_v3_note(component_v2.get("summary") or component_v1.get("summary", ""),
+            "Rang-Score": breakdown_v3.get(BRODEL_SHARED_BLOCKS.get(name)),
+            "Punkte-Score": component_v2.get("score", 0),
+            "Detail": _with_v3_note(clean_detail(component_v2.get("summary") or component_v1.get("summary", "")),
                                     BRODEL_SHARED_BLOCKS.get(name), breakdown_v3.get(BRODEL_SHARED_BLOCKS.get(name)),
                                     item.get("factors_v3") or {}),
         })
     details = v3_block_details(item.get("factors_v3") or {})
     for name in ("Qualitaet", "Bewertung", "Momentum"):
         rows.append({
-            "Baustein": f"{BRODEL_V3_LABELS.get(name, name)} (neu in 3.0)",
-            "Punkte 3.0": breakdown_v3.get(name),
-            "Punkte 2.0": None,
+            "Baustein": BRODEL_V3_LABELS.get(name, name),
+            "Rang-Score": breakdown_v3.get(name),
+            "Punkte-Score": None,
             "Detail": details[name],
         })
 
     def order(row: dict) -> tuple[float, float]:
-        v3, v2 = row["Punkte 3.0"], row["Punkte 2.0"]
+        v3, v2 = row["Rang-Score"], row["Punkte-Score"]
         return (-v3 if v3 is not None else 1.0, -v2 if v2 is not None else 1000.0)
 
     return sorted(rows, key=order)
 
 
-INSIDER_SOURCE_NOTES = {
-    "Tracefour": "Quelle BaFin-Meldungen über Tracefour (tracefour.com, CC BY 4.0)",
-    "BaFin": "Quelle BaFin-Datei",
-    "SIX": "Quelle SIX-Meldungen",
-    "AMF": "Quelle AMF-Meldungen",
-    "AFM": "Quelle AFM-Register",
-    "Yahoo": "Quelle Yahoo",
-    "Finnhub/Yahoo": "Quelle SEC-Meldungen",
+# Older snapshots carry the data source as a tag and German words without umlauts.
+_SOURCE_TAG = re.compile(r"^\[(?:YF|YFinance|Finnhub|AV)\]\s*")
+_UMLAUT_WORDS = {
+    "Rueckkauf": "Rückkauf", "Verwaesserung": "Verwässerung", "fuer": "für", "verfuegbar": "verfügbar",
+    "unauffaellig": "unauffällig", "Kaeufe": "Käufe", "Verkaeufe": "Verkäufe", "Insiderkaeufe": "Insiderkäufe",
+    "Naechster": "Nächster", "ueber": "über", "Ueberkauft": "Überkauft", "Ueberverkauft": "Überverkauft",
+    "Baerisch": "Bärisch", "baerisch": "bärisch", "baerischer": "bärischer", "erhoehtes": "erhöhtes",
+    "Leerverkaufsaktivitaet": "Leerverkaufsaktivität", "Relative-Staerke-Berechnung": "Relative-Stärke-Berechnung",
 }
+_UMLAUT_PATTERN = re.compile(r"\b(" + "|".join(sorted(_UMLAUT_WORDS, key=len, reverse=True)) + r")\b")
+
+
+def clean_detail(text: str) -> str:
+    """Detail text without the data source and with proper umlauts."""
+    text = _SOURCE_TAG.sub("", text or "")
+    return _UMLAUT_PATTERN.sub(lambda match: _UMLAUT_WORDS[match.group(1)], text)
 
 
 def _with_v3_note(detail: str, block: str | None, points: float | None, factors: dict | None = None) -> str:
@@ -330,11 +338,9 @@ def _with_v3_note(detail: str, block: str | None, points: float | None, factors:
             level = "keine Daten für dieses Land = neutral wie keine Käufe"
         else:
             level = {0.5: "keine Käufe = neutral", 0.75: "kleine Käufe", 1.0: "Käufe ab 100.000 $"}.get(round(points / weight, 2), "")
-            source = INSIDER_SOURCE_NOTES.get(factors.get("insider_source"))
-            level = f"{level}, {source}" if source else level
-        note = f"Rang-Score: {points:.1f} von {weight} ({level}). Nur Käufe zählen, Verkäufe nicht"
+        note = f"Rang-Score {points:.1f} von {weight}: {level}, nur Käufe zählen, Verkäufe nicht"
     else:
-        note = f"Rang-Score: {points:.1f} von {weight} = besser als {points / weight * 100:.0f} % der Vergleichsaktien"
+        note = f"Rang-Score {points:.1f} von {weight}: besser als {points / weight * 100:.0f} % der Vergleichsaktien"
     return f"{detail} · {note}" if detail else note
 
 
@@ -342,7 +348,7 @@ def v3_weight_for_label(label: str) -> int | None:
     """Weight of the Rang-Score block shown in a breakdown row, by its visible label."""
     for name, weight in BRODEL_V3_WEIGHTS.items():
         shown = BRODEL_V3_LABELS.get(name, name)
-        if label in (shown, f"{shown} (neu in 3.0)"):
+        if label == shown:
             return weight
     for component, block in BRODEL_SHARED_BLOCKS.items():
         if label == BRODEL_COMPONENT_LABELS.get(component, component):
@@ -351,7 +357,7 @@ def v3_weight_for_label(label: str) -> int | None:
 
 
 def v3_block_details(factors: dict) -> dict[str, str]:
-    """Plain-language values behind the blocks that have no 2.0 counterpart."""
+    """Plain-language values behind the blocks that only the Rang-Score has."""
     def percent(value, signed=False):
         return "k. A." if value is None else f"{value * 100:{'+' if signed else ''}.1f} %"
 
@@ -388,8 +394,8 @@ def _rank_points_style(row: pd.Series) -> list[str]:
     """Rang-Score points are a share of the weight: green upper third, red lower third, neutral between."""
     styles = []
     for column, value in row.items():
-        weight = v3_weight_for_label(row.get("Baustein", "")) if column == "Punkte 3.0" else None
-        if column != "Punkte 3.0" or pd.isna(value) or not weight:
+        weight = v3_weight_for_label(row.get("Baustein", "")) if column == "Rang-Score" else None
+        if column != "Rang-Score" or pd.isna(value) or not weight:
             styles.append("")
             continue
         share = value / weight
@@ -399,11 +405,11 @@ def _rank_points_style(row: pd.Series) -> list[str]:
 
 def style_breakdown(frame: pd.DataFrame):
     """Rang-Score column by share of its weight (it is never negative), the point columns by sign."""
-    point_columns = [column for column in ("Punkte 2.0",) if column in frame]
+    point_columns = [column for column in ("Punkte-Score",) if column in frame]
     styler = style_points(frame, point_columns)
-    if "Punkte 3.0" in frame:
+    if "Rang-Score" in frame:
         styler = styler.apply(_rank_points_style, axis=1).format(
-            lambda value: "–" if pd.isna(value) else f"{value:.1f}", subset=["Punkte 3.0"])
+            lambda value: "–" if pd.isna(value) else f"{value:.1f}", subset=["Rang-Score"])
     return styler
 
 
@@ -596,8 +602,8 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     height=breakdown_table_height(len(breakdown_frame)),
                     column_config={
                         "Baustein": st.column_config.TextColumn("Baustein", width="medium"),
-                        "Punkte 3.0": st.column_config.Column("Rang-Score", width="small", help="Punkte dieses Bausteins im Rang-Score: Gewicht × Anteil der Vergleichsaktien, die schlechter sind. Grün oberes, rot unteres Drittel, ohne Farbe Mitte. Insider: keine Käufe oder keine Daten = 5 von 10 (neutral)"),
-                        "Punkte 2.0": st.column_config.Column("Punkte", width="small", help="Feste Punkte im Punkte-Score"),
+                        "Rang-Score": st.column_config.Column("Rang-Score", width="small", help="Punkte dieses Bausteins im Rang-Score: Gewicht × Anteil der Vergleichsaktien, die schlechter sind. Grün oberes, rot unteres Drittel, ohne Farbe Mitte. Insider: keine Käufe oder keine Daten = 5 von 10 (neutral)"),
+                        "Punkte-Score": st.column_config.Column("Punkte-Score", width="small", help="Feste Punkte im Punkte-Score. – = Baustein gibt es nur im Rang-Score"),
                         "Detail": st.column_config.TextColumn("Detail", width="large"),
                     },
                 )
@@ -605,6 +611,8 @@ def render_watchlist_signal_monitor(mapping_text: str):
                 explanation = rank_score_explanation(item)
                 if explanation:
                     st.caption(explanation)
+                if (item.get("factors_v3") or {}).get("insider_source") == "Tracefour":
+                    st.caption("Insider-Daten: [Tracefour](https://tracefour.com/de), CC BY 4.0")
                 if item.get("next_earnings"):
                     st.caption(f"Nächste Quartalszahlen: {item['next_earnings']}")
 
@@ -1104,8 +1112,7 @@ HELP_INSIDER_SOURCE_ROWS = [
 HELP_DATA_SOURCE_ROWS = [
     {"Quelle": "Yahoo Finance", "Wofür": "Kurse, Volumen, Kennzahlen, Analysten-Revisionen, News, Termine, Aktienanzahl, Wechselkurse, Insider außerhalb der USA",
      "Aktualität": "jeder Nachtlauf"},
-    {"Quelle": "Finnhub", "Wofür": "Kursziele, Empfehlungen, Insider-Daten USA (SEC)", "Aktualität": "Zwischenspeicher 24 Stunden"},
-    {"Quelle": "Alpha Vantage", "Wofür": "Fundamentaldaten, sonst Yahoo", "Aktualität": "Zwischenspeicher 30 Tage"},
+    {"Quelle": "Finnhub", "Wofür": "Analysten-Empfehlungen, Insider-Daten USA (SEC)", "Aktualität": "Zwischenspeicher 24 Stunden"},
     {"Quelle": "SIX, AMF, AFM, Tracefour", "Wofür": "Insider-Käufe in Europa",
      "Aktualität": "jeder Nachtlauf, gelesene Meldungen in insider_data/"},
     {"Quelle": "Google Gemini", "Wofür": "Stimmung der News-Überschriften, sonst Stichwortliste", "Aktualität": "jeder Nachtlauf"},
@@ -1228,7 +1235,7 @@ def _help_points_score() -> None:
         st.markdown("- **Free-Cashflow-Rendite:** über 5 % **+2**, über 2 % **+1**.")
         st.markdown("- **Gewinnmarge:** über 20 % **+2**, über 10 % **+1**.")
         st.markdown("- Die Summe (höchstens 10) wird mal 1,5 genommen, also höchstens **15** Punkte. In den Snapshots war das der stärkste Baustein.")
-        st.write("**Datenquelle:** Alpha Vantage (30 Tage Cache) mit Fallback auf Yahoo Finance")
+        st.write("**Datenquelle:** Yahoo Finance")
 
     with st.expander("🔁 Aktienrückkauf (max. 5)"):
         st.write("**Was es misst:** Hat die Firma heute weniger Aktien als vor einem Jahr? Dann kauft sie eigene Aktien zurück. Jedem Aktionär gehört danach ein größeres Stück der Firma.")

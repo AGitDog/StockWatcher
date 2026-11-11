@@ -180,7 +180,7 @@ def probe_fx() -> tuple[bool, str]:
     return ok, ", ".join(f"{code} {rate:.4f}" if rate else f"{code} fehlt" for code, rate in rates.items())
 
 
-# ── Finnhub, Alpha Vantage, Gemini ──────────────────────────────────────────
+# ── Finnhub, Gemini  ──────────────────────────────────────────
 
 def _finnhub(endpoint: str, **params) -> requests.Response:
     import finnhub_cache
@@ -190,7 +190,7 @@ def _finnhub(endpoint: str, **params) -> requests.Response:
 
 
 def probe_finnhub() -> tuple[bool, str]:
-    """The three endpoints of the free plan. price-target is paid only (403) and not checked."""
+    """The three endpoints the nightly run uses."""
     import finnhub_cache
 
     if not finnhub_cache.get_finnhub_key():
@@ -208,20 +208,6 @@ def probe_finnhub() -> tuple[bool, str]:
         if "data" not in results["Insider-Geschäfte"].json():
             problems.append("Insider-Geschäfte ohne data")
     return not problems, "; ".join(problems) or "Empfehlungen, Insider-Geschäfte, Insider-Stimmung"
-
-
-def probe_alpha_vantage() -> tuple[bool, str]:
-    import alpha_vantage_cache
-
-    key = alpha_vantage_cache.get_av_key()
-    if not key:
-        return False, "ALPHAVANTAGE_API_KEY fehlt"
-    data = requests.get("https://www.alphavantage.co/query",
-                        params={"function": "OVERVIEW", "symbol": "IBM", "apikey": key}, timeout=20).json()
-    if data.get("Symbol") == "IBM" and data.get("PERatio"):
-        return True, "Fundamentaldaten für IBM"
-    note = data.get("Information") or data.get("Note") or data.get("Error Message") or "leere Antwort"
-    return False, f"keine Daten: {str(note)[:150]}"
 
 
 def probe_gemini() -> tuple[bool, str]:
@@ -380,7 +366,6 @@ LIVE_PROBES: list[tuple[str, str, Callable[[], tuple[bool, str]], bool]] = [
     ("Yahoo", "Symbolsuche", probe_yahoo_search, True),
     ("Yahoo", "Wechselkurse", probe_fx, True),
     ("Finnhub", "Empfehlungen und Insider", probe_finnhub, True),
-    ("Alpha Vantage", "Fundamentaldaten", probe_alpha_vantage, False),
     ("Gemini", "News-Stimmung", probe_gemini, False),
     ("Indizes", "Wikipedia und Nasdaq", probe_indices, True),
     ("Insider", "Tracefour Deutschland", insider_check.probe_tracefour, True),

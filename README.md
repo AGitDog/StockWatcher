@@ -157,6 +157,6 @@ ML-Gewichte für den Punkte-Score werden nur noch angewendet, wenn sie auf einem
 Der Workflow `weekly_check.yml` läuft jeden Sonntag um 10:00 UTC, wenn kein Nachtlauf ansteht:
 
 1. alle Unit-Tests mit frisch installierten Bibliotheken (wie im Nachtlauf, also neueste yfinance-Version),
-2. `python system_check.py`: jede externe Verbindung einmal echt abgefragt und mit dem Code des Nachtlaufs gelesen (Yahoo, Finnhub, Alpha Vantage, Gemini, Index-Listen, Insider-Quellen), drei Aktien komplett durch den Nachtlauf, die App-Adresse, alle App-Seiten mit den Daten im Repository, die Snapshots und Bot-Werte der Woche.
+2. `python system_check.py`: jede externe Verbindung einmal echt abgefragt und mit dem Code des Nachtlaufs gelesen (Yahoo, Finnhub, Gemini, Index-Listen, Insider-Quellen), drei Aktien komplett durch den Nachtlauf, die App-Adresse, alle App-Seiten mit den Daten im Repository, die Snapshots und Bot-Werte der Woche.
 
 Schlägt eine Pflichtprüfung fehl, schlägt der Lauf fehl, und der Workflow legt ein Issue mit Label `wochencheck` und dem Bericht an (oder ergänzt das offene). GitHub schickt für beides eine E-Mail. Lokal: `python system_check.py` oder `python -m pytest tests/live --live -q`. Ein normales `pytest` überspringt die Live-Tests.

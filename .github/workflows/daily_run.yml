@@ -38,7 +38,6 @@ jobs:
       - name: Run Daily Job
         env:
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-          ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
           python daily_job.py

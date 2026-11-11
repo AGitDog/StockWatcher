@@ -62,18 +62,15 @@ def _save_cache(cache_data: dict[str, Any]) -> None:
     except Exception:
         pass
 
-def get_analyst_data(symbol: str) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
-    """
-    Holt Price Targets und Recommendation Trends von Finnhub.
-    Nutzt einen lokalen 24-Stunden-Cache, um API-Limits zu schonen.
-    
-    Returns:
-        (price_target_dict, recommendation_list)
-        If API key is missing or an error occurs, returns (None, []).
+def get_recommendations(symbol: str) -> list[dict[str, Any]]:
+    """Analyst recommendation trends from Finnhub, cached for 24 hours.
+
+    Price targets are not fetched: the free plan answers them with 403. They come from Yahoo.
+    Returns [] when the key is missing or the call fails.
     """
     api_key = get_finnhub_key()
     if not api_key:
-        return None, []
+        return []
 
     cache_data = _load_cache()
     now = time.time()
@@ -81,20 +78,10 @@ def get_analyst_data(symbol: str) -> tuple[dict[str, Any] | None, list[dict[str,
     # Check cache validity
     symbol_data = cache_data.get(symbol)
     if symbol_data and (now - symbol_data.get("timestamp", 0)) < CACHE_TTL:
-        return symbol_data.get("price_target"), symbol_data.get("recommendation", [])
+        return symbol_data.get("recommendation", [])
 
-    # Need to fetch fresh data
-    price_target = None
     recommendation = []
-    
     try:
-        # Fetch Price Target
-        target_url = f"https://finnhub.io/api/v1/stock/price-target?symbol={symbol}&token={api_key}"
-        res_target = _get(target_url, timeout=10)
-        if res_target.status_code == 200:
-            price_target = res_target.json()
-            
-        # Fetch Recommendation Trends
         rec_url = f"https://finnhub.io/api/v1/stock/recommendation?symbol={symbol}&token={api_key}"
         res_rec = _get(rec_url, timeout=10)
         if res_rec.status_code == 200:
@@ -102,19 +89,12 @@ def get_analyst_data(symbol: str) -> tuple[dict[str, Any] | None, list[dict[str,
             
     except Exception as e:
         print(f"Finnhub API Error for {symbol}: {e}")
-        # Even on error, if we have stale cache, we might want to return it, but for now return None.
-        return None, []
+        return []
 
-    # Save to cache
-    if price_target is not None or recommendation:
-        cache_data[symbol] = {
-            "timestamp": now,
-            "price_target": price_target,
-            "recommendation": recommendation
-        }
+    if recommendation:
+        cache_data[symbol] = {"timestamp": now, "recommendation": recommendation}
         _save_cache(cache_data)
-        
-    return price_target, recommendation
+    return recommendation
 def get_insider_buy_value(symbol: str, days: int = 90) -> float | None:
     """Value in USD of open-market purchases (Form 4 code P) of the last ``days`` days.
 
