@@ -28,6 +28,41 @@ MIN_BLOCKS = 4  # fewer known blocks besides Insider: no score (ETFs, indices, s
 MIN_GROUP_SIZE = 8  # smaller sector groups are ranked within the whole region
 INSIDER_LARGE_BUY_USD = 100_000
 INSIDER_NEUTRAL = 0.5  # no purchase, and also no data: only a real purchase moves the block
+EPS_PRIOR = 1  # one imaginary upgrade and one downgrade: 2:0 becomes 75 %, 18:1 stays 90 %
+QUALITY_CHANGE_DAY = "2026-11-11"  # since then: operating margin, return on assets, free cashflow to debt
+
+
+def eps_up_ratio(up: int, down: int) -> float | None:
+    """Share of upgrades, pulled towards the middle when few analysts changed their estimate.
+
+    Without the prior, 2 upgrades and no downgrade (100 %) beat 18 upgrades and 1 downgrade,
+    and every stock with no downgrade shares the same top rank regardless of breadth.
+    """
+    if up + down < 2:
+        return None
+    return (up + EPS_PRIOR) / (up + down + 2 * EPS_PRIOR)
+
+
+def _eps_ratio(item: dict[str, Any], factors: dict[str, Any]) -> float | None:
+    """The shrunk ratio, also for days stored before the counts were part of the factors."""
+    up, down = factors.get("eps_up"), factors.get("eps_down")
+    if up is None or down is None:
+        signal = (item.get("signal_breakdown") or {}).get("EPS-Revisionen") or {}
+        up, down = signal.get("up"), signal.get("down")
+    if up is not None and down is not None:
+        return eps_up_ratio(int(up), int(down))
+    return factors.get("eps_up_ratio")
+
+
+def _quality_inputs(factors: dict[str, Any]) -> dict[str, Any]:
+    """Margin, return and solvency. Days before QUALITY_CHANGE_DAY only have the old figures
+    (profit margin, return on equity, debt to equity); each day is ranked within itself."""
+    if "operating_margin" in factors:
+        return {"margin": factors.get("operating_margin"), "returns": factors.get("return_on_assets"),
+                "solvency": factors.get("fcf_to_debt")}
+    debt = factors.get("debt_equity")
+    return {"margin": factors.get("profit_margin"), "returns": factors.get("return_on_equity"),
+            "solvency": None if debt is None else -debt}
 
 
 def _ranks(frame: pd.DataFrame, column: str, ascending: bool = True, groups: list[str] | None = None) -> pd.Series:
@@ -76,13 +111,11 @@ def compute_brodel_v3(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "index": index,
             "region": symbol_region(item.get("symbol")),
             "sector": str(item.get("sector") or "Unbekannt"),
-            "margin": factors.get("profit_margin"),
-            "roe": factors.get("return_on_equity"),
-            "debt": factors.get("debt_equity"),
+            **_quality_inputs(factors),
             "earnings_yield": _earnings_yield(factors.get("forward_pe")),
             "fcf_yield": factors.get("fcf_yield"),
             "momentum": factors.get("momentum_12_1"),
-            "eps": factors.get("eps_up_ratio"),
+            "eps": _eps_ratio(item, factors),
             "shares": factors.get("share_change"),
             "insider": _insider_rank(factors.get("insider_buy_usd")),
         })
@@ -97,8 +130,8 @@ def compute_brodel_v3(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     blocks = pd.DataFrame(index=frame.index)
     blocks["Qualitaet"] = pd.concat([
         _ranks(frame, "margin", groups=by_sector),
-        _ranks(frame, "roe", groups=by_sector),
-        _ranks(frame, "debt", ascending=False, groups=by_sector),
+        _ranks(frame, "returns", groups=by_sector),
+        _ranks(frame, "solvency", groups=by_sector),
     ], axis=1).mean(axis=1)
     blocks["Bewertung"] = pd.concat([
         _ranks(frame, "earnings_yield", groups=by_sector),

@@ -1066,6 +1066,13 @@ def momentum_12_1(history: pd.DataFrame | None) -> float | None:
     return float(close.iloc[-MOMENTUM_SKIP_DAYS - 1]) / start - 1 if start > 0 else None
 
 
+def fcf_to_debt(free_cashflow: float | None, total_debt: float | None) -> float | None:
+    """Free cashflow per unit of debt. Independent of the book equity, which buybacks can push below zero."""
+    if free_cashflow is None or total_debt is None:
+        return None
+    return free_cashflow / max(total_debt, 1.0)  # no debt: the cashflow itself, ranks at the top
+
+
 def collect_v3_factors(
     symbol: str,
     info: dict[str, Any],
@@ -1081,6 +1088,7 @@ def collect_v3_factors(
     up, down = eps_signal.get("up") or 0, eps_signal.get("down") or 0
     free_cashflow = _safe_float(info.get("freeCashflow"))
     market_cap = _safe_float(info.get("marketCap"))
+    from brodel_v3 import eps_up_ratio
     import finnhub_cache
 
     import insider_sources
@@ -1098,12 +1106,15 @@ def collect_v3_factors(
         insider, insider_source = insider_sources.insider_value_usd(symbol, info, insider_signal.get("buy_value_usd"))
     return {
         "profit_margin": _safe_float(info.get("profitMargins")),
-        "return_on_equity": _safe_float(info.get("returnOnEquity")),
-        "debt_equity": _safe_float(info.get("debtToEquity")),
+        "operating_margin": _safe_float(info.get("operatingMargins")),
+        "return_on_assets": _safe_float(info.get("returnOnAssets")),
+        "fcf_to_debt": fcf_to_debt(free_cashflow, _safe_float(info.get("totalDebt"))),
         "forward_pe": _safe_float(info.get("forwardPE")),
         "fcf_yield": free_cashflow / market_cap if free_cashflow is not None and market_cap else None,
         "momentum_12_1": momentum_12_1(history),
-        "eps_up_ratio": up / (up + down) if up + down >= 2 else None,
+        "eps_up": up,
+        "eps_down": down,
+        "eps_up_ratio": eps_up_ratio(up, down),
         "share_change": buyback_signal.get("share_change"),
         "insider_source": insider_source,
         "insider_buy_usd": insider,

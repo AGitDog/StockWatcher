@@ -65,7 +65,7 @@ def test_week_bot_needs_a_value_per_day(tmp_path):
 
 def test_pipeline_problems_name_what_is_missing(monkeypatch):
     monkeypatch.setattr("snapshot_store.is_fresh_measurement", lambda item: True)
-    good = {"factors_v3": {"profit_margin": 0.2, "forward_pe": 20, "momentum_12_1": 0.1, "eps_up_ratio": 0.5}, "signal_breakdown_v2": {"x": {}}}
+    good = {"factors_v3": {"operating_margin": 0.2, "forward_pe": 20, "momentum_12_1": 0.1, "eps_up_ratio": 0.5}, "signal_breakdown_v2": {"x": {}}}
     assert pipeline_problems(good) == []
     thin = {"factors_v3": {"momentum_12_1": 0.1}, "signal_breakdown_v2": {}}
     problems = pipeline_problems(thin)

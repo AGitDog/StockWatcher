@@ -39,7 +39,7 @@ from ml_weights import load_trained_weights, train_on_snapshots
 from backtest_engine.engine import load_snapshots, snapshots_with_datetimes
 import snapshot_store
 import paper_bot
-from brodel_v3 import BRODEL_V3_WEIGHTS, compute_brodel_v3
+from brodel_v3 import BRODEL_V3_WEIGHTS, QUALITY_CHANGE_DAY, compute_brodel_v3
 from factor_lab import BacktestConfig, build_truth_report, snapshot_score_ic
 from factor_lab.data import download_close_prices, filter_single_currency, load_universe
 from factor_lab.factors import FACTOR_DESCRIPTIONS
@@ -362,10 +362,15 @@ def v3_block_details(factors: dict) -> dict[str, str]:
         return "k. A." if value is None else f"{value * 100:{'+' if signed else ''}.1f} %"
 
     pe = factors.get("forward_pe")
-    debt = factors.get("debt_equity")
+    if "operating_margin" in factors:
+        quality = (f"Operative Marge {percent(factors.get('operating_margin'))}, Gesamtkapitalrendite {percent(factors.get('return_on_assets'))}, "
+                   f"Free Cashflow {percent(factors.get('fcf_to_debt'))} der Schulden")
+    else:  # stored before QUALITY_CHANGE_DAY
+        debt = factors.get("debt_equity")
+        quality = (f"Marge {percent(factors.get('profit_margin'))}, Eigenkapitalrendite {percent(factors.get('return_on_equity'))}, "
+                   f"Verschuldung {'k. A.' if debt is None else f'{debt:.0f} %'} des Eigenkapitals")
     return {
-        "Qualitaet": f"Marge {percent(factors.get('profit_margin'))}, Eigenkapitalrendite {percent(factors.get('return_on_equity'))}, "
-                     f"Verschuldung {'k. A.' if debt is None else f'{debt:.0f} %'} des Eigenkapitals",
+        "Qualitaet": quality,
         "Bewertung": f"KGV {'k. A.' if pe is None else f'{pe:.1f}'}, Free-Cashflow-Rendite {percent(factors.get('fcf_yield'))}",
         "Momentum": f"{percent(factors.get('momentum_12_1'), signed=True)} in 12 Monaten ohne den letzten Monat",
     }
@@ -633,7 +638,9 @@ def render_watchlist_signal_monitor(mapping_text: str):
                             rank_days = int(chart_data["Rang-Score"].notna().sum())
                             st.caption(
                                 f"Ein Punkt je Handelstag mit frischen Kursdaten. Den Rang-Score gibt es erst für {rank_days} "
-                                f"{'Tag' if rank_days == 1 else 'Tage'}, weil seine Kennzahlen erst seit dem 06.11.2026 gespeichert werden."
+                                f"{'Tag' if rank_days == 1 else 'Tage'}, weil seine Kennzahlen erst seit dem 06.11.2026 gespeichert werden. "
+                                f"Seit dem {QUALITY_CHANGE_DAY[8:]}.{QUALITY_CHANGE_DAY[5:7]}.{QUALITY_CHANGE_DAY[:4]} misst der Baustein Qualität andere Kennzahlen (siehe Hilfe), "
+                                "Werte davor sind damit nur bedingt vergleichbar."
                             )
                         else:
                             st.info("Nicht genuegend Historien-Daten fuer ein Diagramm (mindestens 2 Snapshots benoetigt).")
@@ -1083,9 +1090,9 @@ def build_v3_help_rows() -> list[dict]:
 
 
 BRODEL_V3_EXPLANATIONS = {
-    "Qualitaet": "Marge, Eigenkapitalrendite und niedrige Verschuldung",
+    "Qualitaet": "Operative Marge, Gesamtkapitalrendite und Free Cashflow im Verhältnis zu den Schulden",
     "Momentum": "Kursentwicklung der letzten 12 Monate ohne den letzten Monat",
-    "EPS-Revisionen": "Anteil der Analysten-Hochstufungen an allen Änderungen",
+    "EPS-Revisionen": "Anteil der Analysten-Hochstufungen an allen Änderungen; bei wenigen Analysten zur Mitte gezogen",
     "Bewertung": "Gewinn und Free Cashflow im Verhältnis zum Preis",
     "Aktienrueckkauf": "Rückgang der Aktienzahl in den letzten 12 Monaten",
     "Insider": "Käufe am offenen Markt in 90 Tagen (USA, Europa, Kanada; nicht Japan und Indien). Keine Käufe oder keine Daten 5, unter 100.000 $ 7,5, ab 100.000 $ 10 Punkte",
@@ -1165,6 +1172,20 @@ def _help_rank_score() -> None:
         st.markdown(
             "- Immer innerhalb **derselben Region** (Amerika, Europa, Asien).\n"
             "- Qualität und Bewertung zusätzlich innerhalb **desselben Sektors**, denn eine Bank hat andere Kennzahlen als ein Softwarehaus."
+        )
+    with st.expander("Warum Gesamtkapitalrendite statt Eigenkapitalrendite?"):
+        st.markdown(
+            "Firmen, die über Jahre eigene Aktien zurückkaufen, haben oft fast kein oder sogar negatives Eigenkapital in der Bilanz. "
+            "Eigenkapitalrendite und Verschuldung zum Eigenkapital werden dann unbrauchbar: mal über 100 %, mal gar nicht vorhanden. "
+            "Seit dem 11.11.2026 misst die Qualität deshalb die operative Marge, die Rendite auf das gesamte Kapital und den Free Cashflow "
+            "im Verhältnis zu den Schulden. Alle drei bleiben vergleichbar, egal wie viel Eigenkapital durch Rückkäufe verschwunden ist. "
+            "Tage davor im Score-Verlauf nutzen noch die alten Kennzahlen."
+        )
+    with st.expander("Wenige Analysten, volle Punkte?"):
+        st.markdown(
+            "Bei den EPS-Revisionen zählt der Anteil der Hochstufungen. Damit 2 Hochstufungen von 2 Analysten (100 %) nicht vor "
+            "18 Hochstufungen und 1 Abstufung (95 %) landen, wird je eine gedachte Hoch- und Abstufung dazugezählt: "
+            "aus 2:0 werden 75 %, aus 18:1 werden 90 %. Breiter Konsens gewinnt gegen Zufallstreffer."
         )
     with st.expander("Was passiert, wenn Daten fehlen?"):
         st.markdown(

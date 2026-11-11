@@ -36,7 +36,7 @@ MIN_GOOD_DAYS = 4  # of 5 weekdays: one holiday or skipped GitHub run is tolerat
 REGION_SYMBOLS = ["AAPL", "SAP.DE", "HSBA.L", "7203.T", "RELIANCE.NS", "RY.TO", "NESN.SW"]
 PIPELINE_SYMBOLS = ["AAPL", "SAP.DE", "7203.T"]
 V3_BLOCKS = {
-    "Qualität": ("profit_margin", "return_on_equity", "debt_equity"),
+    "Qualität": ("operating_margin", "return_on_assets", "fcf_to_debt"),
     "Bewertung": ("forward_pe", "fcf_yield"),
     "Momentum": ("momentum_12_1",),
     "EPS-Revisionen": ("eps_up_ratio",),

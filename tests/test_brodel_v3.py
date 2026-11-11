@@ -7,7 +7,7 @@ from stock_agent import momentum_12_1
 
 def _factors(value, **extra):
     return {
-        "profit_margin": value, "return_on_equity": value, "debt_equity": 100 - value, "forward_pe": 100 - value,
+        "operating_margin": value, "return_on_assets": value, "fcf_to_debt": value, "forward_pe": 100 - value,
         "fcf_yield": value, "momentum_12_1": value, "eps_up_ratio": value, "share_change": -value,
         "insider_buy_usd": None, **extra,
     }
@@ -41,7 +41,7 @@ def test_regions_are_ranked_separately():
 
 
 def test_quality_is_compared_within_the_sector():
-    banks = [_item(f"B{i}", float(i), sector="Banks", debt_equity=900.0 + i) for i in range(1, 11)]
+    banks = [_item(f"B{i}", float(i), sector="Banks", fcf_to_debt=0.01 * i) for i in range(1, 11)]
     tech = [_item(f"T{i}", float(i) * 5, sector="Tech") for i in range(1, 11)]
     by_symbol = {i["symbol"]: i["signal_breakdown_v3"]["Bewertung"] for i in compute_brodel_v3(banks + tech)}
     assert by_symbol["B10"] == by_symbol["T10"]
@@ -191,3 +191,40 @@ def test_neutral_insider_does_not_count_towards_the_minimum_blocks():
     thin = {"symbol": "THIN", "sector": "Tech",
             "factors_v3": {"momentum_12_1": 0.5, "eps_up_ratio": 0.5, "share_change": 0.0, "insider_buy_usd": 0.0}}
     assert "brodel_score_v3" not in compute_brodel_v3([thin] + [_item(f"S{i}", float(i)) for i in range(10)])[0]
+
+
+def test_eps_ratio_is_pulled_towards_the_middle_for_few_analysts():
+    from brodel_v3 import eps_up_ratio
+
+    assert eps_up_ratio(2, 0) == pytest.approx(0.75)
+    assert eps_up_ratio(18, 1) == pytest.approx(19 / 21)
+    assert eps_up_ratio(18, 0) > eps_up_ratio(4, 0)  # breadth breaks the tie among stocks without downgrades
+    assert eps_up_ratio(1, 0) is None
+
+
+def test_eps_block_uses_the_counts_also_for_days_stored_before():
+    items = [_item(f"S{i}", 5.0, eps_up=i, eps_down=10 - i) for i in range(11)]
+    old = _item("OLD", 5.0, eps_up_ratio=1.0)  # stored raw, 2 of 2, without the counts
+    old["signal_breakdown"] = {"EPS-Revisionen": {"up": 2, "down": 0}}
+    by_symbol = {i["symbol"]: i["signal_breakdown_v3"]["EPS-Revisionen"] for i in compute_brodel_v3(items + [old])}
+    assert by_symbol["OLD"] < by_symbol["S10"]  # 2:0 (75 %) below 10:0 (92 %)
+    assert by_symbol["OLD"] > by_symbol["S7"]  # and above 7:3 (67 %)
+
+
+def test_quality_ignores_book_equity_and_ranks_old_days_with_their_old_figures():
+    from stock_agent import fcf_to_debt
+
+    assert fcf_to_debt(2e9, 4e9) == pytest.approx(0.5)
+    assert fcf_to_debt(2e9, 0.0) == pytest.approx(2e9)  # no debt ranks at the top
+    assert fcf_to_debt(None, 4e9) is None and fcf_to_debt(2e9, None) is None
+    # a buyback champion with negative equity: no ROE and no D/E from Yahoo, but a full quality block today
+    champion = _item("MCD", 5.0, operating_margin=0.45, return_on_assets=0.15, fcf_to_debt=0.2)
+    others = [_item(f"S{i}", float(i), operating_margin=0.01 * i, return_on_assets=0.01 * i, fcf_to_debt=0.01 * i) for i in range(1, 11)]
+    by_symbol = {i["symbol"]: i["signal_breakdown_v3"]["Qualitaet"] for i in compute_brodel_v3(others + [champion])}
+    assert by_symbol["MCD"] == 25.0
+    # a day stored before the change still ranks on margin, ROE and low debt
+    old = [{"symbol": f"O{i}", "sector": "Tech", "factors_v3": {"profit_margin": 0.01 * i, "return_on_equity": 0.01 * i,
+            "debt_equity": 100.0 - i, "forward_pe": 10.0, "fcf_yield": 0.05, "momentum_12_1": 0.1, "eps_up_ratio": 0.5,
+            "share_change": 0.0}} for i in range(1, 11)]
+    by_symbol = {i["symbol"]: i["signal_breakdown_v3"]["Qualitaet"] for i in compute_brodel_v3(old)}
+    assert by_symbol["O10"] == 25.0 and by_symbol["O1"] < by_symbol["O5"]

@@ -517,3 +517,12 @@ def test_breakdown_detail_has_no_source_and_no_version_names():
     assert by_name["Insider-Aktivität"]["Detail"] == "2 Käufe, 0 Verkäufe · Rang-Score 7.5 von 10: kleine Käufe, nur Käufe zählen, Verkäufe nicht"
     assert by_name["EPS-Revisionen"]["Detail"].endswith("Rang-Score 15.0 von 20: besser als 75 % der Vergleichsaktien")
     assert app.clean_detail("Aktienanzahl 12M: -2.0% - Rueckkauf (bullisch)") == "Aktienanzahl 12M: -2.0% - Rückkauf (bullisch)"
+
+
+def test_quality_detail_names_the_new_figures_and_keeps_old_days_readable():
+    import app
+
+    new = app.v3_block_details({"operating_margin": 0.31, "return_on_assets": 0.12, "fcf_to_debt": 0.42})["Qualitaet"]
+    assert new == "Operative Marge 31.0 %, Gesamtkapitalrendite 12.0 %, Free Cashflow 42.0 % der Schulden"
+    old = app.v3_block_details({"profit_margin": 0.2, "return_on_equity": 1.4, "debt_equity": 84.0})["Qualitaet"]
+    assert old.startswith("Marge 20.0 %, Eigenkapitalrendite 140.0 %")
