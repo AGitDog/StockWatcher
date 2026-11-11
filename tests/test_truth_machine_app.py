@@ -93,7 +93,7 @@ def test_truth_machine_help_explains_etf_benchmark():
 def test_help_tab_includes_truth_machine_and_fixed_macro_text():
     text = _rendered_help_text("render_help_tab")
     assert "Die Wahrheitsmaschine einfach erklärt" in text
-    assert "negative Scores dadurch geteilt" in text
+    assert "negative Scores dadurch geteilt" not in text  # the overlay only applied to the old version
     assert "60 Snapshot-Tage" in text
 
 

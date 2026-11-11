@@ -308,6 +308,7 @@ def build_breakdown_rows(item: dict) -> list[dict]:
 
 
 INSIDER_SOURCE_NOTES = {
+    "Tracefour": "Quelle BaFin-Meldungen über Tracefour (tracefour.com, CC BY 4.0)",
     "BaFin": "Quelle BaFin-Datei",
     "SIX": "Quelle SIX-Meldungen",
     "AMF": "Quelle AMF-Meldungen",
@@ -930,7 +931,7 @@ def render_truth_machine_help():
     st.write(
         "Die Wahrheitsmaschine beantwortet eine einzige Frage: Hätte man mit dieser Aktien-Strategie in den letzten 20 Jahren "
         "mehr Geld verdient als mit einem ganz normalen ETF? Gezählt wird erst, nachdem Gebühren und deutsche Steuern bezahlt sind. "
-        "Du findest sie im Seite **Forschung** ganz oben."
+        "Du findest sie auf der Seite **Forschung** ganz oben."
     )
 
     with st.expander("1. Die Grundidee: faul gegen fleißig"):
@@ -1183,169 +1184,177 @@ BRODEL_V3_EXPLANATIONS = {
 }
 
 
-def render_help_tab():
-    st.subheader("Hilfe & Methodik")
-    st.write("Der **Aktien-Score** (Skala: -30 bis 100) ist ein 'Frühwarn-Thermometer' dieses Systems. "
-             "Er zählt Punkte aus 11 Bausteinen zusammen. "
-             "Die App rankt nach **Punkte-Score**. **Rang-Score** ist ein neuer Rang-Score aus 6 Bausteinen, der in einem eigenen Bot-Depot läuft. "
-             "Der alte **Punkte-Score alt** läuft zum Vergleich mit und steht in der Detailansicht.")
+HELP_SCORE_ROWS = [
+    {"Score": "Rang-Score", "Skala": "0 bis 100", "Frage": "Wie gut ist die Aktie im Vergleich zu ähnlichen Aktien?",
+     "Bausteine": "6", "Genutzt von": "Spieldepot „Rang-Score beste 2 %“, Startseite"},
+    {"Score": "Punkte-Score", "Skala": "−30 bis 90", "Frage": "Wie viele feste Punkte sammelt die Aktie bei 11 Signalen?",
+     "Bausteine": "11", "Genutzt von": "Spieldepots „Punkte-Score ab 60“, Score-Prüfstand"},
+]
 
-    st.markdown("### Schnellstart: der empfohlene Ablauf")
+HELP_INSIDER_SOURCE_ROWS = [
+    {"Land": "USA", "Quelle": "SEC-Meldungen (über Finnhub)"},
+    {"Land": "Deutschland", "Quelle": "BaFin-Meldungen über Tracefour (CC BY 4.0)"},
+    {"Land": "Schweiz", "Quelle": "SIX Exchange Regulation"},
+    {"Land": "Frankreich", "Quelle": "AMF (PDF-Meldungen)"},
+    {"Land": "Niederlande", "Quelle": "AFM-Register"},
+    {"Land": "Großbritannien, Kanada, Spanien, Australien u. a.", "Quelle": "Yahoo Finance"},
+    {"Land": "Japan, Indien", "Quelle": "keine freie Quelle, zählt neutral"},
+]
+
+HELP_DATA_SOURCE_ROWS = [
+    {"Quelle": "Yahoo Finance", "Wofür": "Kurse, Volumen, Kennzahlen, Analysten-Revisionen, News, Termine, Aktienanzahl, Wechselkurse, Insider außerhalb der USA",
+     "Aktualität": "jeder Nachtlauf"},
+    {"Quelle": "Finnhub", "Wofür": "Kursziele, Empfehlungen, Insider-Daten USA (SEC)", "Aktualität": "Zwischenspeicher 24 Stunden"},
+    {"Quelle": "Alpha Vantage", "Wofür": "Fundamentaldaten, sonst Yahoo", "Aktualität": "Zwischenspeicher 30 Tage"},
+    {"Quelle": "SIX, AMF, AFM, Tracefour", "Wofür": "Insider-Käufe in Europa",
+     "Aktualität": "jeder Nachtlauf, gelesene Meldungen in insider_data/"},
+    {"Quelle": "Google Gemini", "Wofür": "Stimmung der News-Überschriften, sonst Stichwortliste", "Aktualität": "jeder Nachtlauf"},
+    {"Quelle": "Wikipedia", "Wofür": "Mitglieder der Indizes (S&P 500, DAX, Nikkei 225 …)", "Aktualität": "beim Aufbau der Watchlist"},
+]
+
+
+def build_points_help_rows() -> list[dict]:
+    """Overview of the Punkte-Score blocks, the maxima come straight from the code."""
+    return [
+        {"Baustein": BRODEL_COMPONENT_LABELS.get(name, name), "Max. Punkte": str(points)}
+        for name, points in sorted(BRODEL_V2_MAX_POINTS.items(), key=lambda item: -item[1])
+    ]
+
+
+def _help_overview() -> None:
     st.markdown(
-        "1. Öffne die **Marktbeobachtung**. Dort steht die Rangliste aus dem letzten Tages-Snapshot. Die Snapshots werden jeden Tag automatisch erstellt.\n"
-        "2. Bei Bedarf aktualisierst du die Signale auf der Seite **Forschung** über **⚙️ Datenpflege**. Dabei wird ebenfalls ein Tages-Snapshot gespeichert.\n"
-        "3. Prüfe neben dem Gesamtscore immer die Einzelkomponenten, die fundamentale Verfassung, die Liquidität und den Sektor-Kontext.\n"
-        "4. Prüfe auf der Seite **Forschung** mit der Wahrheitsmaschine und dem Score-Prüfstand, ob eine Strategie den ETF überhaupt schlägt. Ein hoher Score ist ein Recherche-Signal und keine Kaufentscheidung."
+        "StockWatcher bewertet jeden Werktag alle Aktien der Watchlist und prüft mit Spielgeld, ob diese Bewertung etwas taugt. "
+        "Es gibt **zwei Scores**:"
     )
+    st.table(pd.DataFrame(HELP_SCORE_ROWS))
+    st.markdown("#### Die Seiten")
+    st.markdown(
+        "- **🏠 Start:** Datenstand, beste Aktien und Spieldepots auf einen Blick.\n"
+        "- **📊 Marktbeobachtung:** alle Aktien mit beiden Scores. Ein Klick auf eine Zeile öffnet die Detailansicht mit Berechnung und Unternehmenswerten.\n"
+        "- **💼 Trades:** die Spieldepots mit Käufen, Verkäufen und Stop-Loss.\n"
+        "- **🔬 Forschung:** Wahrheitsmaschine, Score-Prüfstand und Backtests.\n"
+        "- **❓ Hilfe:** diese Seite."
+    )
+    st.markdown("#### So liest du einen Score")
+    st.markdown(
+        "- Ein Score ist eine **Platzierung am jeweiligen Tag**, keine Wahrscheinlichkeit und kein Kursziel.\n"
+        "- Schau in der Detailansicht, welche Bausteine den Wert tragen und ob echte Daten dahinterstehen.\n"
+        "- Ein hoher Score ist ein Anlass zum Recherchieren, keine Kaufentscheidung."
+    )
+    st.warning("Die App gibt keine Anlageberatung und führt keine Orders aus. Ob die Scores einen ETF schlagen, ist nicht bewiesen.")
 
-    with st.expander("Die drei Tabs im Überblick"):
-        st.markdown(
-            "- **📊 Marktbeobachtung:** aktuelle Frühwarnsignale, Detailanalyse und historischer Score-Verlauf.\n"
-            "- **Forschung:** Wahrheitsmaschine (Strategie gegen ETF nach Kosten und Steuern), Score-Prüfstand, historische Simulation des Top-N-Portfolios, Training der Komponenten-Gewichte sowie manuelle Datenpflege.\n"
-            "- **Hilfe & Methodik:** Definitionen der Signale, Datenquellen, Berechnungen und Grenzen."
-        )
 
-    with st.expander("Scores richtig interpretieren"):
+def _help_rank_score() -> None:
+    st.markdown(
+        "Der Rang-Score fragt: **Wie gut ist diese Aktie im Vergleich zu den anderen?** Für jeden Baustein bekommt jede Aktie einen Rang. "
+        "Wer besser ist als 80 % der Vergleichsaktien, bekommt 80 % der Punkte dieses Bausteins."
+    )
+    st.table(pd.DataFrame(build_v3_help_rows()))
+    st.markdown(
+        "**Beispiel:** Qualität 24,1 + Momentum 19,1 + EPS-Revisionen 19,6 + Bewertung 13,9 + Rückkauf 4,9 + Insider 5 (neutral) "
+        "= **86,6** von 100. Die Aktie ist damit im Mittel besser als rund 87 % ihrer Vergleichsaktien."
+    )
+    with st.expander("Mit wem wird verglichen?"):
         st.markdown(
-            "Der Aktien-Score ist ein Ranking innerhalb des aktuellen Analysezeitpunkts. Er ist **keine Wahrscheinlichkeit**, dass eine Aktie steigt, und kein Kursziel. "
-            "Vergleiche möglichst Aktien aus ähnlichen Branchen und Märkten. Ein Score sollte erst dann zu einer Handelsidee werden, wenn mindestens folgende Punkte zusammenpassen: Trend oder klarer Katalysator, ausreichende Liquidität, plausibles Chance-Risiko-Verhältnis und ein definierter Ausstieg."
+            "- Immer innerhalb **derselben Region** (Amerika, Europa, Asien).\n"
+            "- Qualität und Bewertung zusätzlich innerhalb **desselben Sektors**, denn eine Bank hat andere Kennzahlen als ein Softwarehaus."
         )
-        st.warning("Ein fehlender Datenpunkt wird nicht automatisch zu einem positiven Signal. Prüfe in der Detailanalyse, ob ein Score durch echte Daten oder durch neutrale Standardwerte zustande kommt.")
-
-    st.markdown("---")
-    st.markdown("### Rang-Score: wie er rechnet")
-    with st.expander("Rang-Score gegen Punkte-Score", expanded=True):
+    with st.expander("Was passiert, wenn Daten fehlen?"):
         st.markdown(
-            "Der Punkte-Score zählt feste Punkte zusammen. Der Rang-Score fragt stattdessen: **Wie gut ist diese Aktie im Vergleich zu den anderen?** "
-            "Für jeden Baustein bekommt jede Aktie einen Rang von 0 bis 100 %. Wer bei einem Baustein besser ist als 80 % der Vergleichsaktien, "
-            "bekommt 80 % der Punkte dieses Bausteins. Das Ergebnis liegt zwischen 0 und 100."
+            "- Fehlt ein Baustein, wird über die übrigen gerechnet. Beispiel ohne Rückkauf: 81,7 von 90 möglichen Punkten ergeben 90,8.\n"
+            "- Eine Aktie braucht mindestens **4 Bausteine mit echten Daten**, sonst bekommt sie keinen Wert. ETFs und Indizes bleiben außen vor.\n"
+            "- **Insider** ist die Ausnahme: Fehlen Daten, zählt er wie „keine Käufe“, also neutral 5 von 10. "
+            "Sonst hätten Aktien aus Ländern ohne Datenquelle einen Vorteil."
         )
-        st.table(pd.DataFrame(build_v3_help_rows()))
+    with st.expander("Woher kommen die Insider-Daten?"):
+        st.table(pd.DataFrame(HELP_INSIDER_SOURCE_ROWS))
         st.markdown(
-            "**Verglichen wird innerhalb derselben Region** (Asien, Europa, Amerika). Qualität und Bewertung werden zusätzlich innerhalb des Sektors verglichen, "
-            "denn eine Bank hat von Natur aus andere Kennzahlen als ein Softwarehaus.\n\n"
-            "**Fehlt ein Baustein**, wird über die übrigen gerechnet. Eine Aktie braucht mindestens 4 Bausteine mit echten Daten, "
-            "sonst bekommt sie keinen Wert. ETFs und Indizes bleiben außen vor.\n\n"
-            "**Ausnahme Insider:** Insider-Käufe kommen aus den Meldungen der Börsenaufsichten: USA (SEC), Schweiz (SIX), "
-            "Frankreich (AMF), Niederlande (AFM), Großbritannien, Kanada, Spanien und weitere über Yahoo, Deutschland über eine von Hand "
-            "geladene BaFin-Datei. Für Japan und Indien gibt es keine freie Quelle. Wo Daten fehlen, zählt der Baustein wie „keine Käufe“, also neutral 5 von 10. "
-            "Eine wöchentliche Prüfung meldet, wenn eine Quelle ausfällt oder ihr Format ändert. "
-            "Würde er wegfallen, hätten starke Aktien ohne Daten einen Vorteil: Bei ihnen zöge kein neutraler Wert den Schnitt zur Mitte.\n\n"
-            "**Nicht mehr dabei:** Preis/Volumen, Technik, Kursziele, News, Event-Druck und Short Interest. "
-            "Sie zeigten in unseren Tests keinen Nutzen, sind nicht rückwirkend prüfbar oder messen eher Aufmerksamkeit als Qualität. "
-            "Die Marktlage (Makro-Overlay) gehört ebenfalls nicht in den Score."
+            "Es zählen nur Käufe am offenen Markt, keine Rückkäufe der Firma, Optionen oder Mitarbeiteraktien. "
+            "Die deutschen Daten stellt [Tracefour](https://tracefour.com/de) bereit. "
+            "Eine Prüfung jeden Montag meldet, wenn eine Quelle ausfällt oder ihr Format ändert."
         )
+    with st.expander("Die Spalten in der Marktbeobachtung"):
         st.markdown(
-            "**Beispiel:** Qualität 24,1 + Momentum 19,1 + EPS-Revisionen 19,6 + Bewertung 13,9 + Rückkauf 4,9 + Insider 5 (neutral) = 86,6 von 100 Punkten, "
-            "also ein Rang-Score von **86,6**. Fehlt ein Baustein wie Rückkauf, zählen nur die übrigen: 81,7 von 90 möglichen Punkten ergeben 90,8. "
-            "Die Aktie ist damit im Mittel besser als rund 87 % ihrer Vergleichsaktien. Der Wert ist eine Platzierung am jeweiligen Tag, keine Kursprognose.\n\n"
-            "**In der Tabelle der Marktbeobachtung:**\n"
             "- **Bausteine:** Rechts oben schaltest du um, ob die Spalten die 6 Bausteine des Rang-Scores oder die 11 des Punkte-Scores zeigen. "
             "Grün heißt oberes Drittel der Vergleichsaktien, rot unteres Drittel.\n"
-            "- **Rang:** Platz nach Rang-Score unter den Aktien derselben Region und desselben Sektors, zum Beispiel 1/43 = beste von 43 europäischen Finanzwerten.\n"
+            "- **Rang:** Platz unter den Aktien derselben Region und desselben Sektors, zum Beispiel 1/43 = beste von 43 europäischen Finanzwerten.\n"
             "- **Vs. Sektor:** Rang-Score minus Durchschnitt dieser Gruppe. +37 heißt 37 Punkte über dem Schnitt.\n"
             "- Aktien ohne Rang-Score (ETFs, zu wenige Daten) haben dort ein „–“."
         )
-        st.warning(
-            "Die Gewichte sind fachlich begründete Startwerte, kein Messergebnis. Ob der Rang-Score besser ist als der Punkte-Score, ist nicht bewiesen. "
-            "Das zeigt erst der Vergleich der Bot-Depots über mindestens 12 Monate."
+    with st.expander("Warum diese 6 Bausteine?"):
+        st.markdown(
+            "Preis/Volumen, Technik, Kursziele, News, Event-Druck und Short Interest sind nicht dabei. "
+            "Sie zeigten in unseren Tests keinen Nutzen, sind nicht rückwirkend prüfbar oder messen eher Aufmerksamkeit als Qualität. "
+            "Die Marktlage gehört ebenfalls nicht in den Score."
         )
+    st.info("Die Gewichte sind fachlich begründete Startwerte, kein Messergebnis. Ob der Rang-Score besser ist, zeigt erst der Vergleich der Spieldepots über mindestens 12 Monate.")
 
-    st.markdown("### Trades: drei Spieldepots im Vergleich")
+
+def _help_points_score() -> None:
     st.markdown(
-        "Jedes Depot startet mit 100.000 € und kauft Aktien für je 5.000 €, höchstens 20 Stück. Es wird nur simuliert, es fließt kein echtes Geld.\n\n"
-        "- **Punkte-Score ab 60:** kauft jede Aktie ab 60 Punkten.\n"
-        "- **Punkte-Score ab 60 ohne Stop-Loss:** dieselben Käufe, aber ohne Verkauf. Zeigt, ob der Stop-Loss hilft.\n"
-        "- **Rang-Score beste 2 %:** kauft die besten 2 % des Tages, höchstens 5 Käufe pro Tag und 25 % je Sektor, keine Aktie in der Woche vor ihren Quartalszahlen.\n"
-        "- **MSCI World ETF:** die Messlatte. Wer sie nicht schlägt, lohnt die Mühe nicht.\n\n"
-        "Die genauen Stop-Loss-Regeln stehen auf der Seite **Trades**."
+        "Der Punkte-Score zählt **feste Punkte** aus 11 Bausteinen zusammen. Die Summe liegt zwischen −30 und 90. "
+        "Bausteine, die in den Tests geholfen haben, bekommen mehr Punkte."
     )
-
-    st.markdown("### Punkte-Score: was sich geändert hat")
-    with st.expander("Punkte-Score: neue gegen alte Gewichtung", expanded=True):
-        st.write(
-            "Der Punkte-Score nutzt dieselben Daten wie seine alte Version, verteilt die Punkte aber anders. Grundlage ist die Auswertung der "
-            "gespeicherten Snapshots und ein 20-Jahres-Test der Kursregeln (November 2026). Bausteine, die gute Aktien "
-            "nach oben sortiert haben, bekommen mehr Punkte. Bausteine ohne Nutzen oder mit falscher Richtung bekommen weniger."
-        )
-        st.table(pd.DataFrame([
-            {"Baustein": "Fundamentale Bewertung", "Max alt": "10", "Max neu": "15", "Grund": "in den Snapshots der stärkste Baustein"},
-            {"Baustein": "EPS-Revisionen", "Max alt": "15", "Max neu": "15", "Grund": "neue Regel: Anteil der Hochstufungen statt Anzahl"},
-            {"Baustein": "Kursziele & Konsens", "Max alt": "15", "Max neu": "5", "Grund": "hohe Kursziele liefen nach 3 Monaten schlechter"},
-            {"Baustein": "Preis/Volumen", "Max alt": "10", "Max neu": "5", "Grund": "über 20 Jahre ohne Nutzen"},
-            {"Baustein": "Technische Indikatoren", "Max alt": "10", "Max neu": "5", "Grund": "über 20 Jahre ohne Nutzen"},
-            {"Baustein": "Aktienrückkauf (neu)", "Max alt": "–", "Max neu": "5", "Grund": "Firmen, die eigene Aktien zurückkaufen, liefen leicht besser"},
-            {"Baustein": "News, Event, Insider, Short, Rel. Stärke", "Max alt": "unverändert", "Max neu": "unverändert", "Grund": "noch zu wenig Daten für eine Änderung"},
-        ]))
-        st.write(
-            "Die alten Punkte werden dafür umgerechnet. Beispiel Kursziele: Die alte Version vergibt bis zu 15 Punkte, die neue bis zu 5. "
-            "Aus 10 alten Punkten werden also 10 × 5/15 ≈ 3 neue Punkte."
-        )
-        st.warning(
-            "Ehrlicher Hinweis: Die neuen Gewichte wurden an denselben, noch wenigen Snapshots ausgesucht, an denen sie auch gut aussehen. "
-            "Ob die neue Gewichtung wirklich besser ist, zeigt erst die Zukunft. Deshalb läuft die alte weiter mit, und der Score-Prüfstand in "
-            "**Backtest & ML** misst beide Versionen nebeneinander."
-        )
-
+    st.table(pd.DataFrame(build_points_help_rows()))
     st.markdown("### Die 11 Bausteine")
+    st.caption("Aufklappen für die genauen Regeln und die Datenquelle.")
 
-    with st.expander("📊 EPS-Revisionen (alt: max. 15 | neu: max. 15)"):
+    with st.expander("📊 EPS-Revisionen (max. 15)"):
         st.write("**Was es misst:** Haben Analysten ihre Gewinnschätzungen (Gewinn je Aktie) zuletzt nach oben oder nach unten korrigiert?")
-        st.markdown("- **Punkte-Score alt:** Hochstufungen minus Herabstufungen. Ist das Ergebnis positiv, gibt es 6 Punkte plus 3 je Hochstufung Überhang (max. 15). Ist es negativ, gibt es bis zu −5 Punkte.")
-        st.markdown("- **Punkte-Score:** zählt den **Anteil** der Hochstufungen an allen Revisionen (mindestens 2 Revisionen): ab 80 % **+15**, ab 65 % **+10**, ab 50 % **+5**, höchstens 35 % **−5**.")
-        st.write("**Warum die neue Regel:** Große Firmen haben viele Analysten und damit fast immer einen Überhang von 3 Hochstufungen. In der alten Version bekamen sie deshalb fast immer volle Punkte.")
+        st.markdown("- Gezählt wird der **Anteil** der Hochstufungen an allen Revisionen (mindestens 2 Revisionen): ab 80 % **+15**, ab 65 % **+10**, ab 50 % **+5**, höchstens 35 % **−5**.")
+        st.write("**Warum ein Anteil und keine Anzahl:** Große Firmen haben viele Analysten und hätten sonst fast immer volle Punkte.")
         st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
 
-    with st.expander("🎯 Kursziele & Konsens (alt: max. 15 | neu: max. 5)"):
+    with st.expander("🎯 Kursziele & Konsens (max. 5)"):
         st.write("**Was es misst:** Wie weit liegt das durchschnittliche Analysten-Kursziel über dem Kurs, und wie viele Analysten raten zum Kauf?")
         st.markdown("- Kursziel mindestens 20 % über dem Kurs: **+10**, mindestens 10 %: **+5**, darüber: **+2**.")
         st.markdown("- Bei mindestens 5 Analysten: Kaufempfehlungen ab 80 %: **+5**, ab 60 %: **+3**.")
-        st.markdown("- **Punkte-Score:** dieselben Regeln, aber nur ein Drittel der Punkte.")
+        st.markdown("- Die Summe (höchstens 15) wird auf ein Drittel gekürzt, also höchstens **5** Punkte.")
         st.write("**Datenquelle:** Finnhub mit Fallback auf Yahoo Finance")
         st.warning("Analysten hinken dem Kurs oft hinterher. Fällt eine Aktie stark, sieht das Kurspotenzial plötzlich groß aus. In den Snapshots liefen Aktien mit hohem Kursziel-Potenzial nach 3 Monaten sogar schlechter.")
 
-    with st.expander("📰 News-Sentiment (alt: max. 15 | neu: max. 15)"):
+    with st.expander("📰 News-Sentiment (max. 15)"):
         st.write("**Was es misst:** Wie viele Nachrichten gab es in den letzten 7 Tagen, und klingen sie gut oder schlecht?")
         st.markdown("- **Nachrichtendichte:** ab 2 Meldungen **+3**, ab 4 **+5**, ab 6 **+7**.")
         st.markdown("- **Stimmung:** Die Überschriften werden per KI (Gemini) oder Stichwortliste bewertet: **−8 bis +8**.")
         st.markdown("- Summe begrenzt auf −10 bis +15.")
         st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
 
-    with st.expander("🏦 Fundamentale Bewertung (alt: max. 10 | neu: max. 15)"):
+    with st.expander("🏦 Fundamentale Bewertung (max. 15)"):
         st.write("**Was es misst:** Ist die Firma solide und günstig bewertet?")
         st.markdown("- **KGV (Forward P/E):** unter 15 **+2**, unter 25 **+1**, über 50 **−2**.")
         st.markdown("- **PEG-Ratio:** unter 1,0 **+2**, unter 1,5 **+1**.")
         st.markdown("- **Verschuldung (Debt/Equity):** unter 50 % **+2**, unter 100 % **+1**.")
         st.markdown("- **Free-Cashflow-Rendite:** über 5 % **+2**, über 2 % **+1**.")
         st.markdown("- **Gewinnmarge:** über 20 % **+2**, über 10 % **+1**.")
-        st.markdown("- **Punkte-Score:** dieselben Regeln, Punkte mal 1,5.")
+        st.markdown("- Die Summe (höchstens 10) wird mal 1,5 genommen, also höchstens **15** Punkte. In den Snapshots war das der stärkste Baustein.")
         st.write("**Datenquelle:** Alpha Vantage (30 Tage Cache) mit Fallback auf Yahoo Finance")
 
-    with st.expander("🔁 Aktienrückkauf (nur neu: max. 5)"):
+    with st.expander("🔁 Aktienrückkauf (max. 5)"):
         st.write("**Was es misst:** Hat die Firma heute weniger Aktien als vor einem Jahr? Dann kauft sie eigene Aktien zurück. Jedem Aktionär gehört danach ein größeres Stück der Firma.")
         st.markdown("- Mindestens 3 % weniger Aktien: **+5**, mindestens 1 % weniger: **+3**.")
         st.markdown("- Mindestens 5 % mehr Aktien (Verwässerung durch neue Aktien): **−2**.")
         st.write("**Warum:** Im Test 2017 bis 2026 liefen die stärksten Rückkäufer gut 1,8 % pro Jahr besser als der Durchschnitt. Das ist ein kleiner Vorteil und statistisch noch nicht sicher, zeigte aber in die richtige Richtung.")
         st.write("**Datenquelle:** Yahoo Finance (Aktienanzahl-Historie)")
 
-    with st.expander("🚀 Preis/Volumen (alt: max. 10 | neu: max. 5)"):
+    with st.expander("🚀 Preis/Volumen (max. 5)"):
         st.write("**Was es misst:** Läuft der Kurs im Aufwärtstrend, und fließt gerade viel Geld in die Aktie?")
         st.markdown("- Kurs über der 20-Tage-Linie: **+5**, über der 50-Tage-Linie: **+6**.")
         st.markdown("- In 5 Tagen mindestens 7 % gestiegen: **+4**, mindestens 7 % gefallen: **−3**.")
         st.markdown("- Steigender Tag mit mehr als dem 1,5-fachen Durchschnittsvolumen: **+3**.")
-        st.markdown("- Summe begrenzt auf −10 bis +10. **Punkte-Score:** halbe Punkte.")
-        st.write("**Warum weniger in 2.0:** Über 20 Jahre nachgerechnet halfen diese Regeln nicht. Auf Wochensicht liefen Aktien über der 20-Tage-Linie sogar leicht schlechter.")
+        st.markdown("- Summe begrenzt auf −10 bis +10, davon zählt die Hälfte, also höchstens **5** Punkte.")
+        st.write("**Warum nur halbe Punkte:** Über 20 Jahre nachgerechnet halfen diese Regeln nicht. Auf Wochensicht liefen Aktien über der 20-Tage-Linie sogar leicht schlechter.")
         st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
 
-    with st.expander("📈 Technische Indikatoren (alt: max. 10 | neu: max. 5)"):
+    with st.expander("📈 Technische Indikatoren (max. 5)"):
         st.write("**Was es misst:** Ist die Aktie rechnerisch überkauft oder überverkauft?")
         st.markdown("- **RSI:** unter 30 (überverkauft) **+4**, über 70 (überkauft) **−4**.")
         st.markdown("- **MACD:** über der Signallinie **+3**, darunter **−1**.")
         st.markdown("- **Bollinger-Bänder:** Kurs unter dem unteren Band **+3**, über dem oberen Band **−3**.")
-        st.markdown("- Summe begrenzt auf −8 bis +10. **Punkte-Score:** halbe Punkte.")
+        st.markdown("- Summe begrenzt auf −8 bis +10, davon zählt die Hälfte, also höchstens **5** Punkte.")
         st.write("**Datenquelle:** Yahoo Finance (6 Monate Kurshistorie)")
 
-    with st.expander("👔 Insider-Aktivität (alt: max. 10 | neu: max. 10)"):
+    with st.expander("👔 Insider-Aktivität (max. 10)"):
         st.write("**Was es misst:** Kaufen Vorstände und Direktoren mit eigenem Geld Aktien ihrer Firma?")
         st.markdown("- Insider-Stimmung der letzten 3 Monate: viele Käufe **+10**, mehrere **+6**, ein Kauf **+4**.")
         st.markdown("- Mehr als doppelt so viele Verkäufe wie Käufe: **−3** (nicht unter 0).")
@@ -1354,112 +1363,92 @@ def render_help_tab():
                  "Aktienrückkäufe der Firma selbst zählen nicht als Insider-Kauf.")
         st.info("Insider verkaufen aus vielen Gründen (Steuern, Hauskauf), aber sie kaufen meist nur aus einem: Sie glauben an steigende Kurse.")
 
-    with st.expander("💪 Relative Stärke (alt: max. 5 | neu: max. 5)"):
+    with st.expander("💪 Relative Stärke (max. 5)"):
         st.write("**Was es misst:** Lief die Aktie im letzten Monat besser als ihr Heimatindex (z. B. S&P 500, DAX, Nikkei 225)?")
         st.markdown("- Mindestens 10 Prozentpunkte besser: **+5**, mindestens 5: **+3**, mindestens 2: **+1**.")
         st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
 
-    with st.expander("📅 Event-Druck (alt: max. 5 | neu: max. 5)"):
+    with st.expander("📅 Event-Druck (max. 5)"):
         st.write("**Was es misst:** Steht bald ein Termin an, zum Beispiel Quartalszahlen?")
         st.markdown("- Nächster Termin in höchstens 7 Tagen: **+5**, in höchstens 14 Tagen: **+3**, in höchstens 30 Tagen: **+1**.")
         st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
 
-    with st.expander("🔥 Short Interest (alt: max. 5 | neu: max. 5)"):
+    with st.expander("🔥 Short Interest (max. 5)"):
         st.write("**Was es misst:** Wetten viele Leerverkäufer auf fallende Kurse? Steigt der Kurs trotzdem, müssen sie teuer zurückkaufen (Short Squeeze).")
         st.markdown("- Nur wenn der Kurs über der 50-Tage-Linie liegt: Short-Anteil ab 20 % **+5**, ab 10 % **+3**, ab 5 % **+1**.")
         st.markdown("- Alternativ nach Tagen zum Eindecken: ab 5 Tagen **+4**, ab 3 Tagen **+2**.")
         st.markdown("- Unter der 50-Tage-Linie gibt es **0 Punkte**, denn dann haben die Leerverkäufer bisher recht.")
         st.write("**Datenquelle:** Yahoo Finance (`yfinance`)")
 
-    st.markdown("---")
-    st.markdown("### Das Makro-Overlay (Markt-Kontext)")
-    st.write(
-        "Das Overlay gilt nur noch für **Punkte-Score alt**. Bei Punkte-Score und 3.0 ist es entfernt: Die Werte werden seit November 2026 in mehreren Läufen pro Tag berechnet, "
-        "und der Faktor sprang zwischen den Läufen von 1,0 auf 0,72. Aktien eines Tages wären so nicht mehr vergleichbar gewesen. "
-        "Auch ältere 2.0-Werte werden deshalb ohne Overlay angezeigt."
-    )
-
-    st.markdown("- **Bullenmarkt-Bonus:** Steht der S&P 500 (SPY) über seiner 200-Tage-Linie, wird der Basis-Score um **10% angehoben (1.1x)**.")
-    st.markdown("- **Bärenmarkt-Malus:** Steht der S&P 500 unter der 200-Tage-Linie, wird der Score um **20% gekürzt (0.8x)**.")
-    st.markdown("- **Volatilitäts-Bremse:** Liegt der Angstindex (VIX) über 25 Punkten, wird der Score pauschal um **10% reduziert (0.9x)**.")
-    st.markdown("- **Rezessions-Indikator (FRED):** Wenn die US-Zinsstrukturkurve invertiert ist (10Y Rendite minus 2Y Rendite < 0), wird der Score aus Risiko-Erwägungen um weitere **5% (0.95x)** reduziert.")
-    st.info(
-        "Alle Faktoren werden zu einem Gesamt-Multiplikator verrechnet. Positive Scores werden damit multipliziert, negative Scores dadurch geteilt. "
-        "So wird ein schlechter Score in einem schwachen Markt schlechter und nicht besser. Beispiel: Bei 0,8x wird aus +20 ein +16 und aus −20 ein −25."
-    )
-
-    st.markdown("---")
-    st.markdown("### Strategie-Setups")
-    st.write("Die Strategien versuchen, aus dem Signalprofil konkrete, getrennte Handelsideen abzuleiten. Sie ersetzen nicht die Einzelprüfung der Aktie.")
-    with st.expander("Momentum / Breakout"):
-        st.write("Sucht Aktien mit Trend über MA20 und MA50, positiver kurzfristiger Bewegung, Volumenbestätigung, positiven Revisionen oder Konsensdaten und relativer Stärke. Das Setup ist trendfolgend und kann bei späten Einstiegen besonders anfällig für Rücksetzer sein.")
-    with st.expander("Mean Reversion / Oversold Bounce"):
-        st.write("Sucht überverkaufte Aktien mit niedrigem RSI, Nähe zum unteren Bollinger Band und starkem Rückgang. News und Short Interest sollen keinen eindeutig bearishen Zustand anzeigen. Das Setup ist antizyklisch und kann in einem echten Abwärtstrend weiter fallen.")
-    with st.expander("Pre-Earnings"):
-        st.write("Sucht Aktien mit bevorstehenden Quartalszahlen, intaktem Trend, positiver Gewinnrevision und ohne extremes Überkauft-Signal. Der Earnings-Termin ist ein Ereignisrisiko: Kurslücken können Stop-Loss-Ausführungen deutlich verschlechtern.")
-    with st.expander("Short Squeeze"):
-        st.write("Sucht hohe Short-Quote zusammen mit steigender Kursstärke und ungewöhnlichem Volumen. Eine hohe Short-Quote allein ist kein Kaufsignal; sie kann auch auf fundamentale Probleme oder anhaltenden Verkaufsdruck hindeuten.")
-
-    st.markdown("### Backtesting: Was wird simuliert?")
-    st.write(
-        "Der Backtest nimmt die gespeicherten Signal-Snapshots und simuliert daraus ein Portfolio. Standardmäßig werden die Aktien mit den höchsten Aktien-Scores ausgewählt, "
-        "die Positionen werden nach dem gewählten Intervall neu zusammengestellt und mit einer Benchmark verglichen. Die Simulation verwendet verfügbare Handelstage, führt ein Signal frühestens am nächsten Handelstag aus und prüft offene Stops und Take-Profits täglich."
-    )
-    st.markdown("**Einstellungen:**")
+def _help_trades() -> None:
     st.markdown(
-        "- **Startkapital:** rein rechnerischer Portfoliowert zum Start.\n"
-        "- **Max. Positionen:** begrenzt die Anzahl gleichzeitig geöffneter Positionen.\n"
-        "- **Rebalancing:** Abstand zwischen den Portfolio-Umschichtungen in Tagen.\n"
-        "- **Benchmark:** Vergleichsindex, zum Beispiel SPY, QQQ, IWM oder DAX."
+        "Jedes Depot startet mit **100.000 €** und kauft Aktien für je 5.000 €, höchstens 20 Stück. Es wird nur simuliert, es fließt kein echtes Geld."
     )
-    st.markdown("**Ausgaben:**")
+    st.table(pd.DataFrame([
+        {"Depot": "Punkte-Score ab 60", "Kauft": "jede Aktie ab 60 Punkten, höchste zuerst", "Verkauft": "per Stop-Loss"},
+        {"Depot": "Punkte-Score ab 60 ohne Stop-Loss", "Kauft": "dieselben Aktien", "Verkauft": "nie, zeigt, ob der Stop-Loss hilft"},
+        {"Depot": "Rang-Score beste 2 %", "Kauft": "die besten 2 % des Tages, höchstens 5 pro Tag und 25 % je Sektor, nichts in der Woche vor Quartalszahlen",
+         "Verkauft": "per Stop-Loss"},
+        {"Depot": "MSCI World ETF", "Kauft": "einmal am Start", "Verkauft": "nie, die Messlatte"},
+    ]))
     st.markdown(
-        "- **Total Return:** Gesamtveränderung des simulierten Portfolios.\n"
-        "- **CAGR:** annualisierte Rendite über die tatsächliche Zeitspanne.\n"
-        "- **Sharpe Ratio:** Rendite im Verhältnis zur Schwankung; höhere Werte sind nicht automatisch belastbar.\n"
-        "- **Max Drawdown:** größter Rückgang vom bisherigen Höchststand.\n"
-        "- **Win Rate und Profit Factor:** Gewinnhäufigkeit und Verhältnis von Bruttogewinnen zu Bruttoverlusten.\n"
-        "- **Alpha:** Differenz zwischen Portfolio- und Benchmark-Rendite.\n"
-        "- **Equity-Kurve und Trades:** zeitlicher Verlauf und einzelne Ein-/Ausstiege."
+        "**Stop-Loss:** 15 % unter dem Kaufkurs. Er steigt mit dem höchsten Schlusskurs mit und sinkt nie. "
+        "Liegt der Höchststand 25 % über dem Kaufkurs, rückt er auf 10 % Abstand. Die genauen Regeln stehen auf der Seite **Trades**."
     )
-    st.info("Ein Backtest ist nur so gut wie seine Snapshots und Kursdaten. Er modelliert nicht automatisch jeden Spread, jede Marktgängigkeit oder jede Kurslücke. Besonders bei kleinen Aktien können echte Ausführungen deutlich schlechter sein.")
 
-    with st.expander("Risikobasierte Positionsgröße"):
-        st.write("Wenn ein Strategie-Signal einen Stop-Loss liefert, wird die Positionsgröße anhand des Stop-Abstands berechnet. Standardmäßig werden dabei ungefähr 0,75% des Startkapitals riskiert. Ein weiter Stop führt deshalb zu einer kleineren Position, ein enger Stop zu einer größeren Position.")
-        st.code("Risiko je Trade = Startkapital * 0,0075\nAktienanzahl = Risiko je Trade / abs(Einstieg - Stop-Loss)")
-        st.write("Das ist eine Risikobegrenzung, keine Garantie gegen Verluste. Bei Kurslücken kann der tatsächliche Verlust über dem geplanten Risiko liegen.")
 
-    st.markdown("---")
+def _help_research() -> None:
     render_truth_machine_help()
-    st.markdown("---")
+    st.markdown("### Weitere Werkzeuge auf der Seite Forschung")
+    with st.expander("Event-Backtest: Punktebereich-Eintritt"):
+        st.markdown(
+            "Kauft alle Aktien an dem Tag, an dem ihr Punkte-Score in einen gewählten Bereich eintritt, "
+            "teilt das Kapital gleichmäßig auf und zeigt den heutigen Wert des Depots. Grundlage sind die gespeicherten Snapshots."
+        )
+    with st.expander("Klassischer Rebalancing-Backtest"):
+        st.markdown(
+            "Hält die Aktien mit dem höchsten Punkte-Score und stellt das Depot in festen Abständen neu zusammen.\n\n"
+            "- **Startkapital, Max. Positionen, Rebalancing (Tage):** die Spielregeln.\n"
+            "- **Benchmark:** Vergleichsindex, zum Beispiel SPY oder DAX.\n"
+            "- **Ergebnisse:** Rendite, Rendite pro Jahr (CAGR), Sharpe Ratio, größter Rückgang (Max Drawdown), Trefferquote und Vorsprung zur Benchmark (Alpha).\n\n"
+            "Gekauft wird frühestens am nächsten Handelstag. Spreads und Kurslücken sind nicht vollständig abgebildet, echte Ausführungen können schlechter sein."
+        )
+    with st.expander("ML-Gewichtung"):
+        st.markdown(
+            "Verbindet die Snapshots mit der Rendite der folgenden 30 Tage und schätzt, welche Bausteine des Punkte-Scores mehr Gewicht verdienen.\n\n"
+            "- Gelernt wird an den ältesten 70 % der Snapshot-Tage, geprüft an den jüngsten, mit 30 Tagen Abstand dazwischen. "
+            "Diese Prüfung braucht mindestens 60 Snapshot-Tage.\n"
+            "- Die Gewichte gelten nur, wenn sie im Prüfzeitraum besser sortieren als gleiche Gewichte. Bis dahin zeigt die Tabelle keinen ML-Score."
+        )
 
-    st.markdown("### ML-Gewichtung")
-    st.write(
-        "Mit **ML-Gewichtung trainieren** werden historische Snapshots mit der späteren 30-Tage-Forward-Rendite verbunden. Ein Ridge-Regressionsmodell schätzt, welche der zehn Komponenten im vorhandenen Datenbestand stärker oder schwächer gewichtet werden sollten. Negative Gewichte werden ausgeschlossen und die Gewichte anschließend zur besseren Lesbarkeit normiert."
-    )
+
+def _help_data_sources() -> None:
+    st.table(pd.DataFrame(HELP_DATA_SOURCE_ROWS))
     st.markdown(
-        "- Es werden mindestens fünf Snapshots für ein Training benötigt.\n"
-        "- **Out-of-Sample-Schutz:** Die gelernten Gewichte werden nur angewendet, wenn sie auf einem zeitlich getrennten Testzeitraum besser sortieren als die einfache Gleichgewichtung. "
-        "Dafür werden die ältesten 70 % der Snapshot-Tage zum Lernen genutzt, die jüngsten zum Prüfen, mit einem Abstand von 30 Tagen dazwischen. "
-        "Diese Prüfung braucht mindestens 60 Snapshot-Tage. Bis ein Modell diese Prüfung bestanden hat, wird in der Haupttabelle kein ML-Score angezeigt.\n"
-        "- Die Gewichte werden in `ml_weights/optimized_weights.json` gespeichert, zusammen mit dem Ergebnis der Prüfung.\n"
-        "- Nach dem Training zeigt die App an, ob die Gewichte angewendet werden und warum."
+        "- **Nachtlauf:** Jeden Werktag nach US-Börsenschluss rechnet GitHub alle Aktien neu und speichert einen **Snapshot**. "
+        "Ein zweiter Lauf am nächsten Morgen springt ein, falls der erste ausfällt.\n"
+        "- **Gedrosselte Daten:** Liefert Yahoo für eine Aktie nichts, wird sie im selben Lauf erneut abgefragt. "
+        "Die Startseite zeigt, wie viele Aktien frische Daten haben.\n"
+        "- **Prüfung der Insider-Quellen:** jeden Montag automatisch."
     )
+    st.caption("Zwischengespeicherte Daten sparen Abrufe, können aber etwas älter sein als der Snapshot.")
 
-    st.markdown("### Datenquellen und Caching")
-    st.markdown(
-        "- **Yahoo Finance / yfinance:** Kurse, Volumen, technische Historie, News, Earnings-Termine, Basis-Fundamentaldaten und teilweise Insider-/Short-Daten.\n"
-        "- **Finnhub:** Analysten-Kursziele, Empfehlungen und Insider-Sentiment, sofern `FINNHUB_API_KEY` eingerichtet ist. Cache-Dauer: typischerweise 24 Stunden.\n"
-        "- **Alpha Vantage:** Fundamentaldaten, sofern `ALPHAVANTAGE_API_KEY` eingerichtet ist. Cache-Dauer: typischerweise 30 Tage; bei fehlendem Key oder Limit greift die App auf Yahoo Finance zurück.\n"
-        "- **FRED:** US-Zinskurven-Spread `T10Y2Y` für den Makro-Overlay, sofern `FRED_API_KEY` eingerichtet ist.\n"
-        "- **Google Gemini:** optionale semantische News-Auswertung, wenn die Google-GenAI-Abhängigkeit und ein gültiger Key verfügbar sind; sonst wird eine lokale Keyword-Auswertung verwendet.\n"
-        "- **Wikipedia:** Indexzusammensetzungen für unterstützte Indizes."
-    )
-    st.caption("Lokale Caches sparen API-Aufrufe, können aber veraltete Daten enthalten. Prüfe das Alter der Daten, bevor du eine Entscheidung triffst.")
 
-    st.warning(
-        "Die App ist ein Research- und Priorisierungstool. Sie gibt keine Anlageberatung, führt keine Orders aus und kann Verluste nicht verhindern."
-    )
+def render_help_tab():
+    st.subheader("Hilfe & Methodik")
+    tabs = st.tabs(["Überblick", "Rang-Score", "Punkte-Score", "Spieldepots", "Forschung", "Datenquellen"])
+    with tabs[0]:
+        _help_overview()
+    with tabs[1]:
+        _help_rank_score()
+    with tabs[2]:
+        _help_points_score()
+    with tabs[3]:
+        _help_trades()
+    with tabs[4]:
+        _help_research()
+    with tabs[5]:
+        _help_data_sources()
 
 
 TRUTH_UNIVERSES = ["S&P 500", "Nasdaq-100", "Dow Jones"]
@@ -1627,8 +1616,7 @@ def render_brodel_check_section():
         "Überlappende Zeitfenster werden für den belastbaren t-Wert herausgerechnet."
     )
     st.caption(
-        "Für ältere Snapshots wird Punkte-Score aus den gespeicherten Einzelpunkten nachgerechnet, ohne Rückkauf-Daten. "
-        "Punkte-Score wird dabei ohne Makro-Overlay gemessen."
+        "Für ältere Snapshots wird der Punkte-Score aus den gespeicherten Einzelpunkten nachgerechnet, ohne Rückkauf-Daten."
     )
     horizon = st.select_slider("Horizont (Handelstage)", options=[5, 10, 21, 63], value=21, key="brodel_horizon")
     if st.button("Score messen", use_container_width=True):
@@ -1998,7 +1986,7 @@ def start_page_summary() -> dict:
             "day": str(latest.get("timestamp", ""))[:10],
             "items": len(items),
             "fresh": len(fresh),
-            "top": [{"Aktie": f"{i['symbol']} · {i.get('name', '')}", "Sektor": i.get("sector", ""), "Rang-Score": i["brodel_score_v3"]}
+            "top": [{"Aktie": f"{i['symbol']} · {i.get('name', '')}", "Sektor": i.get("sector", ""), "Rang-Score": round(float(i["brodel_score_v3"]), 1)}
                     for i in ranked[:5]],
         })
     state = paper_bot.load_state()
@@ -2007,10 +1995,24 @@ def start_page_summary() -> dict:
     return summary
 
 
+DEPOT_LABELS = {"bot": "Punkte-Score ab 60", "no_stop": "Punkte-Score ohne Stop-Loss", "rank": "Rang-Score beste 2 %"}
+
+
+def best_depot(depots: dict) -> tuple[str, float]:
+    """Name and value of the best bot depot, the start capital while none has traded yet."""
+    values = {key: value for key, value in (depots or {}).items() if key in DEPOT_LABELS and isinstance(value, (int, float))}
+    if not values:
+        return "noch keine Werte", 100_000.0
+    key = max(values, key=values.get)
+    return DEPOT_LABELS[key], float(values[key])
+
+
 def render_start_page(prefs: dict | None) -> None:
+    summary = start_page_summary()
+    count = f"{summary['items']:,}".replace(",", ".") if summary["items"] else "rund 1.400"
     st.markdown("## Willkommen bei StockWatcher")
     st.markdown(
-        "StockWatcher bewertet **jeden Werktag rund 1.375 Aktien** aus den USA, Europa und Asien. "
+        f"StockWatcher bewertet **jeden Werktag {count} Aktien** aus Amerika, Europa und Asien. "
         "Dann prüft die Seite mit **Spielgeld**, ob diese Bewertung im echten Börsenverlauf etwas taugt. "
         "Es fließt kein echtes Geld, und nichts hier ist eine Kaufempfehlung."
     )
@@ -2019,7 +2021,7 @@ def render_start_page(prefs: dict | None) -> None:
     with col1:
         st.markdown("#### 1. Daten sammeln")
         st.markdown(
-            "Nach Börsenschluss jeder Region lädt die Seite Kurse, Bilanzkennzahlen, Analystenschätzungen und Insiderkäufe. "
+            "Jeden Werktag nach US-Börsenschluss lädt die Seite Kurse, Bilanzkennzahlen, Analystenschätzungen und Insiderkäufe. "
             "Daraus entsteht pro Tag ein **Snapshot**, also ein Foto aller Aktien."
         )
     with col2:
@@ -2027,16 +2029,15 @@ def render_start_page(prefs: dict | None) -> None:
         st.markdown(
             "Jede Aktie bekommt zwei Werte:\n\n"
             "- **Rang-Score (0–100):** Wie gut steht die Aktie im Vergleich zu ähnlichen Aktien da? 80 heißt besser als 80 %.\n"
-            "- **Punkte-Score (bis 90):** feste Punkte für 11 Signale, die ältere Methode."
+            "- **Punkte-Score (−30 bis 90):** feste Punkte für 11 Signale."
         )
     with col3:
         st.markdown("#### 3. Ehrlich prüfen")
         st.markdown(
-            "Drei **Spieldepots** mit je 100.000 € kaufen nach festen Regeln und verkaufen per Stop-Loss. "
+            "Drei **Spieldepots** mit je 100.000 € kaufen nach festen Regeln, zwei davon verkaufen per Stop-Loss. "
             "Ein MSCI-World-ETF ist die Messlatte. Erst nach etwa 12 Monaten zeigt sich, ob sich der Aufwand lohnt."
         )
 
-    summary = start_page_summary()
     st.markdown("---")
     st.markdown("#### Stand heute")
     if summary["day"]:
@@ -2044,8 +2045,10 @@ def render_start_page(prefs: dict | None) -> None:
         status[0].metric("Datenstand", summary["day"])
         status[1].metric("Aktien mit frischen Daten", f"{summary['fresh']} von {summary['items']}")
         depots = summary.get("depots") or {}
-        status[2].metric("Bestes Spieldepot", f"{max((v for k, v in depots.items() if k in ('bot', 'no_stop', 'rank')), default=100_000):,.0f} €")
-        status[3].metric("MSCI World ETF", f"{depots.get('etf', 100_000):,.0f} €")
+        best_name, best_value = best_depot(depots)
+        status[2].metric("Bestes Spieldepot", f"{best_value:,.0f} €".replace(",", "."), help=best_name)
+        status[2].caption(best_name)
+        status[3].metric("MSCI World ETF", f"{depots.get('etf', 100_000):,.0f} €".replace(",", "."))
         if summary["top"]:
             st.markdown("**Die 5 Aktien mit dem höchsten Rang-Score**")
             st.dataframe(pd.DataFrame(summary["top"]), use_container_width=True, hide_index=True)
@@ -2077,7 +2080,7 @@ def render_start_page(prefs: dict | None) -> None:
 
 def render_app():
     st.title("📈 StockWatcher")
-    st.caption("Aktien-Score und Spieldepots für rund 1.375 Aktien weltweit")
+    st.caption("Aktien-Scores und Spieldepots für Aktien aus Amerika, Europa und Asien")
 
     prefs = visitor_prefs(st.session_state.get("skip_start_box"))
     choose_start_page(prefs, st.session_state)

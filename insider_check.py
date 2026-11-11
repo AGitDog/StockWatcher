@@ -24,7 +24,7 @@ import insider_sources as sources
 HISTORY_DIR = Path(__file__).parent / "signal_history" / "meine_watchlist"
 BAFIN_MAX_AGE_DAYS = 21
 # markets that have an automatic source: the snapshot must show it for at least one stock
-EXPECTED_SOURCES = {"L": "Yahoo", "TO": "Yahoo", "SW": "SIX", "PA": "AMF", "AS": "AFM"}
+EXPECTED_SOURCES = {"L": "Yahoo", "TO": "Yahoo", "SW": "SIX", "PA": "AMF", "AS": "AFM", "DE": "Tracefour"}
 
 
 @dataclass
@@ -41,6 +41,18 @@ def _run(name: str, probe: Callable[[], tuple[bool, str]], hard: bool = True) ->
     except Exception as exc:  # a crash is a failed check, not a failed script
         ok, detail = False, f"{type(exc).__name__}: {exc}"
     return Check(name, ok, detail, hard)
+
+
+def probe_tracefour() -> tuple[bool, str]:
+    response = sources._get(sources.TRACEFOUR_DE_URL, headers={"Accept": "application/json"})
+    if response.status_code != 200:
+        return False, f"HTTP {response.status_code}"
+    rows = response.json().get("data") or []
+    needed = {"issuerName", "transactionNature", "currency", "totalValue", "transactionDate"}
+    if not rows or not needed <= set(rows[0]):
+        return False, f"{len(rows)} Meldungen, Felder fehlen: {sorted(needed - set(rows[0] if rows else {}))}"
+    purchases = sources.parse_tracefour_filings(rows)
+    return len(rows) >= 20 and bool(purchases), f"{len(rows)} Meldungen, {len(purchases)} Firmen mit Käufen"
 
 
 def probe_six() -> tuple[bool, str]:
@@ -112,7 +124,7 @@ def probe_fx() -> tuple[bool, str]:
 def bafin_file_age(path: Path = sources.BAFIN_CSV_PATH, today: date | None = None) -> tuple[bool, str]:
     """Soft check: the hand-made BaFin file should be younger than three weeks."""
     if not path.exists():
-        return True, "keine Datei (deutsche Aktien neutral)"
+        return True, "keine Datei (nur Ersatz, falls Tracefour ausfällt)"
     latest = None
     with path.open(encoding="utf-8-sig", newline="") as handle:
         for row in csv.DictReader(handle, delimiter=";"):
@@ -156,6 +168,7 @@ def latest_snapshot_items(directory: Path = HISTORY_DIR) -> list[dict]:
 
 def run_checks() -> list[Check]:
     return [
+        _run("Tracefour Deutschland", probe_tracefour),
         _run("SIX Schweiz", probe_six),
         _run("AMF Frankreich", probe_amf),
         _run("AFM Niederlande", probe_afm),

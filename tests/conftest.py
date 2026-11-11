@@ -21,11 +21,13 @@ def _offline_insider_sources(monkeypatch):
     monkeypatch.setattr(insider_sources, "usd_per_unit", fake_rate)
     monkeypatch.setattr(insider_sources, "REQUEST_PAUSE_SECONDS", 0)
     insider_sources._six_purchases.cache_clear()
+    insider_sources._tracefour_purchases.cache_clear()
     insider_sources._amf_notices.cache_clear()
     insider_sources.load_bafin_purchases.cache_clear()
     insider_sources._DISK_CACHES.clear()
     yield
     insider_sources._six_purchases.cache_clear()
+    insider_sources._tracefour_purchases.cache_clear()
     insider_sources._amf_notices.cache_clear()
     insider_sources.load_bafin_purchases.cache_clear()
     insider_sources._DISK_CACHES.clear()

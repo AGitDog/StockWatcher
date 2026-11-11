@@ -77,3 +77,20 @@ Freigabe im Chat: „Punkte alt ist nur noch aus historischen Gründen drin, wir
 - Geprüft: Die erste Punkte-Version wurde nur noch angezeigt (Spalte „Punkte alt“ in der Detailtabelle, Zeile „Punkte-Score alt“ im Score-Prüfstand). Rang-Score, Punkte-Score, Paper-Bot und Rang-Depot nutzen sie nicht.
 - Entfernt: beide Anzeigen. Die gespeicherten Rohwerte (`signal_breakdown`, `brodel_score`) bleiben, weil der Punkte-Score älterer Snapshots daraus nachgerechnet wird.
 - Tests: `test_brodel_v2.py` prüft, dass die Spalte fehlt und der Prüfstand nur den Punkte-Score misst. 401 grün.
+
+## 9. Nachtrag 11.11.2026: Deutschland über Tracefour
+Freigabe im Chat: „Was ist mit Tracefour? Hier kann man auch Daten holen in Deutschland.“
+- **Prüfung:** Tracefour bietet eine dokumentierte, kostenlose API ohne Schlüssel (`https://tracefour.com/v1/eu/de`, 60 Abrufe pro Stunde je IP). Die robots.txt sperrt nur `/api/` und `/embed/`, nicht `/v1/`. Die Daten stehen unter CC BY 4.0: Wo sie angezeigt werden, steht ein Link auf Tracefour. Tracefour gibt an, die Nutzungsbedingungen der BaFin selbst nicht geprüft zu haben.
+- **Inhalt:** BaFin-Meldungen der letzten rund 90 Tage mit Emittent, ISIN, Art (Buy/Sell), Wert und Währung. Am 11.11. waren es 202 Meldungen, darunter 23 unserer 99 deutschen Aktien (z. B. SAP, adidas, Fresenius).
+- **Code:** `parse_tracefour_filings` (nur „Buy“ in EUR mit positivem Wert, doppelte Meldungen einmal), `tracefour_purchases` (ein Abruf pro Lauf), `germany_buy_value_eur` (Tracefour zuerst, die BaFin-Datei nur als Ersatz). Ein leerer Feed gilt als Ausfall, nicht als „keine Käufe“.
+- **Live-Check:** neue Prüfung „Tracefour Deutschland“. In der Abdeckung erwartet der Check für .DE jetzt Daten.
+- **Tests:** `tests/fixtures/insider/tracefour_de.json` (echte Meldungen, Personennamen anonymisiert), Filter, ein Abruf pro Lauf, 90-Tage-Fenster, Ausfall (429, leer), Ersatz durch die BaFin-Datei, Probe des Live-Checks.
+
+## 10. Nachtrag 11.11.2026: Hilfe und Startseite
+Freigabe im Chat: „Bitte auch die gesamte Hilfe anpassen wegen den Punkten alt. Es soll nur einen Punkte-Score geben.“ Dazu: „Datenquellen und Caching auch sauber aktualisieren. Insgesamt könnte man die Hilfe besser lesbar machen. Bitte auch nochmals die Einstiegsseite überprüfen.“
+- **Hilfe in sechs Reitern:** Überblick, Rang-Score, Punkte-Score, Spieldepots, Forschung, Datenquellen. Vorne stehen Übersichtstabellen, Details sind aufklappbar.
+- **Nur noch ein Punkte-Score:** Abschnitt „was sich geändert hat“, alle „alt/neu“-Angaben und die alten Regeln sind entfernt. Die Übersicht der 11 Bausteine kommt aus `BRODEL_V2_MAX_POINTS`.
+- **Entfernt, weil nicht mehr sichtbar oder falsch:** Makro-Overlay (galt nur für die alte Version), FRED als Quelle, Strategie-Setups (nirgends angezeigt), „Die drei Tabs“ (die App hat fünf Seiten), Skala „−30 bis 100“ (Maximum ist 90).
+- **Datenquellen:** Tabelle mit Quelle, Zweck und Aktualität, darunter alle Insider-Quellen und Tracefour mit Lizenzhinweis.
+- **Startseite:** Aktienzahl aus dem Snapshot statt fest „1.375“. Der Nachtlauf startet nach US-Börsenschluss, nicht nach jeder Region. Punkte-Score „−30 bis 90“ ohne „ältere Methode“. „Zwei davon verkaufen per Stop-Loss“. Das beste Spieldepot nennt seinen Namen. Rang-Scores auf eine Nachkommastelle.
+- **Tests:** neu `tests/test_help_page.py`, angepasst `test_brodel_v2.py` und `test_truth_machine_app.py`. 413 grün.

@@ -1,6 +1,6 @@
 """Insider purchases outside the USA, from sources that may be used automatically.
 
-Only sources whose robots.txt allows the access are fetched automatically:
+Only sources whose robots.txt allows the access, or that offer a public API, are fetched automatically:
 
 | Market | Source |
 |---|---|
@@ -8,7 +8,7 @@ Only sources whose robots.txt allows the access are fetched automatically:
 | Switzerland | SIX Exchange Regulation, management transactions (JSON) |
 | France | AMF BDIF, directors' dealings (JSON list + PDF per notice) |
 | Netherlands | AFM register MAR 19 (HTML search + detail page) |
-| Germany | BaFin CSV, downloaded by hand (BaFin's robots.txt forbids automated access) |
+| Germany | Tracefour API (BaFin filings, free and keyless, CC BY 4.0); fallback: BaFin CSV stored by hand |
 
 Japan and India have no usable free source: Japan publishes no director purchases, and the NSE
 only answers with outdated data unless its bot protection is bypassed, which we do not do.
@@ -50,6 +50,8 @@ SIX_URL = "https://www.ser-ag.com/sheldon/management_transactions/v1/overview.js
 AMF_LIST_URL = "https://bdif.amf-france.org/back/api/v1/informations"
 AMF_DOCUMENT_URL = "https://bdif.amf-france.org/back/api/v1/documents/"
 AFM_SEARCH_URL = "https://www.afm.nl/nl-nl/sector/registers/meldingenregisters/transacties-leidinggevenden-mar19-"
+TRACEFOUR_DE_URL = "https://tracefour.com/v1/eu/de"  # documented keyless API, 60 requests/hour per IP
+TRACEFOUR_PAGE = "https://tracefour.com/de"  # CC BY 4.0: link here wherever the data is shown
 
 YAHOO_MARKETS = {"L", "TO", "V", "MC", "AX", "MI", "HE", "BR", "ST", "CO", "OL", "VI", "LS", "IR"}
 MINOR_UNITS = {"GBp": ("GBP", 100), "GBX": ("GBP", 100), "ILA": ("ILS", 100), "ZAc": ("ZAR", 100)}
@@ -259,6 +261,71 @@ def bafin_buy_value_eur(company_names: list[object], today: date | None = None,
     if purchases is None:
         return None
     return _window_sum(_matching(purchases, company_names), today, days)
+
+
+# ── Germany: Tracefour API (BaFin filings) ──────────────────────────────────
+
+def parse_tracefour_filings(rows: list[dict]) -> dict[str, list[tuple[date, float]]]:
+    """Purchases per normalised issuer from Tracefour records: [(trade date, EUR)].
+
+    Kept: nature "Buy" in EUR with a positive value. The same filing listed twice counts once.
+    """
+    seen: set[str] = set()
+    purchases: dict[str, list[tuple[date, float]]] = {}
+    for row in rows:
+        if str(row.get("transactionNature") or "").strip().lower() != "buy":
+            continue
+        if str(row.get("currency") or "").upper() != "EUR":
+            continue  # other currencies are rare; skipping them only loses a bonus
+        filing = str(row.get("filingId") or "")
+        if filing and filing in seen:
+            continue
+        try:
+            value = float(row.get("totalValue"))
+            day = datetime.strptime(str(row.get("transactionDate"))[:10], "%Y-%m-%d").date()
+        except (TypeError, ValueError):
+            continue
+        if value <= 0:
+            continue
+        seen.add(filing)
+        purchases.setdefault(normalize_company_name(row.get("issuerName")), []).append((day, value))
+    return purchases
+
+
+def tracefour_purchases() -> dict[str, list[tuple[date, float]]] | None:
+    """German directors' dealings purchases, fetched once per run (rate limit 60/hour)."""
+    with _BULK_LOCK:
+        return _tracefour_purchases()
+
+
+@lru_cache(maxsize=1)
+def _tracefour_purchases() -> dict[str, list[tuple[date, float]]] | None:
+    try:
+        response = _get(TRACEFOUR_DE_URL, headers={"Accept": "application/json"})
+        if response.status_code != 200:
+            return None
+        rows = response.json().get("data")
+    except Exception:
+        return None
+    if not isinstance(rows, list) or not rows:
+        return None  # an empty feed means a broken source, not a quiet quarter
+    return parse_tracefour_filings(rows)
+
+
+def tracefour_buy_value_eur(company_names: list[object], today: date | None = None) -> float | None:
+    purchases = tracefour_purchases()
+    if purchases is None:
+        return None
+    return _window_sum(_matching(purchases, company_names), today, INSIDER_WINDOW_DAYS)
+
+
+def germany_buy_value_eur(company_names: list[object]) -> tuple[float | None, str | None]:
+    """Tracefour first; the BaFin file stored by hand only when Tracefour does not answer."""
+    value = tracefour_buy_value_eur(company_names)
+    if value is not None:
+        return value, "Tracefour"
+    value = bafin_buy_value_eur(company_names)
+    return (value, "BaFin") if value is not None else (None, None)
 
 
 # ── Switzerland: SIX management transactions ───────────────────────────────
@@ -584,8 +651,13 @@ def insider_value_usd(symbol: str, info: dict, yahoo_value: float | None = None)
     names = [info.get("longName"), info.get("shortName")]
     quote_currency = str(info.get("currency") or "")
     main_currency = MINOR_UNITS.get(quote_currency, (quote_currency, 1))[0] or None
+    if market == "DE":
+        try:
+            value, name = germany_buy_value_eur(names)
+        except Exception:
+            value, name = None, None
+        return (to_usd(value, "EUR"), name) if value is not None else (None, None)
     sources: dict[str, tuple[str, Callable[[], float | None], str | None]] = {
-        "DE": ("BaFin", lambda: bafin_buy_value_eur(names), "EUR"),
         "SW": ("SIX", lambda: six_buy_value_chf(names), "CHF"),
         "PA": ("AMF", lambda: amf_buy_value_eur(names), "EUR"),
         "AS": ("AFM", lambda: afm_buy_value_eur(names), "EUR"),

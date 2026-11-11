@@ -56,3 +56,19 @@ def test_workflow_runs_the_check_weekly():
     assert "tests/test_insider_sources.py" in workflow
     nightly = (Path(__file__).parent.parent / ".github" / "workflows" / "update_signals.yml").read_text(encoding="utf-8")
     assert nightly.count("insider_data/") == 2  # the caches are committed by the group jobs and the bot job
+
+
+def test_tracefour_probe_reads_the_live_format(monkeypatch):
+    import json
+    from pathlib import Path
+    from unittest.mock import MagicMock
+
+    rows = json.loads((Path(__file__).parent / "fixtures" / "insider" / "tracefour_de.json").read_text(encoding="utf-8"))["data"]
+    response = MagicMock(status_code=200)
+    response.json.return_value = {"data": rows * 4}
+    monkeypatch.setattr(insider_check.sources, "_get", MagicMock(return_value=response))
+    ok, detail = insider_check.probe_tracefour()
+    assert ok and "2 Firmen mit Käufen" in detail
+    response.json.return_value = {"data": [{"issuer": "renamed field"}]}
+    assert not insider_check.probe_tracefour()[0]
+    assert "DE" in insider_check.EXPECTED_SOURCES

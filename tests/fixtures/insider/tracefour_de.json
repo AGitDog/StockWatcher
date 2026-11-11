@@ -1,0 +1,100 @@
+{
+ "data": [
+  {
+   "filingId": "3af133331154af14",
+   "publicationAt": "2026-11-10T00:00:00Z",
+   "issuerName": "AUMOVIO SE",
+   "isin": "DE000AUM0V10",
+   "pdmrName": "Anonym A",
+   "capacity": "Management Board",
+   "transactionNature": "Buy",
+   "price": 32.71,
+   "currency": "EUR",
+   "totalValue": 99772.9,
+   "transactionDate": "2026-11-10"
+  },
+  {
+   "filingId": "66b5aebb5495f9d7",
+   "publicationAt": "2026-11-10T00:00:00Z",
+   "issuerName": "AUMOVIO SE",
+   "isin": "DE000AUM0V10",
+   "pdmrName": "Anonym B",
+   "capacity": "Management Board",
+   "transactionNature": "Buy",
+   "price": 31.72,
+   "currency": "EUR",
+   "totalValue": 74854.5,
+   "transactionDate": "2026-11-09"
+  },
+  {
+   "filingId": "20460fded7386e1d",
+   "publicationAt": "2026-11-10T00:00:00Z",
+   "issuerName": "AUMOVIO SE",
+   "isin": "DE000AUM0V10",
+   "pdmrName": "Anonym C",
+   "capacity": "Management Board",
+   "transactionNature": "Buy",
+   "price": 31.63,
+   "currency": "EUR",
+   "totalValue": 199281.45,
+   "transactionDate": "2026-11-09"
+  },
+  {
+   "filingId": "0705733ae8a6823c",
+   "publicationAt": "2026-11-10T00:00:00Z",
+   "issuerName": "Uzin Utz SE",
+   "isin": "DE0007551509",
+   "pdmrName": "Anonym D",
+   "capacity": "Supervisory board",
+   "transactionNature": "Buy",
+   "price": 62.79,
+   "currency": "EUR",
+   "totalValue": 28254,
+   "transactionDate": "2026-11-09"
+  },
+  {
+   "filingId": "9defacf3b4556536",
+   "publicationAt": "2026-11-09T00:00:00Z",
+   "issuerName": "Cliq Digital AG",
+   "isin": "DE000A35JS40",
+   "pdmrName": "Anonym E",
+   "capacity": "Management Board",
+   "transactionNature": "Sell",
+   "price": 6.9,
+   "currency": "EUR",
+   "totalValue": 762450,
+   "transactionDate": "2026-11-02"
+  },
+  {
+   "filingId": "8942f042a09c5cfb",
+   "publicationAt": "2026-11-09T00:00:00Z",
+   "issuerName": "Cliq Digital AG",
+   "isin": "DE000A35JS40",
+   "pdmrName": "Anonym F",
+   "capacity": "Management Board",
+   "transactionNature": "Sell",
+   "price": 6.9,
+   "currency": "EUR",
+   "totalValue": 34520.7,
+   "transactionDate": "2026-11-02"
+  },
+  {
+   "filingId": "3af133331154af14",
+   "publicationAt": "2026-11-10T00:00:00Z",
+   "issuerName": "AUMOVIO SE",
+   "isin": "DE000AUM0V10",
+   "pdmrName": "Anonym A",
+   "capacity": "Management Board",
+   "transactionNature": "Buy",
+   "price": 32.71,
+   "currency": "EUR",
+   "totalValue": 99772.9,
+   "transactionDate": "2026-11-10"
+  }
+ ],
+ "meta": {
+  "count": 7,
+  "source": "bafin-germany",
+  "license": "https://creativecommons.org/licenses/by/4.0/"
+ }
+}

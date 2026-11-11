@@ -208,15 +208,61 @@ def test_afm_value_skips_old_ids_and_other_issuers(tmp_path):
     assert other == 0.0  # the cached notice belongs to ING, not to Adyen
 
 
+# ── Germany: Tracefour API ──────────────────────────────────────────────────
+
+def _tracefour_rows():
+    return json.loads((FIXTURES / "tracefour_de.json").read_text(encoding="utf-8"))["data"]
+
+
+def test_tracefour_keeps_euro_purchases_once():
+    rows = _tracefour_rows() + [{"filingId": "x1", "issuerName": "AUMOVIO SE", "transactionNature": "Buy",
+                                 "currency": "HKD", "totalValue": 5_000_000, "transactionDate": "2026-11-09"}]
+    purchases = insider_sources.parse_tracefour_filings(rows)
+    assert sorted(purchases) == ["aumovio", "uzin utz"]  # Cliq Digital only sold
+    assert sum(value for _, value in purchases["aumovio"]) == pytest.approx(373908.85)  # duplicate and HKD left out
+
+
+def test_tracefour_value_is_fetched_once_per_run(monkeypatch):
+    response = MagicMock(status_code=200)
+    response.json.return_value = {"data": _tracefour_rows()}
+    fetch = MagicMock(return_value=response)
+    monkeypatch.setattr(insider_sources, "_get", fetch)
+    insider_sources._tracefour_purchases.cache_clear()
+    aumovio = insider_sources.tracefour_buy_value_eur(["AUMOVIO SE"], today=date(2026, 11, 11))
+    other = insider_sources.tracefour_buy_value_eur(["SAP SE"], today=date(2026, 11, 11))
+    late = insider_sources.tracefour_buy_value_eur(["Uzin Utz SE"], today=date(2027, 3, 1))
+    assert aumovio == pytest.approx(373908.85) and other == 0.0 and late == 0.0  # 90-day window
+    assert fetch.call_count == 1
+    assert fetch.call_args.args[0] == "https://tracefour.com/v1/eu/de"
+
+
+@pytest.mark.parametrize("status, payload", [(429, {}), (200, {"data": []}), (200, {"error": "x"})])
+def test_tracefour_down_or_empty_is_no_data(monkeypatch, status, payload):
+    response = MagicMock(status_code=status)
+    response.json.return_value = payload
+    monkeypatch.setattr(insider_sources, "_get", MagicMock(return_value=response))
+    insider_sources._tracefour_purchases.cache_clear()
+    assert insider_sources.tracefour_buy_value_eur(["SAP SE"]) is None
+
+
+def test_germany_falls_back_to_the_bafin_file(monkeypatch):
+    monkeypatch.setattr(insider_sources, "tracefour_buy_value_eur", lambda names: None)
+    monkeypatch.setattr(insider_sources, "bafin_buy_value_eur", lambda names: 100.0)
+    assert insider_sources.insider_value_usd("SAP.DE", {"currency": "EUR"}) == (pytest.approx(110.0), "BaFin")
+    monkeypatch.setattr(insider_sources, "bafin_buy_value_eur", lambda names: None)
+    assert insider_sources.insider_value_usd("SAP.DE", {"currency": "EUR"}) == (None, None)
+
+
 # ── one entry point per stock ───────────────────────────────────────────────
 
 def test_each_market_uses_its_source(monkeypatch):
-    monkeypatch.setattr(insider_sources, "bafin_buy_value_eur", lambda names: 100.0)
+    monkeypatch.setattr(insider_sources, "tracefour_buy_value_eur", lambda names: 100.0)
+    monkeypatch.setattr(insider_sources, "bafin_buy_value_eur", lambda names: 999.0)  # only a fallback
     monkeypatch.setattr(insider_sources, "six_buy_value_chf", lambda names: 100.0)
     monkeypatch.setattr(insider_sources, "amf_buy_value_eur", lambda names: 100.0)
     monkeypatch.setattr(insider_sources, "afm_buy_value_eur", lambda names: None)  # source down
     monkeypatch.setattr(insider_sources, "_yahoo_value", lambda symbol, known: 50.0 if known is None else known)
-    assert insider_sources.insider_value_usd("SAP.DE", {"currency": "EUR"}) == (pytest.approx(110.0), "BaFin")
+    assert insider_sources.insider_value_usd("SAP.DE", {"currency": "EUR"}) == (pytest.approx(110.0), "Tracefour")
     assert insider_sources.insider_value_usd("NOVN.SW", {"currency": "CHF"}) == (pytest.approx(120.0), "SIX")
     assert insider_sources.insider_value_usd("CAP.PA", {"currency": "EUR"}) == (pytest.approx(110.0), "AMF")
     assert insider_sources.insider_value_usd("INGA.AS", {"currency": "EUR"}) == (pytest.approx(55.0), "Yahoo")  # fallback
@@ -230,6 +276,7 @@ def test_a_crashing_source_counts_as_no_data(monkeypatch):
     def broken(names):
         raise RuntimeError("format changed")
 
+    monkeypatch.setattr(insider_sources, "tracefour_buy_value_eur", broken)
     monkeypatch.setattr(insider_sources, "bafin_buy_value_eur", broken)
     assert insider_sources.insider_value_usd("SAP.DE", {"currency": "EUR"}) == (None, None)
 

@@ -339,7 +339,7 @@ def test_help_explains_brodel_v3_with_the_real_weights():
     rows = app.build_v3_help_rows()
     assert [int(row["Punkte"]) for row in rows] == list(BRODEL_V3_WEIGHTS.values())
     source = (Path(__file__).parent.parent / "app.py").read_text(encoding="utf-8")
-    assert "Rang-Score: wie er rechnet" in source
+    assert '"Rang-Score", "Punkte-Score", "Spieldepots"' in source  # help tabs
     assert "Trades: drei Spieldepots im Vergleich" in source
 
 
@@ -396,8 +396,10 @@ def test_help_explains_brodel_v2_and_matches_price_volume_code():
     from tests.test_truth_machine_app import _rendered_help_text
 
     text = _rendered_help_text("render_help_tab")
-    for term in ("Punkte-Score", "Punkte-Score alt", "Aktienrückkauf", "Anteil", "Die 11 Bausteine"):
+    for term in ("Punkte-Score", "Aktienrückkauf", "Anteil", "Die 11 Bausteine", "zwischen −30 und 90"):
         assert term in text, term
+    for removed in ("Punkte-Score alt", "alt: max", "Max alt", "was sich geändert hat", "Makro-Overlay", "Strategie-Setups"):
+        assert removed not in text, removed  # only one Punkte-Score, nothing that is no longer shown
     # Preis/Volumen help now matches the code: +5 over MA20, +6 over MA50, -3 at a 7 % drop
     assert "20-Tage-Linie: **+5**" in text
     assert "50-Tage-Linie: **+6**" in text
