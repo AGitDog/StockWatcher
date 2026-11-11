@@ -310,3 +310,35 @@ def test_conversion_to_usd():
     assert insider_sources.to_usd(0.0, "EUR") == 0.0
     assert insider_sources.to_usd(None, "EUR") is None
     assert insider_sources.to_usd(10.0, "XXX") is None  # unknown currency: no value instead of a wrong one
+
+
+# ── issuer seat beats listing place ─────────────────────────────────────────
+
+@pytest.mark.parametrize("info, dutch", [
+    ({"country": "Netherlands", "longName": "Airbus SE"}, True),
+    ({"country": "Italy", "longName": "Ferrari N.V."}, True),         # Dutch legal form, Italian seat in Yahoo
+    ({"country": "Switzerland", "longName": "STMicroelectronics N.V."}, True),
+    ({"country": "Germany", "longName": "Redcare Pharmacy NV"}, True),
+    ({"country": "France", "longName": "TotalEnergies SE"}, False),
+    ({"country": "Germany", "longName": "Nvidia NVENT AG"}, False),
+])
+def test_dutch_issuers_are_recognised(info, dutch):
+    assert insider_sources.is_dutch_issuer(info) is dutch
+
+
+def test_dutch_company_in_paris_uses_the_afm(monkeypatch):
+    monkeypatch.setattr(insider_sources, "afm_buy_value_eur", lambda names: 200.0)
+    monkeypatch.setattr(insider_sources, "amf_buy_value_eur", lambda names: 999.0)
+    airbus = {"country": "Netherlands", "longName": "Airbus SE", "currency": "EUR"}
+    assert insider_sources.insider_value_usd("AIR.PA", airbus) == (pytest.approx(220.0), "AFM")
+    monkeypatch.setattr(insider_sources, "afm_buy_value_eur", lambda names: None)  # AFM down: Paris source instead
+    assert insider_sources.insider_value_usd("AIR.PA", airbus) == (pytest.approx(1098.9), "AMF")
+
+
+def test_frankfurt_listings(monkeypatch):
+    monkeypatch.setattr(insider_sources, "tracefour_buy_value_eur", lambda names: 100.0)
+    monkeypatch.setattr(insider_sources, "_yahoo_value", lambda symbol, known: 5000.0)
+    german = {"country": "Germany", "longName": "Some AG", "currency": "EUR"}
+    assert insider_sources.insider_value_usd("XYZ.F", german) == (pytest.approx(110.0), "Tracefour")
+    palantir = {"country": "United States", "longName": "Palantir Technologies Inc.", "currency": "EUR"}
+    assert insider_sources.insider_value_usd("PTX.F", palantir) == (5000.0, "Yahoo")  # SEC filings, already USD

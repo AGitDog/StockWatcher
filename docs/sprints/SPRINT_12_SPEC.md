@@ -94,3 +94,10 @@ Freigabe im Chat: „Bitte auch die gesamte Hilfe anpassen wegen den Punkten alt
 - **Datenquellen:** Tabelle mit Quelle, Zweck und Aktualität, darunter alle Insider-Quellen und Tracefour mit Lizenzhinweis.
 - **Startseite:** Aktienzahl aus dem Snapshot statt fest „1.375“. Der Nachtlauf startet nach US-Börsenschluss, nicht nach jeder Region. Punkte-Score „−30 bis 90“ ohne „ältere Methode“. „Zwei davon verkaufen per Stop-Loss“. Das beste Spieldepot nennt seinen Namen. Rang-Scores auf eine Nachkommastelle.
 - **Tests:** neu `tests/test_help_page.py`, angepasst `test_brodel_v2.py` und `test_truth_machine_app.py`. 413 grün.
+
+## 11. Nachtrag 11.11.2026: Sitz der Firma statt Börsenplatz
+Freigabe im Chat: „Ja bitte“ (PTX.F beheben, niederländische Firmen an der Pariser Börse über die AFM).
+- **Befund:** Airbus, Stellantis, STMicro und Euronext (Paris), Qiagen und Redcare (Xetra) und Ferrari (Mailand) sind niederländische Gesellschaften und melden bei der AFM, nicht bei AMF oder BaFin. PTX.F ist Palantir, eine US-Firma mit Frankfurter Zweitnotierung.
+- **Regeln in `insider_value_usd`:** US-Firma an einer ausländischen Börse → Yahoo (zeigt die SEC-Meldungen, Werte in USD). Niederländische Gesellschaft (Sitz Niederlande oder Rechtsform N.V.) → AFM, bei Ausfall die Quelle des Börsenplatzes. Frankfurt und die deutschen Regionalbörsen gelten wie Xetra.
+- **Prüfung Frankreich:** 13 von 39 Aktien mit Käufen in 90 Tagen. 17 haben nur Meldungen ohne echte Käufe (Mitarbeiterfonds, Gratisaktien, Schenkungen, Verkäufe), 9 keine AMF-Meldung. Der Namensabgleich fand jede Firma mit Meldungen.
+- **Tests:** Erkennung niederländischer Firmen, Airbus über AFM mit Ersatz AMF, Frankfurt-Notierungen (deutsch und US). 421 grün.

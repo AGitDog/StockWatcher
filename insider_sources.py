@@ -641,6 +641,21 @@ def market_of(symbol: str) -> str:
     return "US" if suffix in ("A", "B") else suffix  # BRK.B is a US share class
 
 
+GERMAN_EXCHANGES = {"DE", "F", "DU", "MU", "SG", "BE", "HM", "HA"}  # Xetra, Frankfurt and the regional exchanges
+_DUTCH_LEGAL_FORM = re.compile(r"\bN\.\s?V\.?(?=\s|$)|\bNV$")
+
+
+def issuer_country(info: dict) -> str:
+    return str((info or {}).get("country") or "").strip()
+
+
+def is_dutch_issuer(info: dict) -> bool:
+    """Seat in the Netherlands, or a Dutch legal form (Ferrari N.V. is listed with country Italy)."""
+    if issuer_country(info) == "Netherlands":
+        return True
+    return any(_DUTCH_LEGAL_FORM.search(str(name or "").strip()) for name in ((info or {}).get("longName"), (info or {}).get("shortName")))
+
+
 def insider_value_usd(symbol: str, info: dict, yahoo_value: float | None = None) -> tuple[float | None, str | None]:
     """Insider purchases of the last 90 days in USD and the source used, for non-US stocks.
 
@@ -651,7 +666,19 @@ def insider_value_usd(symbol: str, info: dict, yahoo_value: float | None = None)
     names = [info.get("longName"), info.get("shortName")]
     quote_currency = str(info.get("currency") or "")
     main_currency = MINOR_UNITS.get(quote_currency, (quote_currency, 1))[0] or None
-    if market == "DE":
+    if issuer_country(info) == "United States":
+        # a US company with a second listing (PTX.F = Palantir): Yahoo shows its SEC filings in USD
+        value = _yahoo_value(symbol, yahoo_value)
+        return (float(value), "Yahoo") if value is not None else (None, None)
+    if market != "AS" and is_dutch_issuer(info):
+        # Dutch companies report to the AFM wherever they are listed (Airbus, Stellantis, Qiagen ...)
+        try:
+            value = afm_buy_value_eur(names)
+        except Exception:
+            value = None
+        if value is not None:
+            return to_usd(value, "EUR"), "AFM"
+    if market in GERMAN_EXCHANGES:
         try:
             value, name = germany_buy_value_eur(names)
         except Exception:
