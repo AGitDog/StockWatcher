@@ -101,3 +101,11 @@ Freigabe im Chat: „Ja bitte“ (PTX.F beheben, niederländische Firmen an der 
 - **Regeln in `insider_value_usd`:** US-Firma an einer ausländischen Börse → Yahoo (zeigt die SEC-Meldungen, Werte in USD). Niederländische Gesellschaft (Sitz Niederlande oder Rechtsform N.V.) → AFM, bei Ausfall die Quelle des Börsenplatzes. Frankfurt und die deutschen Regionalbörsen gelten wie Xetra.
 - **Prüfung Frankreich:** 13 von 39 Aktien mit Käufen in 90 Tagen. 17 haben nur Meldungen ohne echte Käufe (Mitarbeiterfonds, Gratisaktien, Schenkungen, Verkäufe), 9 keine AMF-Meldung. Der Namensabgleich fand jede Firma mit Meldungen.
 - **Tests:** Erkennung niederländischer Firmen, Airbus über AFM mit Ersatz AMF, Frankfurt-Notierungen (deutsch und US). 421 grün.
+
+## 12. Nachtrag 11.11.2026: Reiter „Unternehmenswerte“ aufgeräumt
+Freigabe im Chat: „Bitte das Ganze etwas besser formatieren. Mir reichen auch die Tabellen, es müssen keine Balken- und Verlaufsdiagramme da sein. Bitte keine Daten hinzufügen.“
+- **Vier Abschnitte:** Profil (eine Zeile, Beschreibung aufklappbar), Kurs und Bewertung, Umsatz/Gewinn/Kosten, Dividende. Jeder Abschnitt hat eine Kennzahlen-Tabelle (Kennzahl, Wert, Bedeutung) und darunter den Verlauf mit den Jahren als Spalten, älteste links, wie im Geschäftsbericht.
+- **Diagramme entfernt:** Bruttomarge, F&E/SG&A, KGV-Verlauf und Dividenden-Balken. Die Werte stehen weiter in den Tabellen.
+- **Zusammengelegt:** Bruttogewinn-Tabelle und Kostentabelle sind jetzt eine Tabelle je Geschäftsjahr. Zeilen ohne einen einzigen Wert entfallen, z. B. Bruttogewinn bei Banken.
+- **Einheitliche Zahlen:** deutsches Format (1.234,56), „Mrd.“/„Mio.“, fehlende Werte als „–“. Es werden nur Felder gezeigt, die schon vorher geladen wurden.
+- **Tests:** `tests/test_company_values.py` (Zahlenformat, Profilzeile, Jahres-Tabellen, keine Diagramme, Darstellung). 426 grün. Mit echten Daten geprüft: SAP, Deutsche Bank, HSBC (Pence).

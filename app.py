@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 import os
 from pathlib import Path
+from typing import Callable
 
 import pandas as pd
 import streamlit as st
@@ -634,296 +635,195 @@ def render_watchlist_signal_monitor(mapping_text: str):
                     st.info("Noch keine Verlaufsdaten vorhanden.")
 
             with detail_tab_fundamentals:
-                st.markdown("#### 🏢 Unternehmensprofil")
-                st.info(ext.get("summary_de", "Keine Zusammenfassung verfuegbar."))
+                render_company_values(ext)
 
-                p_cols = st.columns(4)
-                p_cols[0].metric("Sektor", ext.get("sector_de", "-"))
-                p_cols[1].metric("Branche", ext.get("industry_de", "-"))
-                p_cols[2].metric("Hauptsitz", f"{ext.get('city', '-')}, {ext.get('country', '-')}")
-                emp = ext.get("employees")
-                p_cols[3].metric("Mitarbeiter", f"{emp:,}" if emp else "-")
 
-                st.markdown("#### 📈 Zukünftig geschätzter Wert & Analysten-Konsens")
-                v_cols = st.columns(4)
-                curr_price = ext.get("current_price")
-                target_mean = ext.get("target_mean_price")
-                target_med = ext.get("target_median_price")
-                upside = ext.get("upside_pct")
-                curr_str = ext.get("currency", "EUR")  # quote currency: price, target, dividend per share
-                fin_str = ext.get("financial_currency") or curr_str  # currency of the annual report
-                cap_str = ext.get("main_currency") or curr_str  # market capitalisation (pounds, not pence)
-                if curr_str in ("GBp", "GBX"):
-                    st.caption("Kurs, Kursziel und Dividende je Aktie in Pence (GBp, 100 Pence = 1 Pfund).")
-                if fin_str != (ext.get("main_currency") or curr_str):
-                    st.caption(f"Die Zahlen aus dem Geschäftsbericht sind in {fin_str}, der Kurs in {curr_str}.")
+def _de_number(value, digits: int = 2) -> str:
+    """German number format: 1.234,56."""
+    text = f"{value:,.{digits}f}"
+    return text.replace(",", "X").replace(".", ",").replace("X", ".")
 
-                v_cols[0].metric(
-                    "Aktueller Kurs",
-                    f"{curr_price:.2f} {curr_str}" if curr_price else "n/a"
-                )
-                v_cols[1].metric(
-                    "Kursziel (Mittelwert)",
-                    f"{target_mean:.2f} {curr_str}" if target_mean else "n/a",
-                    help="Durchschnittliches Kursziel der Analysten"
-                )
-                v_cols[2].metric(
-                    "Abstand zum Kursziel",
-                    f"{upside:+.1f} %" if upside is not None else "n/a",
-                    help="Prozentualer Abstand zum mittleren Analysten-Kursziel; negativ heißt, der Kurs liegt schon darüber"
-                )
-                imp_mc = ext.get("implied_market_cap")
-                if imp_mc:
-                    imp_str = f"{imp_mc / 1e9:.2f} Mrd. {cap_str}" if imp_mc >= 1e9 else f"{imp_mc / 1e6:.1f} Mio. {cap_str}"
-                else:
-                    imp_str = "n/a"
-                v_cols[3].metric(
-                    "Implizite Marktkapitalisierung",
-                    imp_str,
-                    help="Erwartete Marktkapitalisierung bei Erreichen des mittleren Analystenkursziels"
-                )
 
-                st.markdown("#### 📊 Bruttogewinn & Bruttomarge")
-                m_cols = st.columns(3)
-                ttm_margin = ext.get("gross_margin_ttm")
-                gm_hist = ext.get("gross_margin_history", [])
-                latest_gp = gm_hist[-1]["Bruttogewinn"] if gm_hist else None
-                latest_rev = gm_hist[-1]["Umsatz"] if gm_hist else None
+def fmt_amount(value, unit: str = "") -> str:
+    """Large amounts as Mrd./Mio., a dash when missing."""
+    if value is None or value != value:
+        return "–"
+    suffix = f" {unit}" if unit else ""
+    if abs(value) >= 1e9:
+        return f"{_de_number(value / 1e9)} Mrd.{suffix}"
+    if abs(value) >= 1e6:
+        return f"{_de_number(value / 1e6, 1)} Mio.{suffix}"
+    return f"{_de_number(value, 0)}{suffix}"
 
-                m_cols[0].metric(
-                    "Bruttomarge (TTM)",
-                    f"{ttm_margin:.1f} %" if ttm_margin is not None else "n/a",
-                    help="Bruttomarge der letzten 12 Monate (Gross Margin TTM)"
-                )
-                if latest_gp is not None:
-                    gp_str = f"{latest_gp / 1e9:.2f} Mrd. {fin_str}" if abs(latest_gp) >= 1e9 else f"{latest_gp / 1e6:.1f} Mio. {fin_str}"
-                else:
-                    gp_str = "n/a"
-                m_cols[1].metric(
-                    f"Bruttogewinn ({gm_hist[-1]['Jahr']})" if gm_hist else "Letzter Bruttogewinn",
-                    gp_str,
-                    help="Gross Profit des letzten vollständigen Geschäftsjahres"
-                )
-                if latest_rev is not None:
-                    rev_str = f"{latest_rev / 1e9:.2f} Mrd. {fin_str}" if abs(latest_rev) >= 1e9 else f"{latest_rev / 1e6:.1f} Mio. {fin_str}"
-                else:
-                    rev_str = "n/a"
-                m_cols[2].metric(
-                    f"Umsatz ({gm_hist[-1]['Jahr']})" if gm_hist else "Letzter Jahresumsatz",
-                    rev_str,
-                    help="Total Revenue des letzten vollständigen Geschäftsjahres"
-                )
 
-                if gm_hist:
-                    st.caption("Historischer Verlauf von Bruttogewinn und Bruttomarge (geprüfte Jahresabschlüsse):")
-                    gm_display_rows = []
-                    for row in gm_hist:
-                        rev_fmt = f"{row['Umsatz'] / 1e9:.2f} Mrd." if row['Umsatz'] and abs(row['Umsatz']) >= 1e9 else (f"{row['Umsatz'] / 1e6:.1f} Mio." if row['Umsatz'] else "-")
-                        gp_fmt = f"{row['Bruttogewinn'] / 1e9:.2f} Mrd." if row['Bruttogewinn'] and abs(row['Bruttogewinn']) >= 1e9 else (f"{row['Bruttogewinn'] / 1e6:.1f} Mio." if row['Bruttogewinn'] else "-")
-                        gm_display_rows.append({
-                            "Jahr": str(row["Jahr"]),
-                            f"Umsatz ({fin_str})": rev_fmt,
-                            f"Bruttogewinn ({fin_str})": gp_fmt,
-                            "Bruttomarge (%)": f"{row['Bruttomarge']:.1f} %" if row['Bruttomarge'] is not None else "n/a",
-                            "_margin_raw": row["Bruttomarge"],
-                        })
-                    gm_df = pd.DataFrame(gm_display_rows)
-                    gmc1, gmc2 = st.columns([1, 1])
-                    with gmc1:
-                        st.dataframe(gm_df[["Jahr", f"Umsatz ({fin_str})", f"Bruttogewinn ({fin_str})", "Bruttomarge (%)"]], use_container_width=True, hide_index=True)
-                    with gmc2:
-                        chart_df = gm_df.dropna(subset=["_margin_raw"]).set_index("Jahr")[["_margin_raw"]]
-                        chart_df.columns = ["Bruttomarge (%)"]
-                        if not chart_df.empty:
-                            st.bar_chart(chart_df)
-                else:
-                    st.info("Keine historischen Bruttogewinn-Daten ausgewiesen (typisch für Finanzinstitute/Banken oder ETFs).")
+def fmt_pct(value, digits: int = 1, signed: bool = False) -> str:
+    if value is None or value != value:
+        return "–"
+    text = _de_number(value, digits)
+    return f"+{text} %" if signed and value > 0 else f"{text} %"
 
-                st.markdown("#### ⚙️ Operative Kosten & Aufwand (OpEx)")
-                op_cols = st.columns(5)
-                ttm_op_margin = ext.get("operating_margin_ttm")
-                oc_hist = ext.get("operating_cost_history", [])
-                latest_opex = oc_hist[-1]["OpEx"] if oc_hist else None
-                latest_fe = oc_hist[-1]["FE"] if oc_hist else None
-                latest_sga = oc_hist[-1]["SGA"] if oc_hist else None
-                latest_ebit = (oc_hist[-1].get("Operativer_Gewinn") if oc_hist[-1].get("Operativer_Gewinn") is not None else oc_hist[-1].get("EBIT")) if oc_hist else None
-                latest_op_margin = oc_hist[-1].get("Operative_Marge") if oc_hist else None
-                latest_opex_quote = oc_hist[-1].get("OpEx_Quote") if oc_hist else None
-                latest_fe_quote = oc_hist[-1]["FE_Quote"] if oc_hist else None
-                latest_sga_quote = oc_hist[-1]["SGA_Quote"] if oc_hist else None
-                latest_year = oc_hist[-1]["Jahr"] if oc_hist else None
 
-                op_cols[0].metric(
-                    "Operative Marge (TTM)",
-                    f"{ttm_op_margin:.1f} %" if ttm_op_margin is not None else "n/a",
-                    help="Operative Marge (Operating Margin) der letzten 12 Monate"
-                )
+def fmt_plain(value, digits: int = 2, unit: str = "") -> str:
+    if value is None or value != value:
+        return "–"
+    return f"{_de_number(value, digits)} {unit}".strip()
 
-                if latest_ebit is not None:
-                    ebit_str = f"{latest_ebit / 1e9:.2f} Mrd. {fin_str}" if abs(latest_ebit) >= 1e9 else f"{latest_ebit / 1e6:.1f} Mio. {fin_str}"
-                else:
-                    ebit_str = "n/a"
-                op_cols[1].metric(
-                    f"EBIT / Op. Gewinn ({latest_year})" if latest_year else "EBIT / Op. Gewinn",
-                    ebit_str,
-                    delta=f"{latest_op_margin:+.1f} % Marge" if latest_op_margin is not None else None,
-                    delta_color="normal",
-                    help="Operativer Gewinn (Earnings Before Interest and Taxes / Operating Income) des letzten vollständigen Geschäftsjahres"
-                )
 
-                if latest_opex is not None:
-                    opex_str = f"{latest_opex / 1e9:.2f} Mrd. {fin_str}" if abs(latest_opex) >= 1e9 else f"{latest_opex / 1e6:.1f} Mio. {fin_str}"
-                else:
-                    opex_str = "n/a"
-                op_cols[2].metric(
-                    f"OpEx gesamt ({latest_year})" if latest_year else "Letzte OpEx gesamt",
-                    opex_str,
-                    delta=f"{latest_opex_quote:.1f} % v. Umsatz" if latest_opex_quote is not None else None,
-                    delta_color="off",
-                    help="Gesamte operative Betriebskosten (Operating Expenses) des letzten Geschäftsjahres"
-                )
+def _by_year_table(rows: list[dict], lines: list[tuple[str, Callable[[dict], str]]]) -> pd.DataFrame | None:
+    """Years as columns, one line per figure, like an annual report. Lines without any value are left out."""
+    if not rows:
+        return None
+    rows = sorted(rows, key=lambda row: row["Jahr"])
+    table = []
+    for label, cell in lines:
+        values = {str(row["Jahr"]): cell(row) for row in rows}
+        if any(value != "–" for value in values.values()):
+            table.append({"Kennzahl": label, **values})
+    return pd.DataFrame(table) if table else None
 
-                if latest_fe is not None:
-                    fe_str = f"{latest_fe / 1e9:.2f} Mrd. {fin_str}" if abs(latest_fe) >= 1e9 else f"{latest_fe / 1e6:.1f} Mio. {fin_str}"
-                else:
-                    fe_str = "n/a"
-                op_cols[3].metric(
-                    f"F&E / R&D ({latest_year})" if latest_year else "Forschung & Entwicklung",
-                    fe_str,
-                    delta=f"{latest_fe_quote:.1f} % v. Umsatz" if latest_fe_quote is not None else None,
-                    delta_color="off",
-                    help="Aufwendungen für Forschung und Entwicklung (Research & Development)"
-                )
 
-                if latest_sga is not None:
-                    sga_str = f"{latest_sga / 1e9:.2f} Mrd. {fin_str}" if abs(latest_sga) >= 1e9 else f"{latest_sga / 1e6:.1f} Mio. {fin_str}"
-                else:
-                    sga_str = "n/a"
-                op_cols[4].metric(
-                    f"SG&A ({latest_year})" if latest_year else "Vertrieb & Verwaltung",
-                    sga_str,
-                    delta=f"{latest_sga_quote:.1f} % v. Umsatz" if latest_sga_quote is not None else None,
-                    delta_color="off",
-                    help="Aufwendungen für Vertrieb, Verwaltung und Allgemeines (Selling, General & Administrative)"
-                )
+def build_company_profile_line(ext: dict) -> str:
+    employees = ext.get("employees")
+    parts = [
+        ("Sektor", ext.get("sector_de")),
+        ("Branche", ext.get("industry_de")),
+        ("Sitz", ", ".join(str(part) for part in (ext.get("city"), ext.get("country")) if part)),
+        ("Mitarbeiter", _de_number(employees, 0) if employees else None),
+    ]
+    return " · ".join(f"**{label}:** {value}" for label, value in parts if value and value != "-")
 
-                if oc_hist and any(row.get("OpEx") is not None or row.get("FE") is not None or row.get("SGA") is not None for row in oc_hist):
-                    st.caption("Historischer Verlauf der operativen Kosten & Aufwandsaufschlüsselung:")
-                    oc_display_rows = []
-                    chart_rows = []
-                    for row in oc_hist:
-                        rev_f = f"{row['Umsatz'] / 1e9:.2f} Mrd." if row['Umsatz'] and abs(row['Umsatz']) >= 1e9 else (f"{row['Umsatz'] / 1e6:.1f} Mio." if row['Umsatz'] else "-")
-                        eb_val = row.get("Operativer_Gewinn") if row.get("Operativer_Gewinn") is not None else row.get("EBIT")
-                        ebit_f = f"{eb_val / 1e9:.2f} Mrd." if eb_val and abs(eb_val) >= 1e9 else (f"{eb_val / 1e6:.1f} Mio." if eb_val else "-")
-                        opex_f = f"{row['OpEx'] / 1e9:.2f} Mrd." if row['OpEx'] and abs(row['OpEx']) >= 1e9 else (f"{row['OpEx'] / 1e6:.1f} Mio." if row['OpEx'] else "-")
-                        fe_f = f"{row['FE'] / 1e9:.2f} Mrd." if row['FE'] and abs(row['FE']) >= 1e9 else (f"{row['FE'] / 1e6:.1f} Mio." if row['FE'] else "-")
-                        sga_f = f"{row['SGA'] / 1e9:.2f} Mrd." if row['SGA'] and abs(row['SGA']) >= 1e9 else (f"{row['SGA'] / 1e6:.1f} Mio." if row['SGA'] else "-")
 
-                        oc_display_rows.append({
-                            "Jahr": str(row["Jahr"]),
-                            f"Umsatz ({fin_str})": rev_f,
-                            f"EBIT ({fin_str})": ebit_f,
-                            f"OpEx ({fin_str})": opex_f,
-                            f"F&E ({fin_str})": fe_f,
-                            f"SG&A ({fin_str})": sga_f,
-                            "Op. Marge (%)": f"{row['Operative_Marge']:.1f} %" if row.get("Operative_Marge") is not None else "n/a",
-                            "OpEx-Quote (%)": f"{row['OpEx_Quote']:.1f} %" if row.get("OpEx_Quote") is not None else "n/a",
-                        })
+def build_valuation_rows(ext: dict) -> list[dict]:
+    currency = ext.get("currency", "EUR")
+    cap_currency = ext.get("main_currency") or currency
+    return [
+        {"Kennzahl": "Aktueller Kurs", "Wert": fmt_plain(ext.get("current_price"), 2, currency), "Bedeutung": ""},
+        {"Kennzahl": "Kursziel der Analysten", "Wert": fmt_plain(ext.get("target_mean_price"), 2, currency), "Bedeutung": "Mittelwert aller Kursziele"},
+        {"Kennzahl": "Abstand zum Kursziel", "Wert": fmt_pct(ext.get("upside_pct"), 1, signed=True), "Bedeutung": "negativ: Der Kurs liegt schon darüber"},
+        {"Kennzahl": "Börsenwert beim Kursziel", "Wert": fmt_amount(ext.get("implied_market_cap"), cap_currency), "Bedeutung": "Marktkapitalisierung, wenn das Kursziel erreicht wird"},
+        {"Kennzahl": "KGV letzte 12 Monate", "Wert": fmt_plain(ext.get("trailing_pe"), 1), "Bedeutung": "Kurs geteilt durch den Gewinn je Aktie"},
+        {"Kennzahl": "KGV erwartet", "Wert": fmt_plain(ext.get("forward_pe"), 1), "Bedeutung": "mit dem von Analysten geschätzten Gewinn"},
+    ]
 
-                        fe_val_m = (row["FE"] / 1e6) if row.get("FE") is not None else 0.0
-                        sga_val_m = (row["SGA"] / 1e6) if row.get("SGA") is not None else 0.0
-                        if fe_val_m > 0 or sga_val_m > 0:
-                            chart_rows.append({
-                                "Jahr": str(row["Jahr"]),
-                                f"F&E (Mio. {fin_str})": fe_val_m,
-                                f"SG&A (Mio. {fin_str})": sga_val_m,
-                            })
 
-                    oc_df = pd.DataFrame(oc_display_rows)
-                    occ1, occ2 = st.columns([1, 1])
-                    with occ1:
-                        st.dataframe(oc_df, use_container_width=True, hide_index=True)
-                    with occ2:
-                        if chart_rows:
-                            chart_df = pd.DataFrame(chart_rows).set_index("Jahr")
-                            st.caption(f"Aufwandssplit F&E vs. SG&A (in Mio. {fin_str}):")
-                            st.bar_chart(chart_df)
-                        else:
-                            st.info("Keine detaillierte Aufteilung in F&E / SG&A verfügbar.")
-                else:
-                    st.info("Keine klassischen operativen Kosten (OpEx / F&E) im Geschäftsbericht ausgewiesen (typisch für Banken, Versicherungen oder Finanzdienstleister).")
+def build_pe_history_table(ext: dict) -> pd.DataFrame | None:
+    currency = ext.get("currency", "EUR")
+    return _by_year_table(ext.get("pe_trend") or [], [
+        (f"Kurs zum Jahresende ({currency})", lambda row: fmt_plain(row.get("Kurs"), 2)),
+        ("KGV", lambda row: fmt_plain(row.get("KGV"), 1)),
+    ])
 
-                st.markdown("#### 📊 KGV-Analyse & Bewertung")
-                k_cols = st.columns(2)
-                curr_pe = ext.get("trailing_pe")
-                fwd_pe = ext.get("forward_pe")
-                k_cols[0].metric(
-                    "Aktuelles KGV (Trailing)",
-                    f"{curr_pe:.1f}" if curr_pe else "n/a",
-                    help="Kurs-Gewinn-Verhaeltnis bezogen auf die letzten 12 Monate",
-                )
-                k_cols[1].metric(
-                    "KGV (Forward)",
-                    f"{fwd_pe:.1f}" if fwd_pe else "n/a",
-                    help="Erwartetes KGV auf Basis von Analystenschaetzungen",
-                )
 
-                pe_trend = ext.get("pe_trend", [])
-                if pe_trend:
-                    st.caption("Historischer KGV-Verlauf der letzten Geschäftsjahre:")
-                    pe_df = pd.DataFrame(pe_trend)
-                    disp_cols = [c for c in ["Jahr", "Kurs", "KGV"] if c in pe_df.columns]
-                    pe_c1, pe_c2 = st.columns([2, 1])
-                    with pe_c1:
-                        chart_pe = pe_df.dropna(subset=["KGV"]).set_index("Jahr")[["KGV"]]
-                        if not chart_pe.empty:
-                            st.line_chart(chart_pe)
-                    with pe_c2:
-                        st.dataframe(pe_df[disp_cols] if disp_cols else pe_df, use_container_width=True, hide_index=True)
-                else:
-                    st.info("Keine historischen KGV-Jahresabschluesse fuer diesen Titel verfuegbar.")
+def build_margin_rows(ext: dict) -> list[dict]:
+    return [
+        {"Kennzahl": "Bruttomarge", "Wert": fmt_pct(ext.get("gross_margin_ttm")), "Bedeutung": "letzte 12 Monate: Umsatz minus Herstellkosten, im Verhältnis zum Umsatz"},
+        {"Kennzahl": "Operative Marge", "Wert": fmt_pct(ext.get("operating_margin_ttm")), "Bedeutung": "letzte 12 Monate: Gewinn aus dem Geschäft vor Zinsen und Steuern, im Verhältnis zum Umsatz"},
+    ]
 
-                st.markdown("#### 💰 Dividenden-Analyse & Historie")
-                d_cols = st.columns(3)
-                d_yield = ext.get("dividend_yield_pct")
-                d_rate = ext.get("dividend_rate")
-                d_streak = ext.get("dividend_streak_years", 0)
 
-                d_cols[0].metric(
-                    "Dividendenrendite",
-                    f"{d_yield:.2f} %" if d_yield is not None else "k. A.",
-                    help="Erwartete Jahresdividende geteilt durch den aktuellen Kurs",
-                )
-                d_cols[1].metric(
-                    "Dividende je Aktie (Jahr)",
-                    f"{d_rate:.2f} {curr_str}" if d_rate is not None else "k. A.",
-                    help="Erwartete Jahresdividende je Aktie",
-                )
-                if d_streak > 0:
-                    d_cols[2].metric(
-                        "Dividenden-Steigerung",
-                        f"{d_streak} Jahre in Folge 🏆",
-                        help="Anzahl aufeinanderfolgender Jahre mit gesteigerter Jahresdividende.",
-                    )
-                else:
-                    d_cols[2].metric(
-                        "Dividenden-Steigerung",
-                        "0 Jahre",
-                        help="Keine mehrjaehrige Steigerungsserie vorhanden.",
-                    )
+def build_income_history_table(ext: dict) -> pd.DataFrame | None:
+    """Revenue, profit and costs per fiscal year in one table (from the gross-margin and cost histories)."""
+    merged: dict[int, dict] = {}
+    for row in (ext.get("gross_margin_history") or []) + (ext.get("operating_cost_history") or []):
+        target = merged.setdefault(row["Jahr"], {"Jahr": row["Jahr"]})
+        for key, value in row.items():
+            if value is not None and target.get(key) is None:
+                target[key] = value
 
-                div_hist = ext.get("dividend_history", [])
-                if div_hist:
-                    st.caption(f"Dividenden-Verlauf der letzten 15 Jahre in {curr_str} je Aktie. Das laufende Jahr ist noch nicht vollständig, deshalb ohne Wachstum:")
-                    div_df = pd.DataFrame(div_hist)
-                    div_c1, div_c2 = st.columns([2, 1])
-                    with div_c1:
-                        div_chart = div_df.set_index("Jahr")[["Dividende"]]
-                        st.bar_chart(div_chart)
-                    with div_c2:
-                        st.dataframe(div_df, use_container_width=True, hide_index=True)
-                else:
-                    st.info("Keine Dividenden-Historie fuer diesen Titel vorhanden.")
+    def operating_profit(row: dict):
+        return row.get("Operativer_Gewinn") if row.get("Operativer_Gewinn") is not None else row.get("EBIT")
+
+    return _by_year_table(list(merged.values()), [
+        ("Umsatz", lambda row: fmt_amount(row.get("Umsatz"))),
+        ("Bruttogewinn", lambda row: fmt_amount(row.get("Bruttogewinn"))),
+        ("Bruttomarge", lambda row: fmt_pct(row.get("Bruttomarge"))),
+        ("Operativer Gewinn (EBIT)", lambda row: fmt_amount(operating_profit(row))),
+        ("Operative Marge", lambda row: fmt_pct(row.get("Operative_Marge"))),
+        ("Betriebskosten (OpEx)", lambda row: fmt_amount(row.get("OpEx"))),
+        ("… in % vom Umsatz", lambda row: fmt_pct(row.get("OpEx_Quote"))),
+        ("Forschung & Entwicklung", lambda row: fmt_amount(row.get("FE"))),
+        ("… in % vom Umsatz ", lambda row: fmt_pct(row.get("FE_Quote"))),
+        ("Vertrieb & Verwaltung (SG&A)", lambda row: fmt_amount(row.get("SGA"))),
+        ("… in % vom Umsatz  ", lambda row: fmt_pct(row.get("SGA_Quote"))),
+    ])
+
+
+def build_dividend_rows(ext: dict) -> list[dict]:
+    currency = ext.get("currency", "EUR")
+    streak = ext.get("dividend_streak_years") or 0
+    return [
+        {"Kennzahl": "Dividendenrendite", "Wert": fmt_pct(ext.get("dividend_yield_pct"), 2), "Bedeutung": "erwartete Jahresdividende geteilt durch den Kurs"},
+        {"Kennzahl": "Dividende je Aktie", "Wert": fmt_plain(ext.get("dividend_rate"), 2, currency), "Bedeutung": "erwartete Jahresdividende"},
+        {"Kennzahl": "Steigerungen in Folge", "Wert": f"{streak} Jahre", "Bedeutung": "Jahre nacheinander mit höherer Dividende"},
+    ]
+
+
+def build_dividend_history_table(ext: dict) -> pd.DataFrame | None:
+    currency = ext.get("currency", "EUR")
+    return _by_year_table(ext.get("dividend_history") or [], [
+        (f"Dividende je Aktie ({currency})", lambda row: fmt_plain(row.get("Dividende"), 2)),
+        ("Rendite zum Jahresende", lambda row: fmt_pct(row.get("Rendite (%)"), 2)),
+        ("Wachstum zum Vorjahr", lambda row: fmt_pct(row.get("Wachstum (%)"), 1, signed=True)),
+    ])
+
+
+def _key_figure_table(rows: list[dict]) -> None:
+    st.dataframe(
+        pd.DataFrame(rows),
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Kennzahl": st.column_config.TextColumn("Kennzahl", width="medium"),
+            "Wert": st.column_config.TextColumn("Wert", width="small"),
+            "Bedeutung": st.column_config.TextColumn("Bedeutung", width="large"),
+        },
+    )
+
+
+def _year_table(table: pd.DataFrame | None, empty_text: str) -> None:
+    if table is None:
+        st.caption(empty_text)
+        return
+    st.dataframe(table, use_container_width=True, hide_index=True,
+                 column_config={"Kennzahl": st.column_config.TextColumn("Kennzahl", width="medium")})
+
+
+def render_company_values(ext: dict) -> None:
+    """Company figures as plain tables: profile, valuation, results per year, dividend."""
+    currency = ext.get("currency", "EUR")
+    fin_currency = ext.get("financial_currency") or currency
+
+    st.markdown("#### 🏢 Profil")
+    profile = build_company_profile_line(ext)
+    if profile:
+        st.markdown(profile)
+    summary = ext.get("summary_de")
+    if summary:
+        with st.expander("Was die Firma macht"):
+            st.write(summary)
+
+    st.markdown("#### 💶 Kurs und Bewertung")
+    if currency in ("GBp", "GBX"):
+        st.caption("Kurs, Kursziel und Dividende je Aktie in Pence (100 Pence = 1 Pfund).")
+    _key_figure_table(build_valuation_rows(ext))
+    st.markdown("**KGV je Geschäftsjahr**")
+    _year_table(build_pe_history_table(ext), "Keine KGV-Werte aus früheren Geschäftsjahren vorhanden.")
+
+    st.markdown("#### 📊 Umsatz, Gewinn und Kosten")
+    _key_figure_table(build_margin_rows(ext))
+    st.markdown(f"**Je Geschäftsjahr** (in {fin_currency}, geprüfte Jahresabschlüsse)")
+    if fin_currency != (ext.get("main_currency") or currency):
+        st.caption(f"Die Zahlen aus dem Geschäftsbericht sind in {fin_currency}, der Kurs in {currency}.")
+    _year_table(build_income_history_table(ext),
+                "Keine Umsatz- und Kostenzahlen ausgewiesen. Das ist typisch für Banken, Versicherungen und ETFs.")
+
+    st.markdown("#### 💰 Dividende")
+    _key_figure_table(build_dividend_rows(ext))
+    st.markdown("**Je Kalenderjahr**")
+    if ext.get("dividend_history"):
+        st.caption("Das laufende Jahr ist noch nicht vollständig, deshalb steht dort kein Wachstum.")
+    _year_table(build_dividend_history_table(ext), "Keine Dividenden-Historie vorhanden.")
+
 
 def render_truth_machine_help():
     """Plain-language help for the truth machine and its ETF benchmark."""
