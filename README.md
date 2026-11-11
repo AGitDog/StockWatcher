@@ -133,7 +133,7 @@ Die Daten fuer den Aktien-Agenten kommen aus frei verfuegbaren Yahoo-Finance-End
 
 ## Wahrheitsmaschine: Schlägt das System einen ETF?
 
-Das Paket `factor_lab/` testet kursbasierte Faktoren über bis zu 20 Jahre gegen einen ETF. Es rechnet mit Transaktionskosten, deutscher Abgeltungssteuer samt Verlusttopf und Sparerpauschbetrag sowie einem Trendfilter für die Investitionsquote. Der ETF wird mit 30 Prozent Teilfreistellung erst beim Verkauf besteuert.
+Das Paket `factor_lab/` testet kursbasierte Faktoren über bis zu 20 Jahre gegen einen ETF. Es rechnet ohne Gebühren und Steuern (seit 11.11.2026), mit einem Trendfilter für die Investitionsquote: Die Frage ist, ob die Auswahl selbst den ETF schlägt.
 
 Zugang über die Seite **Forschung** in der App oder per Kommandozeile:
 

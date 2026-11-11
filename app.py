@@ -845,7 +845,7 @@ def render_truth_machine_help():
     st.markdown("### 🧪 Die Wahrheitsmaschine einfach erklärt")
     st.write(
         "Die Wahrheitsmaschine beantwortet eine einzige Frage: Hätte man mit dieser Aktien-Strategie in den letzten 20 Jahren "
-        "mehr Geld verdient als mit einem ganz normalen ETF? Gezählt wird erst, nachdem Gebühren und deutsche Steuern bezahlt sind. "
+        "mehr Geld verdient als mit einem ganz normalen ETF? Gerechnet wird ohne Gebühren und Steuern, damit allein die Aktienauswahl zählt. "
         "Du findest sie auf der Seite **Forschung** ganz oben."
     )
 
@@ -858,7 +858,7 @@ def render_truth_machine_help():
         )
         st.markdown(
             "**Warum heißt sie Wahrheitsmaschine?** Weil sie nicht schummeln darf. An jedem Tag kennt sie nur die Kurse bis zu diesem Tag. "
-            "Sie weiß im Jahr 2008 also nicht, dass Apple später riesig wird. Und sie zieht jede Gebühr und jeden Euro Steuer ab, so wie es im echten Leben passiert."
+            "Sie weiß im Jahr 2008 also nicht, dass Apple später riesig wird."
         )
         st.info("Wenn der fleißige Weg nicht gewinnt, lohnt sich die viele Arbeit nicht. Dann ist der ETF die bessere Wahl. Genau das soll die Maschine herausfinden, bevor echtes Geld im Spiel ist.")
 
@@ -887,40 +887,17 @@ def render_truth_machine_help():
     with st.expander("3. So wird der ETF im Test genau behandelt"):
         st.markdown(
             "Der ETF spielt den faulen Anleger. Er bekommt genau diese Regeln:\n\n"
-            "1. **Kauf am Start:** Am ersten Handelstag des Tests wird das ganze Startkapital von 100.000 in den ETF gesteckt. Dafür fallen 0,1 % Gebühr an.\n"
+            "1. **Kauf am Start:** Am ersten Handelstag des Tests wird das ganze Startkapital von 100.000 in den ETF gesteckt.\n"
             "2. **Nichts tun:** Danach wird nichts mehr verändert. Kein Umschichten und kein Trendfilter. Der ETF bleibt immer zu 100 % investiert, auch mitten im Börsencrash.\n"
-            "3. **Dividenden:** Ausschüttungen werden automatisch wieder angelegt. Sie stecken schon in den bereinigten Kursen von Yahoo Finance.\n"
-            "4. **Verkauf am Ende:** Am letzten Tag wird alles verkauft. Dafür fallen noch einmal 0,1 % Gebühr an.\n"
-            "5. **Steuer nur einmal, ganz am Ende.** Gerechnet wird so:"
-        )
-        st.code(
-            "Gewinn           = Verkaufserlös - 100.000\n"
-            "steuerpflichtig  = Gewinn x 70 %             (30 % Teilfreistellung)\n"
-            "nach Freibetrag  = steuerpflichtig - 1.000   (Sparerpauschbetrag)\n"
-            "Steuer           = nach Freibetrag x 26,375 %",
-            language=None,
+            "3. **Dividenden:** Ausschüttungen werden automatisch wieder angelegt. Sie stecken schon in den bereinigten Kursen von Yahoo Finance."
         )
         st.markdown(
-            "**Rechenbeispiel, vereinfacht ohne Gebühren:** Aus 100.000 € werden in 20 Jahren 400.000 €.\n\n"
-            "- Der Gewinn beträgt 300.000 €.\n"
-            "- 30 % davon sind steuerfrei. Steuerpflichtig bleiben 210.000 €.\n"
-            "- Nach Abzug des Freibetrags bleiben 209.000 €.\n"
-            "- Die Steuer darauf beträgt rund 55.124 €.\n"
-            "- Am Ende hast du also rund **344.876 €** auf dem Konto."
-        )
-        st.markdown(
-            "**Was ist die Teilfreistellung?** Ein Aktienfonds zahlt intern schon Steuern auf Dividenden, bevor du etwas davon siehst. "
-            "Damit nicht doppelt kassiert wird, lässt der deutsche Staat 30 % deines Gewinns aus Aktien-ETFs steuerfrei. "
-            "Für einzelne Aktien gibt es das nicht.\n\n"
-            "**Der versteckte Vorteil des ETF:** Weil er erst am Ende Steuern zahlt, bleibt das Steuergeld 20 Jahre lang im Depot und arbeitet mit. "
-            "Das ist wie ein Schneeball, der beim Rollen immer größer wird. Wer jeden Monat verkauft und Steuer zahlt, nimmt dem Schneeball ständig etwas weg."
-        )
-        st.markdown(
-            "**Was beim ETF vereinfacht ist:**\n\n"
-            "- **Vorabpauschale:** In echt zahlt man beim ETF jedes Jahr eine kleine Steuer-Vorauszahlung. Die fehlt im Test. Das lässt den ETF etwas besser aussehen.\n"
-            "- **Freibetrag:** Der ETF nutzt den Sparerpauschbetrag nur einmal am Ende. Die Strategie darf ihn jedes Jahr nutzen. Das hilft der Strategie etwas.\n"
+            "**Ohne Gebühren und Steuern:** Beide Seiten rechnen ohne Transaktionskosten und ohne Steuern. "
+            "So zeigt der Test, ob die Auswahl der Aktien selbst etwas taugt. Gebühren und Steuern lassen sich hinterher auf ein Ergebnis draufrechnen, "
+            "das diesen Test besteht; ein Ergebnis, das ihn nicht besteht, retten sie nicht. Im echten Leben zahlt die Strategie bei jedem Verkauf Steuer, "
+            "der ETF erst am Ende; dieser Nachteil der Strategie fehlt hier bewusst.\n\n"
+            "**Was sonst vereinfacht ist:**\n\n"
             "- **Laufende Kosten:** Die jährliche Fondsgebühr steckt bei SPY schon im Kurs.\n"
-            "- **Kirchensteuer** wird nicht berechnet.\n"
             "- **Währung:** Alles wird in Dollar gerechnet, ohne Umtausch in Euro. Das gilt für beide Seiten gleich, der Vergleich bleibt also fair."
         )
 
@@ -932,17 +909,10 @@ def render_truth_machine_help():
             "Bei mehreren Faktoren zählt der Durchschnitt der Ränge.\n"
             "3. **Auswahl:** Die besten 20 Aktien werden gekauft, jede mit gleich viel Geld, also je 5 %.\n"
             "4. **Ein Tag Abstand:** Gekauft wird erst am nächsten Handelstag. So kann die Maschine nicht mit dem Wissen von heute zum Preis von heute handeln.\n"
-            "5. **Umtausch nach einem Monat:** Wer aus den Top 20 fällt, wird verkauft. Neue Aufsteiger werden gekauft.\n"
-            "6. **Am Ende** wird alles verkauft, und die letzte Steuer wird fällig."
+            "5. **Umtausch nach einem Monat:** Wer aus den Top 20 fällt, wird verkauft. Neue Aufsteiger werden gekauft."
         )
-        st.markdown(
-            "**Gebühren und Steuern bei der Strategie:**\n\n"
-            "- Jeder Kauf und jeder Verkauf kostet 0,1 % Gebühr.\n"
-            "- Bei jedem Verkauf mit Gewinn behält die Bank sofort 26,375 % Steuer ein, so wie ein deutscher Broker. Dieses Geld fehlt dann für die nächsten Käufe.\n"
-            "- Verluste wandern in den **Verlusttopf**. Sie werden mit späteren Gewinnen verrechnet, auch über Jahre hinweg.\n"
-            "- Pro Jahr sind 1.000 € Gewinn steuerfrei, das ist der **Sparerpauschbetrag**."
-        )
-        st.warning("Monatliches Umschichten ist teuer. Im ersten Testlauf hat die laufende Steuer etwa ein Viertel der Rendite aufgefressen. Je seltener verkauft wird, desto besser für den Schneeball.")
+        st.warning("Umschichten ist hier kostenlos. Im echten Leben kostet jeder Verkauf mit Gewinn Steuer, und Gebühren kommen dazu. "
+                   "Eine Strategie, die hier nur knapp vor dem ETF liegt, liegt in echt dahinter.")
 
     with st.expander("5. Die Faktoren: nach welchen Noten wird sortiert?"):
         st.table(pd.DataFrame([
@@ -952,7 +922,7 @@ def render_truth_machine_help():
             {"Faktor": "low_volatility", "Einfach erklärt": "Wie ruhig ist die Aktie? Wenig Schwankung im letzten Jahr gibt eine gute Note.",
              "Idee dahinter": "Ruhige Aktien bringen erstaunlich oft ähnliche Renditen mit weniger Stress."},
             {"Faktor": "reversal_1m", "Einfach erklärt": "Wer im letzten Monat am stärksten gefallen ist, bekommt die beste Note.",
-             "Idee dahinter": "Kurze Übertreibungen drehen oft wieder. Achtung: sehr viel Umschichten, also viel Gebühren und Steuer."},
+             "Idee dahinter": "Kurze Übertreibungen drehen oft wieder. Achtung: sehr viel Umschichten, in echt also viel Gebühren und Steuer."},
             {"Faktor": "trend_200d", "Einfach erklärt": "Wie weit liegt der Kurs über seinem Durchschnitt der letzten 200 Handelstage?",
              "Idee dahinter": "Wer über seinem Durchschnitt liegt, steckt in einem Aufwärtstrend."},
         ]))
@@ -971,7 +941,6 @@ def render_truth_machine_help():
             {"Einstellung": "Bisher getestete Varianten", "Was sie macht": "Wie oft du schon verschiedene Einstellungen ausprobiert hast. Bitte ehrlich eintragen.", "Standard": "1"},
             {"Einstellung": "Trendfilter", "Was sie macht": "Liegt der ETF unter seiner 200-Tage-Linie, investiert die Strategie weniger.", "Standard": "an"},
             {"Einstellung": "Investitionsquote im Abwärtstrend", "Was sie macht": "Wie viel bei aktivem Trendfilter noch in Aktien steckt. Der Rest liegt als Bargeld ohne Zinsen.", "Standard": "50 %"},
-            {"Einstellung": "Deutsche Steuer berücksichtigen", "Was sie macht": "Schaltet die Steuer für beide Seiten ein oder aus. Ausgeschaltet dient nur zum Vergleich.", "Standard": "an"},
         ]))
         st.markdown(
             "**Der Trendfilter einfach erklärt:** Die 200-Tage-Linie ist der Durchschnittskurs der letzten 200 Handelstage, also etwa der letzten zehn Monate. "
@@ -986,13 +955,10 @@ def render_truth_machine_help():
         st.markdown(
             "**Fest eingestellt und in der App nicht änderbar:**\n\n"
             "- Startkapital 100.000\n"
-            "- Gebühr 0,1 % pro Kauf und Verkauf\n"
+            "- Keine Gebühren und keine Steuern\n"
             "- Umschichten einmal im Monat\n"
-            "- Gleiche Gewichtung aller ausgewählten Aktien\n"
-            "- Steuersatz 26,375 %, das sind 25 % Abgeltungssteuer plus Solidaritätszuschlag, ohne Kirchensteuer\n"
-            "- Sparerpauschbetrag 1.000 € pro Jahr\n"
-            "- Teilfreistellung 30 % für den ETF\n\n"
-            "Über die Kommandozeile mit `python -m factor_lab --help` lassen sich einige davon ändern, zum Beispiel Gebühr, Umschicht-Rhythmus und Sektorgrenze."
+            "- Gleiche Gewichtung aller ausgewählten Aktien\n\n"
+            "Über die Kommandozeile mit `python -m factor_lab --help` lassen sich einige davon ändern, zum Beispiel Umschicht-Rhythmus und Sektorgrenze."
         )
 
     with st.expander("7. Die Ergebnisse lesen"):
@@ -1001,18 +967,14 @@ def render_truth_machine_help():
             "**Das Urteil** wird automatisch aus den Zahlen geschrieben. Niemand hat es schöngeredet."
         )
         st.table(pd.DataFrame([
-            {"Zeile": "Rendite p. a. (Depotwert)", "Bedeutung": "Um wie viel Prozent der Depotwert im Schnitt pro Jahr gewachsen ist. Bei der Strategie ist die laufende Steuer schon abgezogen, beim ETF noch nicht."},
-            {"Zeile": "Rendite p. a. nach Endverkauf und Steuer", "Bedeutung": "Die wichtigste Zeile. Beide Seiten verkaufen am Ende alles und haben alle Steuern bezahlt. Erst das ist ein fairer Vergleich."},
+            {"Zeile": "Rendite p. a.", "Bedeutung": "Die wichtigste Zeile: um wie viel Prozent der Depotwert im Schnitt pro Jahr gewachsen ist, ohne Gebühren und Steuern."},
             {"Zeile": "Volatilität p. a.", "Bedeutung": "Wie stark der Wert schwankt. Wie bei einer Achterbahn: Ein hoher Wert bedeutet eine wilde Fahrt."},
             {"Zeile": "Maximaler Verlust", "Bedeutung": "Der größte Absturz vom bisherigen Höchststand. −24 % heißt: Aus 100 € wurden zwischendurch 76 €."},
             {"Zeile": "Sharpe Ratio", "Bedeutung": "Rendite pro Schwankung, ähnlich wie Tore pro Spielminute. Bei Aktien ist 0,5 normal und über 1 sehr gut."},
-            {"Zeile": "Endvermögen nach Steuern", "Bedeutung": "Was am Ende wirklich auf dem Konto bleibt, ausgehend von 100.000."},
-            {"Zeile": "Gezahlte Steuern", "Bedeutung": "Alle Steuern zusammen, die über den ganzen Zeitraum ans Finanzamt gingen."},
-            {"Zeile": "Transaktionskosten", "Bedeutung": "Alle Gebühren für Käufe und Verkäufe der Strategie."},
+            {"Zeile": "Endvermögen", "Bedeutung": "Der Depotwert am Ende, ausgehend von 100.000."},
         ]))
         st.markdown(
-            "**Die Vermögenskurve** zeigt beide Wege als Linien über die Zeit. Die ETF-Linie ist vor Steuer gezeichnet, weil der ETF erst am Ende zahlt. "
-            "Deshalb ist sein Endvermögen in der Tabelle etwas niedriger als das Ende der Linie.\n\n"
+            "**Die Vermögenskurve** zeigt beide Wege als Linien über die Zeit.\n\n"
             "**Warum wenige Prozentpunkte so viel ausmachen:** 7,5 % gegen 10 % pro Jahr klingt nach wenig. Über 20 Jahre wird daraus aber ein riesiger Unterschied:"
         )
         st.code(
@@ -1072,10 +1034,10 @@ def render_truth_machine_help():
 
     with st.expander("11. Was das Ergebnis für dich bedeutet"):
         st.markdown(
-            "- **Schlägt die Strategie den ETF nach Steuern nicht,** ist der ETF für den Großteil des Geldes die vernünftigere Wahl.\n"
+            "- **Schlägt die Strategie den ETF schon ohne Gebühren und Steuern nicht,** ist der ETF für den Großteil des Geldes die vernünftigere Wahl.\n"
             "- **Schlägt sie ihn, aber nicht belastbar,** kann es Glück gewesen sein. Dann lieber erst mit wenig Geld oder auf dem Papier weiter beobachten.\n"
             "- **Schlägt sie ihn belastbar,** solltest du trotzdem den Survivorship Bias bedenken und mit einem kleinen Teil des Geldes starten.\n\n"
-            "Der erste Lauf mit den Standardeinstellungen auf dem S&P 500 ergab 7,5 % pro Jahr nach Steuern. Der ETF schaffte 10,0 %. "
+            "Der erste Lauf mit den Standardeinstellungen auf dem S&P 500 (damals noch mit Gebühren und Steuern) ergab 7,5 % pro Jahr. Der ETF schaffte 10,0 %. "
             "Die Strategie hatte dafür nur etwa halb so große Abstürze."
         )
         st.caption("Die Wahrheitsmaschine ist ein Lern- und Prüfwerkzeug und keine Anlageberatung.")
@@ -1409,14 +1371,11 @@ def build_truth_metrics_rows(report: dict) -> list[dict]:
         return f"{value:.2f}" if _is_number(value) else "–"
 
     return [
-        {"Kennzahl": "Rendite p. a. (Depotwert)", "Strategie": pct(m["cagr"]), "ETF": pct(b["cagr"])},
-        {"Kennzahl": "Rendite p. a. nach Endverkauf und Steuer", "Strategie": pct(m["cagr_after_tax"]), "ETF": pct(b["cagr_after_tax"])},
+        {"Kennzahl": "Rendite p. a.", "Strategie": pct(m["cagr"]), "ETF": pct(b["cagr"])},
         {"Kennzahl": "Volatilität p. a.", "Strategie": pct(m["volatility"]), "ETF": pct(b["volatility"])},
         {"Kennzahl": "Maximaler Verlust", "Strategie": pct(m["max_drawdown"]), "ETF": pct(b["max_drawdown"])},
         {"Kennzahl": "Sharpe Ratio", "Strategie": ratio(m["sharpe"]), "ETF": ratio(b["sharpe"])},
-        {"Kennzahl": "Endvermögen nach Steuern", "Strategie": money(m["final_value_after_tax"]), "ETF": money(b["final_value_after_tax"])},
-        {"Kennzahl": "Gezahlte Steuern", "Strategie": money(m["taxes_paid"]), "ETF": money(b["taxes_paid"])},
-        {"Kennzahl": "Transaktionskosten", "Strategie": money(m["costs_paid"]), "ETF": "–"},
+        {"Kennzahl": "Endvermögen", "Strategie": money(m["final_value"]), "ETF": money(b["final_value"])},
     ]
 
 
@@ -1436,8 +1395,7 @@ def build_factor_ic_rows(report: dict) -> list[dict]:
 def render_truth_machine_section():
     st.subheader("🧪 Wahrheitsmaschine: Schlägt das System einen ETF?")
     st.write(
-        "Testet kursbasierte Faktoren über bis zu 20 Jahre gegen einen ETF, mit Transaktionskosten, "
-        "deutscher Abgeltungssteuer samt Verlusttopf und Sparerpauschbetrag sowie Trendfilter für die Investitionsquote. "
+        "Testet kursbasierte Faktoren über bis zu 20 Jahre gegen einen ETF, ohne Gebühren und Steuern, mit Trendfilter für die Investitionsquote. "
         "Signale entstehen zum Monatsende und werden erst am nächsten Handelstag ausgeführt."
     )
     st.caption("Eine ausführliche, einfache Erklärung aller Einstellungen und des ETF-Vergleichs steht im Reiter **Hilfe & Methodik** unter „Die Wahrheitsmaschine einfach erklärt“.")
@@ -1462,13 +1420,11 @@ def render_truth_machine_section():
             help="Jede ausprobierte Einstellung erhöht die Chance auf einen Zufallstreffer. Diese Zahl fließt in die Deflated Sharpe Ratio ein.",
             key="truth_trials",
         )
-    c4, c5, c6 = st.columns(3)
+    c4, c5 = st.columns(2)
     with c4:
         trend_filter = st.checkbox("Trendfilter (ETF unter 200-Tage-Linie)", value=True, key="truth_trend")
     with c5:
         risk_off = st.slider("Investitionsquote im Abwärtstrend", 0.0, 1.0, 0.5, 0.1, disabled=not trend_filter, key="truth_risk_off")
-    with c6:
-        apply_tax = st.checkbox("Deutsche Steuer berücksichtigen", value=True, key="truth_tax")
 
     if st.button("Wahrheitsmaschine starten", use_container_width=True, disabled=not factors):
         with st.spinner("Lade Kurshistorie und rechne... (beim ersten Lauf 1–2 Minuten)"):
@@ -1483,7 +1439,6 @@ def render_truth_machine_section():
                     top_n=int(top_n),
                     trend_filter=trend_filter,
                     risk_off_exposure=float(risk_off),
-                    apply_tax=apply_tax,
                     n_trials=int(n_trials),
                 )
                 st.session_state["truth_report"] = build_truth_report(close, bench, config)

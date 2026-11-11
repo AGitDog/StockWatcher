@@ -29,7 +29,7 @@ def test_truth_metrics_rows_compare_strategy_and_etf():
 
     rows = app.build_truth_metrics_rows(_report())
     labels = [row["Kennzahl"] for row in rows]
-    assert "Rendite p. a. nach Endverkauf und Steuer" in labels
+    assert "Rendite p. a." in labels and not any("Steuer" in label for label in labels)
     assert "Maximaler Verlust" in labels
     assert all(set(row) == {"Kennzahl", "Strategie", "ETF"} for row in rows)
     assert all(row["Strategie"] for row in rows)
@@ -41,8 +41,8 @@ def test_truth_metrics_rows_handle_missing_values():
     nan = float("nan")
     report = {
         "backtest": {
-            "metrics": {k: nan for k in ["cagr", "cagr_after_tax", "volatility", "max_drawdown", "sharpe", "final_value_after_tax", "taxes_paid", "costs_paid"]},
-            "benchmark_metrics": {k: nan for k in ["cagr", "cagr_after_tax", "volatility", "max_drawdown", "sharpe", "final_value_after_tax", "taxes_paid"]},
+            "metrics": {k: nan for k in ["cagr", "volatility", "max_drawdown", "sharpe", "final_value"]},
+            "benchmark_metrics": {k: nan for k in ["cagr", "volatility", "max_drawdown", "sharpe", "final_value"]},
         }
     }
     rows = app.build_truth_metrics_rows(report)
@@ -86,8 +86,10 @@ def _rendered_help_text(render_name: str) -> str:
 
 def test_truth_machine_help_explains_etf_benchmark():
     text = _rendered_help_text("render_truth_machine_help")
-    for term in ["Teilfreistellung", "Sparerpauschbetrag", "26,375", "SPY", "QQQ", "URTH", "DIA", "Survivorship", "Trendfilter", "Deflated Sharpe"]:
+    for term in ["SPY", "QQQ", "URTH", "DIA", "Survivorship", "Trendfilter", "Deflated Sharpe", "Ohne Gebühren und Steuern"]:
         assert term in text, term
+    for gone in ["Teilfreistellung", "Sparerpauschbetrag", "26,375", "Verlusttopf"]:
+        assert gone not in text, gone
 
 
 def test_help_tab_includes_truth_machine_and_fixed_macro_text():

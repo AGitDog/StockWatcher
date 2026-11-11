@@ -238,7 +238,7 @@ class BacktestEngine:
     def __init__(
         self,
         initial_cash: float = 100_000.0,
-        transaction_cost_pct: float = 0.001,
+        transaction_cost_pct: float = 0.0,  # no costs anywhere in the research tools (11.11.2026)
         max_positions: int = 10,
         rebalance_days: int = 30,
         benchmark: str = "SPY",

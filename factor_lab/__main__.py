@@ -24,7 +24,7 @@ REPORT_DIR = Path("cache/factor_lab/reports")
 
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Wahrheitsmaschine: Faktor-Backtest gegen einen ETF nach Kosten und Steuern.")
+    parser = argparse.ArgumentParser(description="Wahrheitsmaschine: Faktor-Backtest gegen einen ETF, ohne Kosten und Steuern.")
     parser.add_argument("--universe", default="S&P 500", help="Indexname oder Pfad zu einer Watchlist-Datei.")
     parser.add_argument("--benchmark", default="SPY", help="Benchmark-ETF, zum Beispiel SPY oder URTH.")
     parser.add_argument("--start", default="2005-01-01")
@@ -35,9 +35,6 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--rebalance-months", type=int, default=1)
     parser.add_argument("--no-trend-filter", action="store_true")
     parser.add_argument("--risk-off-exposure", type=float, default=0.5)
-    parser.add_argument("--cost", type=float, default=0.001, help="Transaktionskosten je Trade als Anteil.")
-    parser.add_argument("--no-tax", action="store_true")
-    parser.add_argument("--tax-allowance", type=float, default=1000.0)
     parser.add_argument("--sector-cap", type=float, default=None, help="Maximaler Anteil je Sektor, zum Beispiel 0.25.")
     parser.add_argument("--capital", type=float, default=100_000.0)
     parser.add_argument("--n-trials", type=int, default=1, help="Anzahl bisher getesteter Varianten fuer die Deflated Sharpe Ratio.")
@@ -97,9 +94,6 @@ def main(argv: list[str] | None = None) -> int:
         rebalance_months=args.rebalance_months,
         trend_filter=not args.no_trend_filter,
         risk_off_exposure=args.risk_off_exposure,
-        transaction_cost_pct=args.cost,
-        apply_tax=not args.no_tax,
-        tax_allowance=args.tax_allowance,
         max_sector_weight=args.sector_cap,
         sectors=load_sector_map() if args.sector_cap else None,
         initial_capital=args.capital,
@@ -111,12 +105,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"\nZeitraum {report['period']['start']} bis {report['period']['end']}, {report['universe_size']} Titel")
     print(f"{'':28}{'Strategie':>14}{args.benchmark:>14}")
     rows = [
-        ("CAGR Depotwert", m["cagr"], b["cagr"], True),
-        ("CAGR nach Endverkauf+Steuer", m["cagr_after_tax"], b["cagr_after_tax"], True),
+        ("CAGR", m["cagr"], b["cagr"], True),
         ("Volatilitaet", m["volatility"], b["volatility"], True),
         ("Max. Drawdown", m["max_drawdown"], b["max_drawdown"], True),
         ("Sharpe", m["sharpe"], b["sharpe"], False),
-        ("Endvermoegen nach Steuern", m["final_value_after_tax"], b["final_value_after_tax"], None),
+        ("Endvermoegen", m["final_value"], b["final_value"], None),
     ]
     for label, left, right, pct in rows:
         if pct is True:
@@ -125,7 +118,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{label:28}{left:>14.2f}{right:>14.2f}")
         else:
             print(f"{label:28}{left:>14,.0f}{right:>14,.0f}")
-    print(f"Gezahlte Steuern {m['taxes_paid']:,.0f}, Kosten {m['costs_paid']:,.0f}, Deflated Sharpe (Ueberrendite) {m['deflated_sharpe_excess']:.2f}")
+    print(f"Deflated Sharpe (Ueberrendite) {m['deflated_sharpe_excess']:.2f}")
     print("\nUrteil:")
     for line in report["verdict"]:
         print(f"- {line}")

@@ -38,7 +38,7 @@ class Trade:
 class Portfolio:
     initial_cash: float = 100_000.0
     cash: float = 100_000.0
-    transaction_cost_pct: float = 0.001
+    transaction_cost_pct: float = 0.0
     max_positions: int = 10
     trades: list[Trade] = field(default_factory=list)
     equity_curve: list[dict[str, Any]] = field(default_factory=list)

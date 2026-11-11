@@ -10,14 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from factor_lab.backtest import (
-    ETF_TEILFREISTELLUNG,
-    TAX_RATE_DE,
-    BacktestConfig,
-    GermanTaxAccount,
-    _cap_sector_weights,
-    run_factor_backtest,
-)
+from factor_lab.backtest import BacktestConfig, _cap_sector_weights, run_factor_backtest
 from factor_lab.data import _extract_close, download_close_prices, filter_single_currency, is_us_listing, to_yahoo_symbol
 from factor_lab.evaluation import (
     deflated_sharpe_ratio,
@@ -210,36 +203,6 @@ def test_snapshot_score_ic_counts_only_non_overlapping_days():
     assert result["summary_independent"]["n"] == 2
 
 
-# --- tax ---
-
-def test_tax_allowance_and_withholding():
-    account = GermanTaxAccount(TAX_RATE_DE, 1000.0)
-    assert account.realize(2024, 800.0) == pytest.approx(0.0)
-    assert account.realize(2024, 1200.0) == pytest.approx(TAX_RATE_DE * 1000.0)
-
-
-def test_tax_refund_on_loss_within_year():
-    account = GermanTaxAccount(TAX_RATE_DE, 0.0)
-    paid = account.realize(2024, 1000.0)
-    refund = account.realize(2024, -400.0)
-    assert paid == pytest.approx(TAX_RATE_DE * 1000.0)
-    assert refund == pytest.approx(-TAX_RATE_DE * 400.0)
-    assert account.total_paid == pytest.approx(TAX_RATE_DE * 600.0)
-
-
-def test_tax_loss_carry_into_next_year():
-    account = GermanTaxAccount(TAX_RATE_DE, 0.0)
-    account.realize(2023, -500.0)
-    assert account.realize(2024, 300.0) == pytest.approx(0.0)
-    assert account.realize(2024, 400.0) == pytest.approx(TAX_RATE_DE * 200.0)
-
-
-def test_allowance_resets_each_year():
-    account = GermanTaxAccount(TAX_RATE_DE, 1000.0)
-    account.realize(2023, 1000.0)
-    assert account.realize(2024, 1000.0) == pytest.approx(0.0)
-
-
 # --- sector cap ---
 
 def test_sector_cap_redistributes_excess():
@@ -270,26 +233,21 @@ def test_backtest_executes_after_signal_and_reports_metrics():
     assert (result.rebalances["exec_date"] > result.rebalances["signal_date"]).all()
     assert result.metrics["n_rebalances"] > 50
     assert result.equity["strategy"].notna().all()
-    assert result.metrics["final_value_after_tax"] <= result.metrics["final_value_pre_tax"] + 1e-6
+    assert result.metrics["final_value"] == pytest.approx(result.equity["strategy"].iloc[-1])
+    for key in ("taxes_paid", "costs_paid", "cagr_after_tax", "final_value_after_tax"):
+        assert key not in result.metrics and key not in result.benchmark_metrics
 
 
-def test_backtest_without_tax_or_costs_pays_nothing():
-    close = _random_prices(40)
-    config = BacktestConfig(top_n=10, apply_tax=False, transaction_cost_pct=0.0)
-    result = run_factor_backtest(close, _benchmark(close.index), config)
-    assert result.metrics["taxes_paid"] == pytest.approx(0.0)
-    assert result.metrics["costs_paid"] == pytest.approx(0.0)
-    assert result.metrics["final_value_after_tax"] == pytest.approx(result.metrics["final_value_pre_tax"])
-
-
-def test_benchmark_tax_uses_partial_exemption():
-    close = _random_prices(40)
-    bench = _benchmark(close.index, daily=0.0005)
-    config = BacktestConfig(top_n=10, transaction_cost_pct=0.0)
-    result = run_factor_backtest(close, bench, config)
-    gain = result.benchmark_metrics["final_value_pre_tax"] - config.initial_capital
-    expected = TAX_RATE_DE * max(0.0, gain * (1 - ETF_TEILFREISTELLUNG) - config.tax_allowance)
-    assert result.benchmark_metrics["taxes_paid"] == pytest.approx(expected)
+def test_backtest_has_no_costs_and_no_taxes():
+    """Buy-and-hold of a single stock must end exactly at the price move, nothing withheld."""
+    index = pd.bdate_range("2020-01-01", periods=600)
+    close = pd.DataFrame({f"S{i}": 100.0 * (1 + 0.0004) ** np.arange(600) for i in range(31)}, index=index)
+    bench = pd.Series(100.0 * (1 + 0.0003) ** np.arange(600), index=index)
+    result = run_factor_backtest(close, bench, BacktestConfig(top_n=31, trend_filter=False))
+    start = result.rebalances["exec_date"].iloc[0]
+    expected = 100_000.0 * close["S0"].iloc[-1] / close.loc[start, "S0"]
+    assert result.metrics["final_value"] == pytest.approx(expected, rel=1e-6)
+    assert result.benchmark_metrics["final_value"] == pytest.approx(100_000.0 * bench.iloc[-1] / bench.loc[start], rel=1e-6)
 
 
 def test_trend_filter_reduces_exposure_in_downtrend():
@@ -333,13 +291,13 @@ def test_verdict_prefers_etf_when_strategy_loses():
         "factor_ic": {"composite": {"t_stat": 0.5}},
         "walk_forward": {"learned_beats_equal": False},
         "backtest": {
-            "metrics": {"cagr_after_tax": 0.05, "deflated_sharpe_excess": 0.2, "max_drawdown": -0.4},
-            "benchmark_metrics": {"cagr_after_tax": 0.07, "max_drawdown": -0.5},
+            "metrics": {"cagr": 0.05, "deflated_sharpe_excess": 0.2, "max_drawdown": -0.4},
+            "benchmark_metrics": {"cagr": 0.07, "max_drawdown": -0.5},
         },
     }
     text = " ".join(build_verdict(report))
     assert "nicht signifikant" in text
-    assert "ETF ist nach Kosten und Steuern" in text
+    assert "Der ETF ist um 2.0 Prozentpunkte" in text
     assert "Gleichgewichtung bleibt" in text
 
 

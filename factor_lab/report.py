@@ -52,14 +52,14 @@ def build_verdict(report: dict[str, Any]) -> list[str]:
             lines.append("Gelernte Gewichte schlagen die Gleichgewichtung out of sample nicht. Gleichgewichtung bleibt.")
 
     bt = report["backtest"]
-    excess = bt["metrics"]["cagr_after_tax"] - bt["benchmark_metrics"]["cagr_after_tax"]
+    excess = bt["metrics"]["cagr"] - bt["benchmark_metrics"]["cagr"]
     dsr = bt["metrics"].get("deflated_sharpe_excess")
     if _finite(excess) and excess > 0 and _finite(dsr) and dsr >= DSR_ROBUST:
-        lines.append(f"Die Strategie schlaegt den ETF nach Kosten und Steuern um {excess * 100:.1f} Prozentpunkte pro Jahr, statistisch belastbar.")
+        lines.append(f"Die Strategie schlaegt den ETF um {excess * 100:.1f} Prozentpunkte pro Jahr, statistisch belastbar.")
     elif _finite(excess) and excess > 0:
-        lines.append(f"Die Strategie schlaegt den ETF nach Steuern um {excess * 100:.1f} Prozentpunkte pro Jahr, aber nicht statistisch belastbar.")
+        lines.append(f"Die Strategie schlaegt den ETF um {excess * 100:.1f} Prozentpunkte pro Jahr, aber nicht statistisch belastbar.")
     elif _finite(excess):
-        lines.append(f"Der ETF ist nach Kosten und Steuern um {-excess * 100:.1f} Prozentpunkte pro Jahr besser.")
+        lines.append(f"Der ETF ist um {-excess * 100:.1f} Prozentpunkte pro Jahr besser.")
 
     dd_s = bt["metrics"].get("max_drawdown")
     dd_b = bt["benchmark_metrics"].get("max_drawdown")

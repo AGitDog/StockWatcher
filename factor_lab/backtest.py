@@ -3,16 +3,9 @@
 Design choices that keep the result honest:
 
 * Signals are taken at the month-end close and executed at the next trading day close.
-* Transaction costs apply to every trade.
-* German taxation: Abgeltungssteuer plus Solidaritaetszuschlag is withheld on each
-  realised gain like a German broker does, with a loss pot carried into later years
-  and the annual Sparer-Pauschbetrag. Individual stocks get no partial exemption.
-* The benchmark ETF is taxed once at the end, with the 30 percent Teilfreistellung
-  for equity funds. The Vorabpauschale is ignored, which slightly favours the ETF.
-* Both sides are liquidated at the end so the after-tax wealth is comparable.
-
-The strategy equity curve already contains the tax withheld on each sale. The
-benchmark equity curve is pre-tax because the ETF pays tax only when sold.
+* No transaction costs and no taxes (since 11.11.2026): the question is whether the
+  selection itself beats the ETF. Costs and taxes can be put on top of a result that
+  survives this test; they cannot rescue one that does not.
 """
 
 from __future__ import annotations
@@ -33,12 +26,6 @@ from .factors import (
     month_end_dates,
 )
 
-# 25 percent Abgeltungssteuer plus 5.5 percent Solidaritaetszuschlag, without church tax.
-TAX_RATE_DE = 0.26375
-SPARER_PAUSCHBETRAG = 1000.0
-ETF_TEILFREISTELLUNG = 0.30
-
-
 @dataclass
 class BacktestConfig:
     top_n: int = 20
@@ -47,14 +34,9 @@ class BacktestConfig:
     rebalance_months: int = 1
     max_sector_weight: float | None = None
     sectors: dict[str, str] | None = None
-    transaction_cost_pct: float = 0.001
     trend_filter: bool = True
     trend_ma_days: int = 200
     risk_off_exposure: float = 0.5
-    apply_tax: bool = True
-    tax_rate: float = TAX_RATE_DE
-    tax_allowance: float = SPARER_PAUSCHBETRAG
-    etf_partial_exemption: float = ETF_TEILFREISTELLUNG
     initial_capital: float = 100_000.0
     min_universe: int = 30
     n_trials: int = 1
@@ -70,43 +52,8 @@ class FactorBacktestResult:
     holdings: dict[pd.Timestamp, list[str]] = field(default_factory=dict)
 
     @property
-    def excess_cagr_after_tax(self) -> float:
-        return self.metrics["cagr_after_tax"] - self.benchmark_metrics["cagr_after_tax"]
-
-
-class GermanTaxAccount:
-    """Withholds capital gains tax per sale with a loss pot and annual allowance."""
-
-    def __init__(self, rate: float, allowance: float) -> None:
-        self.rate = rate
-        self.allowance = allowance
-        self.year: int | None = None
-        self.ytd_gain = 0.0
-        self.loss_carry = 0.0  # always <= 0
-        self.paid_ytd = 0.0
-        self.total_paid = 0.0
-
-    def _roll_to(self, year: int) -> None:
-        if self.year is None:
-            self.year = year
-            return
-        if year == self.year:
-            return
-        net = self.ytd_gain + self.loss_carry
-        self.loss_carry = min(0.0, net)
-        self.ytd_gain = 0.0
-        self.paid_ytd = 0.0
-        self.year = year
-
-    def realize(self, year: int, gain: float) -> float:
-        """Book a realised gain or loss and return the tax payment (negative = refund)."""
-        self._roll_to(year)
-        self.ytd_gain += gain
-        due = self.rate * max(0.0, self.ytd_gain + self.loss_carry - self.allowance)
-        payment = due - self.paid_ytd
-        self.paid_ytd = due
-        self.total_paid += payment
-        return payment
+    def excess_cagr(self) -> float:
+        return self.metrics["cagr"] - self.benchmark_metrics["cagr"]
 
 
 def _cap_sector_weights(weights: pd.Series, sectors: dict[str, str], cap: float) -> pd.Series:
@@ -204,13 +151,9 @@ def run_factor_backtest(
     if not schedule:
         raise ValueError("Zu wenig Historie fuer einen Backtest: keine handelbaren Rebalancing-Termine.")
 
-    tax = GermanTaxAccount(config.tax_rate if config.apply_tax else 0.0, config.tax_allowance)
-    cost_rate = config.transaction_cost_pct
     symbols = prices.columns
     shares = pd.Series(0.0, index=symbols)
-    basis = pd.Series(0.0, index=symbols)
     cash = float(config.initial_capital)
-    total_costs = 0.0
     records: list[dict[str, Any]] = []
     holdings: dict[pd.Timestamp, list[str]] = {}
     equity_parts: list[pd.Series] = []
@@ -242,12 +185,8 @@ def run_factor_backtest(
         current_value = shares * px.fillna(0.0)
         target_value = pd.Series(0.0, index=symbols)
         target_value[target_w.index] = target_w * value
-        est_cost = cost_rate * float((target_value - current_value).abs().sum())
-        target_value[target_w.index] = target_w * max(value - est_cost, 0.0)
         delta = target_value - current_value
 
-        # Sells first, so realised gains and the resulting tax are known before buying.
-        realized = 0.0
         sell_turnover = 0.0
         for symbol in delta[delta < -1e-9].index:
             price = float(px[symbol])
@@ -255,34 +194,19 @@ def run_factor_backtest(
                 continue
             closing = target_value[symbol] <= 1e-9
             sold = shares[symbol] if closing else min(-delta[symbol] / price, shares[symbol])
-            fraction = sold / shares[symbol]
+            shares[symbol] = 0.0 if closing else shares[symbol] - sold
             proceeds = sold * price
-            fee = cost_rate * proceeds
-            basis_part = basis[symbol] * fraction
-            realized += proceeds - fee - basis_part
-            shares[symbol] -= sold
-            basis[symbol] -= basis_part
-            if closing:
-                shares[symbol] = 0.0
-                basis[symbol] = 0.0
-            cash += proceeds - fee
-            total_costs += fee
+            cash += proceeds
             sell_turnover += proceeds
-        tax_payment = tax.realize(exec_date.year, realized) if realized != 0.0 else 0.0
-        cash -= tax_payment
 
         buys = delta[delta > 1e-9]
-        need = float(buys.sum()) * (1.0 + cost_rate)
+        need = float(buys.sum())
         scale = min(1.0, cash / need) if need > 0 else 0.0
         buy_turnover = 0.0
         for symbol, amount in buys.items():
             amount *= scale
-            price = float(px[symbol])
-            fee = cost_rate * amount
-            shares[symbol] += amount / price
-            basis[symbol] += amount + fee
-            cash -= amount + fee
-            total_costs += fee
+            shares[symbol] += amount / float(px[symbol])
+            cash -= amount
             buy_turnover += amount
 
         holdings[signal_date] = list(selected)
@@ -293,8 +217,6 @@ def run_factor_backtest(
             "exposure": exposure,
             "positions": int((shares > 0).sum()),
             "turnover": (sell_turnover + buy_turnover) / value if value > 0 else 0.0,
-            "realized_gain": realized,
-            "tax_payment": tax_payment,
             "portfolio_value": value,
         })
 
@@ -312,32 +234,11 @@ def run_factor_backtest(
     start_date = schedule[0][1]
     end_date = prices.index[-1]
 
-    # Liquidate everything at the end to compare after-tax wealth.
-    final_px = prices.loc[end_date]
-    final_realized = 0.0
-    final_cash = cash
-    for symbol in shares[shares > 0].index:
-        proceeds = float(shares[symbol] * final_px[symbol])
-        fee = cost_rate * proceeds
-        final_realized += proceeds - fee - float(basis[symbol])
-        final_cash += proceeds - fee
-        total_costs += fee
-    final_tax = tax.realize(end_date.year, final_realized) if final_realized != 0.0 else 0.0
-    final_after_tax = final_cash - final_tax
-
-    # Benchmark: buy once, hold, sell once at the end.
+    # Benchmark: buy once and hold.
     bench_series = benchmark_close.loc[start_date:end_date].dropna()
     if bench_series.empty:
         raise ValueError("Keine Benchmark-Kurse im Backtest-Zeitraum.")
-    bench_units = config.initial_capital * (1.0 - cost_rate) / float(bench_series.iloc[0])
-    bench_equity = bench_series * bench_units
-    bench_proceeds = float(bench_equity.iloc[-1]) * (1.0 - cost_rate)
-    bench_gain = bench_proceeds - config.initial_capital
-    bench_tax = 0.0
-    if config.apply_tax and bench_gain > 0:
-        taxable = bench_gain * (1.0 - config.etf_partial_exemption)
-        bench_tax = config.tax_rate * max(0.0, taxable - config.tax_allowance)
-    bench_after_tax = bench_proceeds - bench_tax
+    bench_equity = bench_series * (config.initial_capital / float(bench_series.iloc[0]))
 
     equity = pd.DataFrame({"strategy": strategy_equity, "benchmark": bench_equity}).ffill()
     equity["exposure"] = pd.concat(exposure_parts).groupby(level=0).last()
@@ -346,11 +247,7 @@ def run_factor_backtest(
     strat_monthly = monthly_returns(equity["strategy"])
     metrics = _equity_metrics(equity["strategy"])
     metrics.update({
-        "final_value_pre_tax": float(equity["strategy"].iloc[-1]),
-        "final_value_after_tax": float(final_after_tax),
-        "cagr_after_tax": _cagr(config.initial_capital, final_after_tax, start_date, end_date),
-        "taxes_paid": float(tax.total_paid),
-        "costs_paid": float(total_costs),
+        "final_value": float(equity["strategy"].iloc[-1]),
         "avg_turnover": float(rebalances["turnover"].mean()) if not rebalances.empty else 0.0,
         "share_risk_off": float(rebalances["risk_off"].mean()) if not rebalances.empty else 0.0,
         "n_rebalances": int(len(rebalances)),
@@ -361,10 +258,7 @@ def run_factor_backtest(
     })
     benchmark_metrics = _equity_metrics(equity["benchmark"])
     benchmark_metrics.update({
-        "final_value_pre_tax": float(bench_equity.iloc[-1]),
-        "final_value_after_tax": float(bench_after_tax),
-        "cagr_after_tax": _cagr(config.initial_capital, bench_after_tax, start_date, end_date),
-        "taxes_paid": float(bench_tax),
+        "final_value": float(bench_equity.iloc[-1]),
     })
     excess = (strat_monthly - monthly_returns(equity["benchmark"])).dropna()
     metrics["deflated_sharpe_excess"] = deflated_sharpe_ratio(excess, config.n_trials)
