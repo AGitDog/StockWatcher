@@ -1,0 +1,1253 @@
+{
+ "20260818ECE84F23-CA97-4058-A072-2725B67FC9A7": {
+  "date": "2026-08-18",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 852.86,
+    "unit": "EUR",
+    "volume": 16000.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": false,
+    "price": 357.5,
+    "unit": "EUR",
+    "volume": 16000.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 16000.0
+   }
+  ]
+ },
+ "202608218D09031D-1892-4368-8B70-C38E2BAA80DA": {
+  "date": "2026-08-21",
+  "issuer": "Ferrari N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 368.22,
+    "unit": "EUR",
+    "volume": 988.0
+   }
+  ]
+ },
+ "20260821B3ABD949-5924-4D09-98A4-A84C58B6898D": {
+  "date": "2026-08-21",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 891.7,
+    "unit": "EUR",
+    "volume": 300.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 901.26,
+    "unit": "EUR",
+    "volume": 200.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": true,
+    "price": 309.2,
+    "unit": "EUR",
+    "volume": 500.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 500.0
+   }
+  ]
+ },
+ "202608250D861DED-73F4-46D6-801B-8341F92840F5": {
+  "date": "2026-08-25",
+  "issuer": "Euronext N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 165.6,
+    "unit": "EUR",
+    "volume": 193.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 165.8,
+    "unit": "EUR",
+    "volume": 200.0
+   }
+  ]
+ },
+ "202608262A90FB3E-185D-4D19-BDC8-0C6B331377CC": {
+  "date": "2026-08-26",
+  "issuer": "Euronext N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 164.7,
+    "unit": "EUR",
+    "volume": 500.0
+   }
+  ]
+ },
+ "2026082683A5941E-5D7C-4EDD-9A97-6A1CF43D2A52": {
+  "date": "2026-08-26",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 894.79,
+    "unit": "EUR",
+    "volume": 501.0
+   }
+  ]
+ },
+ "202608272A90FB3E-185D-4D19-BDC8-0C6B331377CC": {
+  "date": "2026-08-27",
+  "issuer": "Euronext N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 162.5,
+    "unit": "EUR",
+    "volume": 1500.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 162.6,
+    "unit": "EUR",
+    "volume": 500.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 163.0,
+    "unit": "EUR",
+    "volume": 500.0
+   }
+  ]
+ },
+ "202608286487A623-347B-47B6-B76B-2143653DC797": {
+  "date": "2026-08-28",
+  "issuer": "Euronext N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 165.11,
+    "unit": "EUR",
+    "volume": 3174.0
+   }
+  ]
+ },
+ "20260828FB987D6A-13BA-4759-8472-0E578CCAAF0A": {
+  "date": "2026-08-28",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 900.78,
+    "unit": "EUR",
+    "volume": 1764.0
+   }
+  ]
+ },
+ "20260831D3C72C45-2B4F-45C7-A494-1C5B750E6162": {
+  "date": "2026-08-31",
+  "issuer": "Ferrari N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 363.06,
+    "unit": "EUR",
+    "volume": 1000.0
+   }
+  ]
+ },
+ "20260901097A4A7D-4678-4BBE-BC43-829D6D32B357": {
+  "date": "2026-09-01",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 81170.0
+   }
+  ]
+ },
+ "202609012B9F224E-CE96-4A51-839E-94DAD101C33C": {
+  "date": "2026-09-01",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 25000.0
+   }
+  ]
+ },
+ "2026090133F68A51-A74B-4818-B73F-7DA532C4CCFE": {
+  "date": "2026-09-01",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 66500.0
+   }
+  ]
+ },
+ "202609015CFDEDC7-663E-44A2-B1A3-59220C7697D1": {
+  "date": "2026-09-01",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 23500.0
+   }
+  ]
+ },
+ "2026090162D09EFE-F33A-412C-B188-AB683F909B82": {
+  "date": "2026-09-01",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 96670.0
+   }
+  ]
+ },
+ "202609016BDC0641-7CD2-4F56-8921-1C1915CFF08D": {
+  "date": "2026-09-01",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 49000.0
+   }
+  ]
+ },
+ "202609018AD8D2F3-FCF8-4BFC-B872-F080600D67A2": {
+  "date": "2026-09-01",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 31840.0
+   }
+  ]
+ },
+ "2026090199B5728F-41EC-4E51-9F9A-3645D3C4D7DF": {
+  "date": "2026-09-01",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 83670.0
+   }
+  ]
+ },
+ "20260901A3637D81-25DD-4F6E-BC1F-D0574B2F4193": {
+  "date": "2026-09-01",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 44840.0
+   }
+  ]
+ },
+ "20260901A7FE2C1B-CF43-444B-90C6-DB8534352E88": {
+  "date": "2026-09-01",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 40840.0
+   }
+  ]
+ },
+ "20260901C26410B0-AEEE-4F37-AC17-C7E8EA7204C4": {
+  "date": "2026-09-01",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 56170.0
+   }
+  ]
+ },
+ "20260901D4CE9A5C-E6AF-4F4C-809A-ACD856CA63C4": {
+  "date": "2026-09-01",
+  "issuer": "Qiagen N.V.",
+  "transactions": [
+   {
+    "instrument": "performance stock units",
+    "kind": "voorwaardelijke toekenning",
+    "nature": "verwerving",
+    "options": true,
+    "price": 0.0,
+    "unit": "USD",
+    "volume": 172851.0
+   }
+  ]
+ },
+ "20260901D82FB2AA-069B-4AEB-B90A-B8D0ECC8C97A": {
+  "date": "2026-09-01",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 40340.0
+   }
+  ]
+ },
+ "20260901E61556EB-BFAF-484A-8E84-BB6FCAD6E331": {
+  "date": "2026-09-01",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 44000.0
+   }
+  ]
+ },
+ "20260901E63971E8-0CFC-4962-9EE5-704C4369D938": {
+  "date": "2026-09-01",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 44000.0
+   }
+  ]
+ },
+ "20260901FA660839-0911-4624-9D3C-271EF0063DD5": {
+  "date": "2026-09-01",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 5840.0
+   }
+  ]
+ },
+ "2026090412E7A59C-264B-4199-9B32-281CCC8F4DCC": {
+  "date": "2026-09-04",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 5.54,
+    "unit": "USD",
+    "volume": 1674.0
+   }
+  ]
+ },
+ "202609048B5E233B-4CA9-4599-8CF1-3EE44AA7721D": {
+  "date": "2026-09-04",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 5.54,
+    "unit": "USD",
+    "volume": 22824.0
+   }
+  ]
+ },
+ "2026090497759887-720E-4EC3-A2D4-E495274C80C5": {
+  "date": "2026-09-04",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 5.54,
+    "unit": "USD",
+    "volume": 12607.0
+   }
+  ]
+ },
+ "202609049D5C22F0-7E96-467F-92F4-CA64ED3975EA": {
+  "date": "2026-09-04",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 5.54,
+    "unit": "USD",
+    "volume": 25944.0
+   }
+  ]
+ },
+ "20260904AB05FF08-E55D-4577-8AB5-9F0EE73EDCDD": {
+  "date": "2026-09-04",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 892.73,
+    "unit": "EUR",
+    "volume": 1281.0
+   }
+  ]
+ },
+ "20260904BA2CEA60-219F-43B4-BD89-AE82AD2A8494": {
+  "date": "2026-09-04",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 5.54,
+    "unit": "USD",
+    "volume": 18863.0
+   }
+  ]
+ },
+ "20260904C126B2DF-C6ED-4C1F-96B4-4F5BAD62803F": {
+  "date": "2026-09-04",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 5.54,
+    "unit": "USD",
+    "volume": 19218.0
+   }
+  ]
+ },
+ "20260904D8A6EE0E-2938-4B10-AE0B-1E9BB4AA9E45": {
+  "date": "2026-09-04",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 5.54,
+    "unit": "USD",
+    "volume": 18790.0
+   }
+  ]
+ },
+ "20260904E186F21C-4072-4879-9FE3-71CD4579B9EF": {
+  "date": "2026-09-04",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 5.54,
+    "unit": "USD",
+    "volume": 36545.0
+   }
+  ]
+ },
+ "20260904E242A3D5-D26C-46C0-A37E-DFA052FB118B": {
+  "date": "2026-09-04",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": true,
+    "price": 309.2,
+    "unit": "EUR",
+    "volume": 1000.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 1000.0
+   }
+  ]
+ },
+ "20260904F448D447-5DB1-43BC-BC05-E8FA869056F9": {
+  "date": "2026-09-04",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 5.54,
+    "unit": "USD",
+    "volume": 23256.0
+   }
+  ]
+ },
+ "20260907767AA618-FCF2-43E4-B2FD-69726CF35BFA": {
+  "date": "2026-09-07",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 881.35,
+    "unit": "EUR",
+    "volume": 47.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": true,
+    "price": 309.2,
+    "unit": "EUR",
+    "volume": 47.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 47.0
+   }
+  ]
+ },
+ "202609077A75A1A6-048D-486F-B9AB-708A0461C7B3": {
+  "date": "2026-09-07",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 862.12,
+    "unit": "EUR",
+    "volume": 1500.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": true,
+    "price": 309.2,
+    "unit": "EUR",
+    "volume": 1500.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 1500.0
+   }
+  ]
+ },
+ "202609077AA69D28-59F7-4E98-B043-794B21777299": {
+  "date": "2026-09-07",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 862.11,
+    "unit": "EUR",
+    "volume": 31000.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": true,
+    "price": 247.6,
+    "unit": "EUR",
+    "volume": 15000.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": true,
+    "price": 309.2,
+    "unit": "EUR",
+    "volume": 16000.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 31000.0
+   }
+  ]
+ },
+ "2026090794DF9DC2-0FF1-4E5C-89B0-919543B59241": {
+  "date": "2026-09-07",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 862.12,
+    "unit": "EUR",
+    "volume": 3379.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": true,
+    "price": 359.6,
+    "unit": "EUR",
+    "volume": 3379.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 3379.0
+   }
+  ]
+ },
+ "202609145B9FF39E-E91E-4E6F-8982-AA6E840BFCD3": {
+  "date": "2026-09-14",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 5.22,
+    "unit": "USD",
+    "volume": 10000.0
+   }
+  ]
+ },
+ "202609185B9FF39E-E91E-4E6F-8982-AA6E840BFCD3": {
+  "date": "2026-09-18",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 4.83,
+    "unit": "USD",
+    "volume": 90000.0
+   }
+  ]
+ },
+ "2026091881338014-7FF2-4A98-BCDB-8CE989C84530": {
+  "date": "2026-09-18",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 875.0,
+    "unit": "EUR",
+    "volume": 1453.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": true,
+    "price": 309.2,
+    "unit": "EUR",
+    "volume": 1453.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 1453.0
+   }
+  ]
+ },
+ "202609243145E380-3906-4C85-ACE3-D90986DB23C9": {
+  "date": "2026-09-24",
+  "issuer": "Euronext N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "schenking/gift",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 1872.0
+   }
+  ]
+ },
+ "202609244DEBC0A9-3A56-46BE-B755-634AD7A06DDD": {
+  "date": "2026-09-24",
+  "issuer": "Euronext N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "schenking/gift",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 624.0
+   }
+  ]
+ },
+ "20260924AEEEC8DF-55FE-44CD-AC92-5F4AB2AAE5E0": {
+  "date": "2026-09-24",
+  "issuer": "Euronext N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "schenking/gift",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 624.0
+   }
+  ]
+ },
+ "20260924D06ADE23-9B68-4BF5-87B9-D6FD291583F1": {
+  "date": "2026-09-24",
+  "issuer": "Euronext N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "schenking/gift",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 624.0
+   }
+  ]
+ },
+ "20260930958D6469-B15B-477C-B055-D7C436FFE4E2": {
+  "date": "2026-09-30",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 351.0
+   },
+   {
+    "instrument": "unvested restricted stock units",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 351.0
+   }
+  ]
+ },
+ "20261007025546AC-5DA9-4EFB-A764-482CD95AB156": {
+  "date": "2026-10-07",
+  "issuer": "STMicroelectronics N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "dividend",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 7.7
+   }
+  ]
+ },
+ "2026100713441E6C-3DA1-4A28-BE5A-ACC204300502": {
+  "date": "2026-10-07",
+  "issuer": "STMicroelectronics N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "dividend",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 7.16
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "dividend",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "USD",
+    "volume": 3.38
+   }
+  ]
+ },
+ "20261007249E45A3-213F-4D62-AA1C-779BD5D86475": {
+  "date": "2026-10-07",
+  "issuer": "STMicroelectronics N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "dividend",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "USD",
+    "volume": 19.0
+   }
+  ]
+ },
+ "20261007376BFA4C-8E5E-4122-BD46-C9A2F944DF98": {
+  "date": "2026-10-07",
+  "issuer": "STMicroelectronics N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "dividend",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 20.89
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "dividend",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "USD",
+    "volume": 24.13
+   }
+  ]
+ },
+ "20261007497A796F-654A-4CE0-9404-1C9E1A25A69A": {
+  "date": "2026-10-07",
+  "issuer": "STMicroelectronics N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "dividend",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 4.21
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "dividend",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "USD",
+    "volume": 8.44
+   }
+  ]
+ },
+ "202610076B8B04A6-1C1D-4547-824B-9389541ABCF7": {
+  "date": "2026-10-07",
+  "issuer": "STMicroelectronics N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "dividend",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "USD",
+    "volume": 8.18
+   }
+  ]
+ },
+ "202610076EDC3B15-2D55-421C-87B8-715AED3EB87B": {
+  "date": "2026-10-07",
+  "issuer": "STMicroelectronics N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "dividend",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "USD",
+    "volume": 39.65
+   }
+  ]
+ },
+ "20261007EE27B07D-73DE-4785-A298-1842E915B883": {
+  "date": "2026-10-07",
+  "issuer": "STMicroelectronics N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "dividend",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "USD",
+    "volume": 18.31
+   }
+  ]
+ },
+ "202610267A78D077-2671-44FF-A693-5BE573AB20F8": {
+  "date": "2026-10-26",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 783.3,
+    "unit": "EUR",
+    "volume": 9000.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": true,
+    "price": 359.6,
+    "unit": "EUR",
+    "volume": 9000.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 9000.0
+   }
+  ]
+ },
+ "202610283F80171F-1B79-4B02-945C-1805C3102138": {
+  "date": "2026-10-28",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 804.71,
+    "unit": "EUR",
+    "volume": 500.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": true,
+    "price": 309.2,
+    "unit": "EUR",
+    "volume": 500.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 500.0
+   }
+  ]
+ },
+ "202610283FEB46E1-78DC-4C45-9BBF-FA776E8331F3": {
+  "date": "2026-10-28",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 805.0,
+    "unit": "EUR",
+    "volume": 1500.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": true,
+    "price": 359.6,
+    "unit": "EUR",
+    "volume": 1500.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 1500.0
+   }
+  ]
+ },
+ "2026110389A7BD17-C37D-4072-8996-EF9A09F8D9C1": {
+  "date": "2026-11-03",
+  "issuer": "STMicroelectronics N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 48.73,
+    "unit": "USD",
+    "volume": 6200.0
+   }
+  ]
+ },
+ "2026110436B2B2B2-9670-4417-8D87-1A85BD2EF00C": {
+  "date": "2026-11-04",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 825.0,
+    "unit": "EUR",
+    "volume": 13.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": true,
+    "price": 359.6,
+    "unit": "EUR",
+    "volume": 13.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 13.0
+   }
+  ]
+ },
+ "2026110536B2B2B2-9670-4417-8D87-1A85BD2EF00C": {
+  "date": "2026-11-05",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 825.0,
+    "unit": "EUR",
+    "volume": 921.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": true,
+    "price": 359.6,
+    "unit": "EUR",
+    "volume": 921.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 921.0
+   }
+  ]
+ }
+}

@@ -1,0 +1,2922 @@
+{
+ "2026DD1131634": {
+  "date": "2026-08-04",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-07-31",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 105.2796,
+    "volume": 996.0
+   }
+  ]
+ },
+ "2026DD1131636": {
+  "date": "2026-08-04",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-07-31",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 105.35,
+    "volume": 641.0
+   }
+  ]
+ },
+ "2026DD1131638": {
+  "date": "2026-08-04",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-07-31",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 105.25,
+    "volume": 1100.0
+   }
+  ]
+ },
+ "2026DD1131641": {
+  "date": "2026-08-04",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-07-31",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 105.2308,
+    "volume": 1904.0
+   }
+  ]
+ },
+ "2026DD1131647": {
+  "date": "2026-08-04",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-07-31",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 48.8424,
+    "volume": 20000.0
+   }
+  ]
+ },
+ "2026DD1131725": {
+  "date": "2026-08-04",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-07-31",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 166.2442,
+    "volume": 47763.0
+   }
+  ]
+ },
+ "2026DD1131727": {
+  "date": "2026-08-04",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-03",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 132.81,
+    "volume": 2730.0
+   }
+  ]
+ },
+ "2026DD1131744": {
+  "date": "2026-08-04",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-03",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 167.1522,
+    "volume": 5000.0
+   }
+  ]
+ },
+ "2026DD1131833": {
+  "date": "2026-08-04",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-07-31",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 16.57,
+    "volume": 66501415.0
+   }
+  ]
+ },
+ "2026DD1131894": {
+  "date": "2026-08-04",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-07-31",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 340.1999,
+    "volume": 1200.0
+   }
+  ]
+ },
+ "2026DD1131969": {
+  "date": "2026-08-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-03",
+    "instrument": "option d'achat",
+    "nature": "exercice",
+    "options": true,
+    "price": 37.99,
+    "volume": 11000.0
+   }
+  ]
+ },
+ "2026DD1131972": {
+  "date": "2026-08-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-03",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 49.439,
+    "volume": 11000.0
+   }
+  ]
+ },
+ "2026DD1132235": {
+  "date": "2026-08-06",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-04",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 82.2328,
+    "volume": 2000.0
+   }
+  ]
+ },
+ "2026DD1132419": {
+  "date": "2026-08-06",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-03",
+    "instrument": "parts d'un fcpe",
+    "nature": "souscription",
+    "options": false,
+    "price": 127.73,
+    "volume": 1565.8029
+   }
+  ]
+ },
+ "2026DD1132504": {
+  "date": "2026-08-07",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-05",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 35.22,
+    "volume": 8000.0
+   }
+  ]
+ },
+ "2026DD1132509": {
+  "date": "2026-08-07",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-05",
+    "instrument": "parts de fcpe",
+    "nature": "cession",
+    "options": false,
+    "price": 38.1509,
+    "volume": 17442.1452
+   }
+  ]
+ },
+ "2026DD1132592": {
+  "date": "2026-08-07",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-06",
+    "instrument": "action",
+    "nature": "present d'usage",
+    "options": false,
+    "price": 0.0,
+    "volume": 50.0
+   }
+  ]
+ },
+ "2026DD1132709": {
+  "date": "2026-08-10",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-07",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 22.0024,
+    "volume": 5000.0
+   }
+  ]
+ },
+ "2026DD1132928": {
+  "date": "2026-08-10",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-07",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 16.235,
+    "volume": 400.0
+   }
+  ]
+ },
+ "2026DD1132999": {
+  "date": "2026-08-11",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-10",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 304.2508,
+    "volume": 250.0
+   }
+  ]
+ },
+ "2026DD1133089": {
+  "date": "2026-08-11",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-07",
+    "instrument": "options de souscription",
+    "nature": "exercice",
+    "options": true,
+    "price": 51.93,
+    "volume": 3300.0
+   }
+  ]
+ },
+ "2026DD1133097": {
+  "date": "2026-08-11",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-07",
+    "instrument": "options de souscription",
+    "nature": "exercice",
+    "options": true,
+    "price": 58.7,
+    "volume": 4485.0
+   }
+  ]
+ },
+ "2026DD1133104": {
+  "date": "2026-08-11",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-07",
+    "instrument": "options de souscription",
+    "nature": "exercice",
+    "options": true,
+    "price": 51.93,
+    "volume": 4144.0
+   }
+  ]
+ },
+ "2026DD1133109": {
+  "date": "2026-08-11",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-07",
+    "instrument": "options de souscription",
+    "nature": "exercice",
+    "options": true,
+    "price": 51.93,
+    "volume": 194.0
+   }
+  ]
+ },
+ "2026DD1133395": {
+  "date": "2026-08-13",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-11",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 28.54,
+    "volume": 4815.0
+   }
+  ]
+ },
+ "2026DD1133521": {
+  "date": "2026-08-14",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-12",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 20.05,
+    "volume": 1018.33
+   }
+  ]
+ },
+ "2026DD1133556": {
+  "date": "2026-08-14",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-12",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 28.45,
+    "volume": 10989.0
+   }
+  ]
+ },
+ "2026DD1133806": {
+  "date": "2026-08-17",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-14",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 76.23,
+    "volume": 14562.0
+   }
+  ]
+ },
+ "2026DD1133854": {
+  "date": "2026-08-18",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-07-31",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 1543.9747,
+    "volume": 3000.0
+   }
+  ]
+ },
+ "2026DD1133941": {
+  "date": "2026-08-19",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-03-19",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 72.0541,
+    "volume": 150.2518
+   }
+  ]
+ },
+ "2026DD1134352": {
+  "date": "2026-08-21",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-20",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 101.8666,
+    "volume": 3848.0
+   }
+  ]
+ },
+ "2026DD1134558": {
+  "date": "2026-08-24",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-20",
+    "instrument": "parts de fonds d'epargne salariale",
+    "nature": "acquisition",
+    "options": false,
+    "price": 77.5618,
+    "volume": 1495.7745
+   }
+  ]
+ },
+ "2026DD1134566": {
+  "date": "2026-08-24",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-20",
+    "instrument": "parts de fonds d'epargne salariale",
+    "nature": "acquisition",
+    "options": false,
+    "price": 77.5618,
+    "volume": 840.1212
+   }
+  ]
+ },
+ "2026DD1134576": {
+  "date": "2026-08-24",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-20",
+    "instrument": "parts de fonds d'epargne salariale",
+    "nature": "acquisition",
+    "options": false,
+    "price": 77.5618,
+    "volume": 1422.3091
+   }
+  ]
+ },
+ "2026DD1134610": {
+  "date": "2026-08-25",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-20",
+    "instrument": "parts de fonds d'epargne salariale",
+    "nature": "acquisition",
+    "options": false,
+    "price": 77.5618,
+    "volume": 168.4732
+   }
+  ]
+ },
+ "2026DD1134644": {
+  "date": "2026-08-25",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-18",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 136.5,
+    "volume": 100.0
+   }
+  ]
+ },
+ "2026DD1134807": {
+  "date": "2026-08-26",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-03",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 391.45,
+    "volume": 10000.0
+   }
+  ]
+ },
+ "2026DD1134816": {
+  "date": "2026-08-26",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-20",
+    "instrument": "parts de fonds d'epargne salariale",
+    "nature": "acquisition",
+    "options": false,
+    "price": 77.5618,
+    "volume": 54.3189
+   }
+  ]
+ },
+ "2026DD1135312": {
+  "date": "2026-08-31",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-27",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 43.9209,
+    "volume": 200000.0
+   }
+  ]
+ },
+ "2026DD1135486": {
+  "date": "2026-08-31",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-28",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 22.9987,
+    "volume": 50978.0
+   }
+  ]
+ },
+ "2026DD1135503": {
+  "date": "2026-09-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-20",
+    "instrument": "parts de fonds d'epargne salariale",
+    "nature": "acquisition",
+    "options": false,
+    "price": 77.5618,
+    "volume": 1505.7538
+   }
+  ]
+ },
+ "2026DD1135640": {
+  "date": "2026-09-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-31",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 29.9646,
+    "volume": 4929.0
+   }
+  ]
+ },
+ "2026DD1135742": {
+  "date": "2026-09-02",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-31",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 44.255,
+    "volume": 271847.0
+   }
+  ]
+ },
+ "2026DD1135789": {
+  "date": "2026-09-02",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-31",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 22.8717,
+    "volume": 149022.0
+   }
+  ]
+ },
+ "2026DD1136003": {
+  "date": "2026-09-03",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-01",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 44.4192,
+    "volume": 25354.0
+   }
+  ]
+ },
+ "2026DD1136294": {
+  "date": "2026-09-04",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-02",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 43.8593,
+    "volume": 52345.0
+   }
+  ]
+ },
+ "2026DD1136517": {
+  "date": "2026-09-07",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-03",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 44.1445,
+    "volume": 57320.0
+   }
+  ]
+ },
+ "2026DD1136649": {
+  "date": "2026-09-07",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 29.16,
+    "volume": 1000.0
+   }
+  ]
+ },
+ "2026DD1136715": {
+  "date": "2026-09-07",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.2429,
+    "volume": 1121.9324
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 1116.6251
+   }
+  ]
+ },
+ "2026DD1136719": {
+  "date": "2026-09-07",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.4685,
+    "volume": 1.6921
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 1.689
+   }
+  ]
+ },
+ "2026DD1136724": {
+  "date": "2026-09-07",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.2429,
+    "volume": 6078.4246
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 6049.6701
+   }
+  ]
+ },
+ "2026DD1136746": {
+  "date": "2026-09-07",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.2429,
+    "volume": 5103.4541
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 5079.3119
+   }
+  ]
+ },
+ "2026DD1136754": {
+  "date": "2026-09-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.2429,
+    "volume": 6986.7148
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 6953.6636
+   }
+  ]
+ },
+ "2026DD1136757": {
+  "date": "2026-09-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 1459.128,
+    "volume": 125.0
+   }
+  ]
+ },
+ "2026DD1136770": {
+  "date": "2026-09-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.2429,
+    "volume": 35903.8438
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 35733.9979
+   }
+  ]
+ },
+ "2026DD1136774": {
+  "date": "2026-09-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.2429,
+    "volume": 56079.3452
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 55814.0576
+   }
+  ]
+ },
+ "2026DD1136777": {
+  "date": "2026-09-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.2429,
+    "volume": 916.0402
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 911.7067
+   }
+  ]
+ },
+ "2026DD1136778": {
+  "date": "2026-09-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.2429,
+    "volume": 3.0694
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 3.0549
+   }
+  ]
+ },
+ "2026DD1136779": {
+  "date": "2026-09-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.2429,
+    "volume": 8092.6296
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 8054.3468
+   }
+  ]
+ },
+ "2026DD1136782": {
+  "date": "2026-09-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.2429,
+    "volume": 63079.6128
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 62781.2099
+   }
+  ]
+ },
+ "2026DD1136783": {
+  "date": "2026-09-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.2429,
+    "volume": 41597.7583
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 41400.977
+   }
+  ]
+ },
+ "2026DD1136785": {
+  "date": "2026-09-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.2429,
+    "volume": 226.3474
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 225.2766
+   }
+  ]
+ },
+ "2026DD1136787": {
+  "date": "2026-09-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.2429,
+    "volume": 45835.3946
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 45618.5669
+   }
+  ]
+ },
+ "2026DD1136788": {
+  "date": "2026-09-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 44.4453,
+    "volume": 42238.0
+   }
+  ]
+ },
+ "2026DD1136792": {
+  "date": "2026-09-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.2429,
+    "volume": 1724.6878
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 1716.5291
+   }
+  ]
+ },
+ "2026DD1136793": {
+  "date": "2026-09-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.4685,
+    "volume": 648.4866
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 647.304
+   }
+  ]
+ },
+ "2026DD1137050": {
+  "date": "2026-09-09",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-07",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 44.8177,
+    "volume": 30360.0
+   }
+  ]
+ },
+ "2026DD1137345": {
+  "date": "2026-09-10",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-08",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 45.0734,
+    "volume": 7139.0
+   }
+  ]
+ },
+ "2026DD1137415": {
+  "date": "2026-09-10",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-07",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 28.9013,
+    "volume": 3328.0
+   }
+  ]
+ },
+ "2026DD1137416": {
+  "date": "2026-09-10",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-07",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 28.9011,
+    "volume": 4787.0
+   }
+  ]
+ },
+ "2026DD1137570": {
+  "date": "2026-09-11",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-09",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 44.2134,
+    "volume": 52362.0
+   }
+  ]
+ },
+ "2026DD1137814": {
+  "date": "2026-09-14",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-10",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 93.58,
+    "volume": 1.0
+   }
+  ]
+ },
+ "2026DD1138345": {
+  "date": "2026-09-16",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-11",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 1415.0,
+    "volume": 20.0
+   }
+  ]
+ },
+ "2026DD1138382": {
+  "date": "2026-09-16",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-14",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 29.9,
+    "volume": 1000.0
+   }
+  ]
+ },
+ "2026DD1138810": {
+  "date": "2026-09-18",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-15",
+    "instrument": "options de souscription",
+    "nature": "exercice",
+    "options": true,
+    "price": 51.93,
+    "volume": 3506.0
+   }
+  ]
+ },
+ "2026DD1139334": {
+  "date": "2026-09-22",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-02",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 27.88,
+    "volume": 67600.0
+   }
+  ]
+ },
+ "2026DD1139340": {
+  "date": "2026-09-22",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-08-02",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 27.88,
+    "volume": 21214.0
+   }
+  ]
+ },
+ "2026DD1139344": {
+  "date": "2026-09-22",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 77.4685,
+    "volume": 41.5803
+   },
+   {
+    "currency": "euro",
+    "date": "2026-09-04",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 77.61,
+    "volume": 41.5044
+   }
+  ]
+ },
+ "2026DD1139749": {
+  "date": "2026-09-23",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-22",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 72.94,
+    "volume": 600.0
+   }
+  ]
+ },
+ "2026DD1140037": {
+  "date": "2026-09-24",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-23",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 92.5,
+    "volume": 500.0
+   }
+  ]
+ },
+ "2026DD1140179": {
+  "date": "2026-09-25",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-21",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 44.7082,
+    "volume": 36717.0
+   }
+  ]
+ },
+ "2026DD1140336": {
+  "date": "2026-09-25",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-24",
+    "instrument": "action",
+    "nature": "present d'usage",
+    "options": false,
+    "price": 0.0,
+    "volume": 50.0
+   }
+  ]
+ },
+ "2026DD1140339": {
+  "date": "2026-09-25",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-24",
+    "instrument": "action",
+    "nature": "present d'usage",
+    "options": false,
+    "price": 0.0,
+    "volume": 50.0
+   }
+  ]
+ },
+ "2026DD1140617": {
+  "date": "2026-09-28",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-24",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 1349.35,
+    "volume": 150.0
+   }
+  ]
+ },
+ "2026DD1140802": {
+  "date": "2026-09-29",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-28",
+    "instrument": "action",
+    "nature": "attribution d'actions de performance",
+    "options": true,
+    "price": 0.0,
+    "volume": 3845.0
+   }
+  ]
+ },
+ "2026DD1140813": {
+  "date": "2026-09-29",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-28",
+    "instrument": "action",
+    "nature": "attribution d'actions de performance",
+    "options": true,
+    "price": 0.0,
+    "volume": 14125.0
+   }
+  ]
+ },
+ "2026DD1140815": {
+  "date": "2026-09-29",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-28",
+    "instrument": "unites de compte au sein de contrats d'assurance vie",
+    "nature": "reinvestissement du dividende au sein de contrats d'assurance vie",
+    "options": false,
+    "price": 96.46,
+    "volume": 2721.9265
+   }
+  ]
+ },
+ "2026DD1140875": {
+  "date": "2026-09-29",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-27",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 81.0483,
+    "volume": 5969.0965
+   }
+  ]
+ },
+ "2026DD1140911": {
+  "date": "2026-09-29",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-25",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 26.39,
+    "volume": 1500.0
+   }
+  ]
+ },
+ "2026DD1140938": {
+  "date": "2026-09-29",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-28",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 26.57,
+    "volume": 11251.0
+   }
+  ]
+ },
+ "2026DD1140950": {
+  "date": "2026-09-29",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-28",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 26.59,
+    "volume": 6000.0
+   }
+  ]
+ },
+ "2026DD1141084": {
+  "date": "2026-09-30",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-25",
+    "instrument": "sar",
+    "nature": "soucription plan epargne groupe",
+    "options": false,
+    "price": 31.33,
+    "volume": 3235.0
+   }
+  ]
+ },
+ "2026DD1141092": {
+  "date": "2026-09-30",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-29",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 146.15,
+    "volume": 250.0
+   }
+  ]
+ },
+ "2026DD1141223": {
+  "date": "2026-09-30",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-29",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 13.81,
+    "volume": 1500.0
+   }
+  ]
+ },
+ "2026DD1141375": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-28",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 16.4927,
+    "volume": 20000.0
+   }
+  ]
+ },
+ "2026DD1141482": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-15",
+    "instrument": "action",
+    "nature": "souscription",
+    "options": false,
+    "price": 31.33,
+    "volume": 517.0
+   }
+  ]
+ },
+ "2026DD1141486": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-15",
+    "instrument": "action",
+    "nature": "souscription",
+    "options": false,
+    "price": 31.33,
+    "volume": 1630.0
+   }
+  ]
+ },
+ "2026DD1141489": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-15",
+    "instrument": "action",
+    "nature": "souscription",
+    "options": false,
+    "price": 31.33,
+    "volume": 76.0
+   }
+  ]
+ },
+ "2026DD1141491": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-15",
+    "instrument": "action",
+    "nature": "souscription",
+    "options": false,
+    "price": 31.33,
+    "volume": 367.0
+   }
+  ]
+ },
+ "2026DD1141492": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-15",
+    "instrument": "action",
+    "nature": "souscription",
+    "options": false,
+    "price": 31.33,
+    "volume": 6364.0
+   }
+  ]
+ },
+ "2026DD1141494": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-15",
+    "instrument": "action",
+    "nature": "souscription",
+    "options": false,
+    "price": 31.33,
+    "volume": 672.0
+   }
+  ]
+ },
+ "2026DD1141495": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-15",
+    "instrument": "action",
+    "nature": "souscription",
+    "options": false,
+    "price": 31.33,
+    "volume": 1891.0
+   }
+  ]
+ },
+ "2026DD1141496": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-15",
+    "instrument": "action",
+    "nature": "souscription",
+    "options": false,
+    "price": 31.33,
+    "volume": 1505.0
+   }
+  ]
+ },
+ "2026DD1141497": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-15",
+    "instrument": "action",
+    "nature": "souscription",
+    "options": false,
+    "price": 31.33,
+    "volume": 3233.0
+   }
+  ]
+ },
+ "2026DD1141499": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-15",
+    "instrument": "action",
+    "nature": "souscription",
+    "options": false,
+    "price": 31.33,
+    "volume": 1030.0
+   }
+  ]
+ },
+ "2026DD1141500": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-15",
+    "instrument": "action",
+    "nature": "souscription",
+    "options": false,
+    "price": 31.33,
+    "volume": 3806.0
+   }
+  ]
+ },
+ "2026DD1141501": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-15",
+    "instrument": "action",
+    "nature": "souscription",
+    "options": false,
+    "price": 31.33,
+    "volume": 6653.0
+   }
+  ]
+ },
+ "2026DD1141502": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-15",
+    "instrument": "action",
+    "nature": "souscription",
+    "options": false,
+    "price": 31.33,
+    "volume": 1891.0
+   }
+  ]
+ },
+ "2026DD1141505": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-15",
+    "instrument": "action",
+    "nature": "souscription",
+    "options": false,
+    "price": 31.33,
+    "volume": 2993.0
+   }
+  ]
+ },
+ "2026DD1141579": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-29",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 13.728,
+    "volume": 14300.0
+   }
+  ]
+ },
+ "2026DD1141581": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-30",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 13.638,
+    "volume": 15000.0
+   }
+  ]
+ },
+ "2026DD1141588": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-30",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 13.685,
+    "volume": 1465.0
+   }
+  ]
+ },
+ "2026DD1141593": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-30",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 13.65,
+    "volume": 1450.0
+   }
+  ]
+ },
+ "2026DD1141596": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-29",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 13.84,
+    "volume": 1700.0
+   }
+  ]
+ },
+ "2026DD1141604": {
+  "date": "2026-10-01",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-01",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 13.6941,
+    "volume": 10000.0
+   }
+  ]
+ },
+ "2026DD1141775": {
+  "date": "2026-10-02",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-01",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 13.685,
+    "volume": 1700.0
+   }
+  ]
+ },
+ "2026DD1141777": {
+  "date": "2026-10-02",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-01",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 13.6,
+    "volume": 14775.0
+   }
+  ]
+ },
+ "2026DD1141778": {
+  "date": "2026-10-02",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-01",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 13.83,
+    "volume": 14600.0
+   }
+  ]
+ },
+ "2026DD1141783": {
+  "date": "2026-10-02",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-01",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 13.595,
+    "volume": 1500.0
+   }
+  ]
+ },
+ "2026DD1141791": {
+  "date": "2026-10-02",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-30",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 26.02,
+    "volume": 500.0
+   }
+  ]
+ },
+ "2026DD1141844": {
+  "date": "2026-10-02",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-01",
+    "instrument": "fcp",
+    "nature": "re correlation du fcp bnpp actionnariat france no 897 suite distribution acompte sur",
+    "options": false,
+    "price": 98.43,
+    "volume": 59.8599
+   }
+  ]
+ },
+ "2026DD1141859": {
+  "date": "2026-10-02",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-05-27",
+    "instrument": "fcp",
+    "nature": "re correlation du fcp bnpp actionnariat france no 897 suite distribution de dividende bnpp",
+    "options": false,
+    "price": 88.02,
+    "volume": 51.7519
+   }
+  ]
+ },
+ "2026DD1141870": {
+  "date": "2026-10-02",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-01",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 224.4,
+    "volume": 150.0
+   }
+  ]
+ },
+ "2026DD1142118": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-01",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 332.42,
+    "volume": 500.0
+   }
+  ]
+ },
+ "2026DD1142135": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "action",
+    "nature": "conclusion dun contrat financier a terme",
+    "options": false,
+    "price": 17.6824,
+    "volume": 45242727.0
+   }
+  ]
+ },
+ "2026DD1142153": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 75.698,
+    "volume": 13.2757
+   }
+  ]
+ },
+ "2026DD1142155": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 75.6983,
+    "volume": 71.9249
+   }
+  ]
+ },
+ "2026DD1142157": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 75.6983,
+    "volume": 60.3884
+   }
+  ]
+ },
+ "2026DD1142158": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 75.6983,
+    "volume": 82.6728
+   }
+  ]
+ },
+ "2026DD1142159": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 75.6983,
+    "volume": 353.8773
+   }
+  ]
+ },
+ "2026DD1142165": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 75.6983,
+    "volume": 663.5776
+   }
+  ]
+ },
+ "2026DD1142168": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 75.6983,
+    "volume": 10.8394
+   }
+  ]
+ },
+ "2026DD1142171": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 75.6983,
+    "volume": 0.0363
+   }
+  ]
+ },
+ "2026DD1142176": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 75.6983,
+    "volume": 95.7588
+   }
+  ]
+ },
+ "2026DD1142180": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 75.6983,
+    "volume": 746.4108
+   }
+  ]
+ },
+ "2026DD1142185": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 75.6983,
+    "volume": 492.2193
+   }
+  ]
+ },
+ "2026DD1142246": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "recorrelation du fcp actionnariat au cours de l'action par creation de nouvelles",
+    "nature": "acquisition",
+    "options": false,
+    "price": 98.43,
+    "volume": 1193.7678
+   }
+  ]
+ },
+ "2026DD1142254": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "recorrelation du fcp actionnariat au cours de l'action par creation de nouvelles",
+    "nature": "acquisition",
+    "options": false,
+    "price": 98.43,
+    "volume": 1214.7525
+   }
+  ]
+ },
+ "2026DD1142268": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "recorrelation du fcp actionnariat au cours de l'action par creation de nouvelles",
+    "nature": "acquisition",
+    "options": false,
+    "price": 98.43,
+    "volume": 95.2018
+   }
+  ]
+ },
+ "2026DD1142312": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 75.6983,
+    "volume": 2.6783
+   }
+  ]
+ },
+ "2026DD1142313": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 75.6983,
+    "volume": 542.3626
+   }
+  ]
+ },
+ "2026DD1142315": {
+  "date": "2026-10-05",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-02",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 75.6983,
+    "volume": 20.408
+   }
+  ]
+ },
+ "2026DD1142545": {
+  "date": "2026-10-06",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-05",
+    "instrument": "totalenergies actionnariat international",
+    "nature": "souscription",
+    "options": false,
+    "price": 74.46,
+    "volume": 56.917
+   }
+  ]
+ },
+ "2026DD1142679": {
+  "date": "2026-10-07",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-01",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 101.45,
+    "volume": 500.0
+   }
+  ]
+ },
+ "2026DD1142701": {
+  "date": "2026-10-07",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-01",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 115.4,
+    "volume": 500.0
+   }
+  ]
+ },
+ "2026DD1142775": {
+  "date": "2026-10-07",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-29",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 13.9,
+    "volume": 400.0
+   }
+  ]
+ },
+ "2026DD1142817": {
+  "date": "2026-10-07",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-06",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 75.7958,
+    "volume": 30.2787
+   }
+  ]
+ },
+ "2026DD1142841": {
+  "date": "2026-10-07",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-06",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "souscription",
+    "options": false,
+    "price": 75.7958,
+    "volume": 16.0299
+   }
+  ]
+ },
+ "2026DD1142910": {
+  "date": "2026-10-07",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-09-24",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 98.333,
+    "volume": 240.4331
+   }
+  ]
+ },
+ "2026DD1142912": {
+  "date": "2026-10-07",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-01",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 91.4562,
+    "volume": 141.2698
+   }
+  ]
+ },
+ "2026DD1143093": {
+  "date": "2026-10-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-07",
+    "instrument": "action",
+    "nature": "livraison d'actions de performance",
+    "options": true,
+    "price": 0.0,
+    "volume": 665.0
+   }
+  ]
+ },
+ "2026DD1143106": {
+  "date": "2026-10-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-07",
+    "instrument": "action",
+    "nature": "livraison d'actions de performance",
+    "options": true,
+    "price": 0.0,
+    "volume": 216.0
+   }
+  ]
+ },
+ "2026DD1143121": {
+  "date": "2026-10-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-07",
+    "instrument": "action",
+    "nature": "livraison d'actions de performance",
+    "options": true,
+    "price": 0.0,
+    "volume": 1744.0
+   }
+  ]
+ },
+ "2026DD1143128": {
+  "date": "2026-10-08",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-07",
+    "instrument": "action",
+    "nature": "livraison d'actions de performance",
+    "options": true,
+    "price": 0.0,
+    "volume": 3332.0
+   }
+  ]
+ },
+ "2026DD1143238": {
+  "date": "2026-10-09",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-07",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 89.74,
+    "volume": 100.0
+   }
+  ]
+ },
+ "2026DD1143304": {
+  "date": "2026-10-09",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-06",
+    "instrument": "action",
+    "nature": "arbitrage d'unites de compte (fonds en euros)",
+    "options": false,
+    "price": 13.98,
+    "volume": 3465.97
+   }
+  ]
+ },
+ "2026DD1144078": {
+  "date": "2026-10-14",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-13",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 169.26,
+    "volume": 2200.0
+   }
+  ]
+ },
+ "2026DD1144115": {
+  "date": "2026-10-14",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-12",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": true,
+    "price": 0.0,
+    "volume": 6315.0
+   }
+  ]
+ },
+ "2026DD1144286": {
+  "date": "2026-10-15",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-06",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 17.01,
+    "volume": 884.956
+   }
+  ]
+ },
+ "2026DD1144489": {
+  "date": "2026-10-15",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-14",
+    "instrument": "actions gratuites",
+    "nature": "cession",
+    "options": true,
+    "price": 70.3,
+    "volume": 798.0
+   }
+  ]
+ },
+ "2026DD1144515": {
+  "date": "2026-10-16",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-14",
+    "instrument": "action",
+    "nature": "nantissement d'actions",
+    "options": false,
+    "price": 0.0,
+    "volume": 950917.0
+   }
+  ]
+ },
+ "2026DD1146115": {
+  "date": "2026-10-26",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-23",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 428.6969,
+    "volume": 10000.0
+   }
+  ]
+ },
+ "2026DD1146120": {
+  "date": "2026-10-26",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-14",
+    "instrument": "action",
+    "nature": "acquisition d'actions gratuites",
+    "options": true,
+    "price": 0.0,
+    "volume": 20000.0
+   }
+  ]
+ },
+ "2026DD1146121": {
+  "date": "2026-10-26",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-23",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 1254.0745,
+    "volume": 2000.0
+   }
+  ]
+ },
+ "2026DD1146123": {
+  "date": "2026-10-26",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-22",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 1243.4571,
+    "volume": 2000.0
+   }
+  ]
+ },
+ "2026DD1146307": {
+  "date": "2026-10-26",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-26",
+    "instrument": "action",
+    "nature": "acquisition dactions de performance",
+    "options": true,
+    "price": 0.0,
+    "volume": 1661.0
+   }
+  ]
+ },
+ "2026DD1146325": {
+  "date": "2026-10-26",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-26",
+    "instrument": "action",
+    "nature": "acquisition dactions de performance",
+    "options": true,
+    "price": 0.0,
+    "volume": 472.0
+   }
+  ]
+ },
+ "2026DD1146331": {
+  "date": "2026-10-26",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-26",
+    "instrument": "action",
+    "nature": "acquisition dactions de performance",
+    "options": true,
+    "price": 0.0,
+    "volume": 345.0
+   }
+  ]
+ },
+ "2026DD1146333": {
+  "date": "2026-10-26",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-26",
+    "instrument": "action",
+    "nature": "acquisition dactions de performance",
+    "options": true,
+    "price": 0.0,
+    "volume": 345.0
+   }
+  ]
+ },
+ "2026DD1146410": {
+  "date": "2026-10-27",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-26",
+    "instrument": "action",
+    "nature": "acquisition dactions de performance",
+    "options": true,
+    "price": 0.0,
+    "volume": 7012.0
+   }
+  ]
+ },
+ "2026DD1146458": {
+  "date": "2026-10-27",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-07-30",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 123.9475,
+    "volume": 70250.0
+   }
+  ]
+ },
+ "2026DD1146527": {
+  "date": "2026-10-27",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-23",
+    "instrument": "action",
+    "nature": "donation",
+    "options": false,
+    "price": 0.0,
+    "volume": 17509.0
+   }
+  ]
+ },
+ "2026DD1146691": {
+  "date": "2026-10-28",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-26",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 436.9468,
+    "volume": 17509.0
+   }
+  ]
+ },
+ "2026DD1146694": {
+  "date": "2026-10-28",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-23",
+    "instrument": "action",
+    "nature": "beneficiaire d'une donation",
+    "options": false,
+    "price": 0.0,
+    "volume": 17509.0
+   }
+  ]
+ },
+ "2026DD1146952": {
+  "date": "2026-10-29",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-27",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 99.8072,
+    "volume": 6441.0
+   }
+  ]
+ },
+ "2026DD1147234": {
+  "date": "2026-10-29",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-28",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 1321.01,
+    "volume": 30000.0
+   }
+  ]
+ },
+ "2026DD1147330": {
+  "date": "2026-10-30",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-26",
+    "instrument": "action",
+    "nature": "nantissement",
+    "options": false,
+    "price": 0.0,
+    "volume": 1600000.0
+   }
+  ]
+ },
+ "2026DD1147687": {
+  "date": "2026-11-02",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-30",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 180.0658,
+    "volume": 1808.0
+   }
+  ]
+ },
+ "2026DD1147809": {
+  "date": "2026-11-02",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-30",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 27.6579,
+    "volume": 1500.0
+   }
+  ]
+ },
+ "2026DD1147830": {
+  "date": "2026-11-02",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-30",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 28.12,
+    "volume": 2000.0
+   }
+  ]
+ },
+ "2026DD1147964": {
+  "date": "2026-11-03",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-02",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 180.5002,
+    "volume": 3077.0
+   }
+  ]
+ },
+ "2026DD1148153": {
+  "date": "2026-11-03",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-10-30",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 80.0,
+    "volume": 650.0
+   }
+  ]
+ },
+ "2026DD1148158": {
+  "date": "2026-11-03",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-03",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 24.99,
+    "volume": 1000.0
+   }
+  ]
+ },
+ "2026DD1148197": {
+  "date": "2026-11-03",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-03",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 24.9843,
+    "volume": 1200.0
+   }
+  ]
+ },
+ "2026DD1148219": {
+  "date": "2026-11-03",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-02",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 85.2,
+    "volume": 6200.0
+   }
+  ]
+ },
+ "2026DD1149162": {
+  "date": "2026-11-06",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-05",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 82.7047,
+    "volume": 11781.1853
+   }
+  ]
+ },
+ "2026DD1149342": {
+  "date": "2026-11-09",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-05",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 50.0,
+    "volume": 10000.0
+   }
+  ]
+ },
+ "2026DD1149369": {
+  "date": "2026-11-09",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-03",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 125.0,
+    "volume": 8000.0
+   }
+  ]
+ },
+ "2026DD1149370": {
+  "date": "2026-11-09",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-05",
+    "instrument": "options de souscription",
+    "nature": "levee de stock-options",
+    "options": true,
+    "price": 51.93,
+    "volume": 2000.0
+   },
+   {
+    "currency": "euro",
+    "date": "2026-11-05",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 95.0,
+    "volume": 2000.0
+   }
+  ]
+ },
+ "2026DD1149371": {
+  "date": "2026-11-09",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-03",
+    "instrument": "action",
+    "nature": "mainlevee partielle de nantissement d'actions",
+    "options": false,
+    "price": 0.0,
+    "volume": 600000.0
+   }
+  ]
+ },
+ "2026DD1149476": {
+  "date": "2026-11-09",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-06",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 25.72,
+    "volume": 200.0
+   }
+  ]
+ },
+ "2026DD1149477": {
+  "date": "2026-11-09",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-06",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 25.733,
+    "volume": 20000.0
+   }
+  ]
+ },
+ "2026DD1149643": {
+  "date": "2026-11-10",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-09",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 51.0,
+    "volume": 10000.0
+   }
+  ]
+ },
+ "2026DD1149646": {
+  "date": "2026-11-10",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-09",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 50.6442,
+    "volume": 10000.0
+   }
+  ]
+ },
+ "2026DD1149775": {
+  "date": "2026-11-10",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-10",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 133.95,
+    "volume": 10483.0
+   }
+  ]
+ },
+ "2026DD1149921": {
+  "date": "2026-11-11",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-09",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 446.699,
+    "volume": 3500.0
+   }
+  ]
+ },
+ "2026DD1149922": {
+  "date": "2026-11-11",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-09",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 446.699,
+    "volume": 3500.0
+   }
+  ]
+ }
+}
