@@ -17,10 +17,13 @@
   "max_buys_per_day": 5,
   "sector_cap": 0.25,
   "earnings_block_days": 7,
-  "order_expiry_days": 7
+  "order_expiry_days": 7,
+  "regime_ma_days": 200,
+  "exit_score": 40,
+  "exit_days": 5
  },
  "started": "2026-11-06",
- "last_run": "2026-11-11T03:03:18Z",
+ "last_run": "2026-11-12T03:41:15Z",
  "portfolios": {
   "bot": {
    "label": "Brodel 2.0 ab 60",
@@ -37,12 +40,12 @@
      "entry_price": 173.19000244140625,
      "shares": 32,
      "cost_eur": 4972.69,
-     "high_close": 175.19000244140625,
-     "stop": 148.911502,
-     "last_price": 175.19000244140625,
-     "last_day": "2026-11-10",
+     "high_close": 175.89999389648438,
+     "stop": 149.514995,
+     "last_price": 175.89999389648438,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4995.41
+     "last_value_eur": 5039.69
     },
     {
      "symbol": "ACGL",
@@ -53,12 +56,12 @@
      "entry_price": 105.47000122070312,
      "shares": 52,
      "cost_eur": 4920.98,
-     "high_close": 109.13999938964844,
-     "stop": 92.768999,
-     "last_price": 109.13999938964844,
-     "last_day": "2026-11-10",
+     "high_close": 109.16999816894531,
+     "stop": 92.794498,
+     "last_price": 109.16999816894531,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 5057.07
+     "last_value_eur": 5082.7
     },
     {
      "symbol": "CPAY",
@@ -69,12 +72,12 @@
      "entry_price": 459.6199951171875,
      "shares": 12,
      "cost_eur": 4948.79,
-     "high_close": 459.6400146484375,
-     "stop": 390.694012,
-     "last_price": 459.6400146484375,
-     "last_day": "2026-11-10",
+     "high_close": 461.95001220703125,
+     "stop": 392.65751,
+     "last_price": 461.95001220703125,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4914.86
+     "last_value_eur": 4963.23
     },
     {
      "symbol": "FTV",
@@ -85,12 +88,12 @@
      "entry_price": 66.30999755859375,
      "shares": 84,
      "cost_eur": 4997.77,
-     "high_close": 67.7300033569336,
-     "stop": 57.570503,
-     "last_price": 67.7300033569336,
-     "last_day": "2026-11-10",
+     "high_close": 67.88999938964844,
+     "stop": 57.706499,
+     "last_price": 67.88999938964844,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 5069.58
+     "last_value_eur": 5105.91
     },
     {
      "symbol": "GEHC",
@@ -103,10 +106,10 @@
      "cost_eur": 4989.66,
      "high_close": 84.02999877929688,
      "stop": 71.425499,
-     "last_price": 83.6500015258789,
-     "last_day": "2026-11-10",
+     "last_price": 82.5999984741211,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4994.05
+     "last_value_eur": 4954.99
     },
     {
      "symbol": "PYPL",
@@ -119,10 +122,10 @@
      "cost_eur": 4983.76,
      "high_close": 60.04999923706055,
      "stop": 51.042499,
-     "last_price": 58.779998779296875,
-     "last_day": "2026-11-10",
+     "last_price": 59.47999954223633,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4871.07
+     "last_value_eur": 4952.7
     },
     {
      "symbol": "SU.TO",
@@ -133,12 +136,12 @@
      "entry_price": 95.94999694824219,
      "shares": 81,
      "cost_eur": 4939.93,
-     "high_close": 96.12000274658203,
-     "stop": 81.702002,
-     "last_price": 96.12000274658203,
-     "last_day": "2026-11-10",
+     "high_close": 98.20999908447266,
+     "stop": 83.478499,
+     "last_price": 98.20999908447266,
+     "last_day": "2026-11-11",
      "currency": "CAD",
-     "last_value_eur": 4914.11
+     "last_value_eur": 5021.21
     },
     {
      "symbol": "SSE.L",
@@ -151,10 +154,10 @@
      "cost_eur": 4998.63,
      "high_close": 2681.0,
      "stop": 2278.85,
-     "last_price": 2681.0,
-     "last_day": "2026-11-09",
+     "last_price": 2670.0,
+     "last_day": "2026-11-10",
      "currency": "GBP",
-     "last_value_eur": 5073.82
+     "last_value_eur": 5042.55
     },
     {
      "symbol": "LSEG.L",
@@ -167,10 +170,10 @@
      "cost_eur": 4913.16,
      "high_close": 9484.0,
      "stop": 8061.4,
-     "last_price": 9380.0,
-     "last_day": "2026-11-09",
+     "last_price": 9394.0,
+     "last_day": "2026-11-10",
      "currency": "GBP",
-     "last_value_eur": 4831.17
+     "last_value_eur": 4828.38
     },
     {
      "symbol": "EG",
@@ -181,12 +184,12 @@
      "entry_price": 414.0,
      "shares": 13,
      "cost_eur": 4796.74,
-     "high_close": 422.32000732421875,
-     "stop": 358.972006,
-     "last_price": 422.32000732421875,
-     "last_day": "2026-11-10",
+     "high_close": 423.739990234375,
+     "stop": 360.178992,
+     "last_price": 423.739990234375,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4892.12
+     "last_value_eur": 4932.09
     },
     {
      "symbol": "RPRX",
@@ -197,12 +200,12 @@
      "entry_price": 68.47000122070312,
      "shares": 81,
      "cost_eur": 4942.94,
-     "high_close": 69.44999694824219,
-     "stop": 59.032497,
-     "last_price": 69.44999694824219,
-     "last_day": "2026-11-10",
+     "high_close": 70.01000213623047,
+     "stop": 59.508502,
+     "last_price": 70.01000213623047,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 5012.67
+     "last_value_eur": 5077.3
     },
     {
      "symbol": "STE",
@@ -215,10 +218,10 @@
      "cost_eur": 4790.64,
      "high_close": 257.1199951171875,
      "stop": 218.551996,
-     "last_price": 257.1199951171875,
-     "last_day": "2026-11-10",
+     "last_price": 256.2699890136719,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4811.35
+     "last_value_eur": 4818.42
     },
     {
      "symbol": "VRTX",
@@ -231,10 +234,10 @@
      "cost_eur": 4874.89,
      "high_close": 547.8900146484375,
      "stop": 465.706512,
-     "last_price": 547.8900146484375,
-     "last_day": "2026-11-10",
+     "last_price": 547.030029296875,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4882.08
+     "last_value_eur": 4897.78
     },
     {
      "symbol": "WST",
@@ -245,12 +248,12 @@
      "entry_price": 410.8800048828125,
      "shares": 13,
      "cost_eur": 4760.6,
-     "high_close": 412.54998779296875,
-     "stop": 350.66749,
-     "last_price": 412.54998779296875,
-     "last_day": "2026-11-10",
+     "high_close": 412.8599853515625,
+     "stop": 350.930988,
+     "last_price": 412.8599853515625,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4778.94
+     "last_value_eur": 4805.45
     },
     {
      "symbol": "ROP",
@@ -261,12 +264,12 @@
      "entry_price": 470.0799865722656,
      "shares": 11,
      "cost_eur": 4608.62,
-     "high_close": 474.4700012207031,
-     "stop": 403.299501,
-     "last_price": 474.4700012207031,
-     "last_day": "2026-11-10",
+     "high_close": 477.70001220703125,
+     "stop": 406.04501,
+     "last_price": 477.70001220703125,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4650.65
+     "last_value_eur": 4704.74
     },
     {
      "symbol": "TRV",
@@ -279,10 +282,10 @@
      "cost_eur": 4955.56,
      "high_close": 400.7799987792969,
      "stop": 340.662999,
-     "last_price": 400.7799987792969,
-     "last_day": "2026-11-10",
+     "last_price": 399.4599914550781,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4999.72
+     "last_value_eur": 5007.14
     },
     {
      "symbol": "WSM",
@@ -293,12 +296,12 @@
      "entry_price": 258.3900146484375,
      "shares": 21,
      "cost_eur": 4836.12,
-     "high_close": 261.54998779296875,
-     "stop": 222.31749,
-     "last_price": 261.54998779296875,
-     "last_day": "2026-11-10",
+     "high_close": 262.0899963378906,
+     "stop": 222.776497,
+     "last_price": 262.0899963378906,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4894.25
+     "last_value_eur": 4927.85
     },
     {
      "symbol": "ADP",
@@ -309,12 +312,12 @@
      "entry_price": 300.45001220703125,
      "shares": 18,
      "cost_eur": 4820.0,
-     "high_close": 305.44000244140625,
-     "stop": 259.624002,
-     "last_price": 305.44000244140625,
-     "last_day": "2026-11-10",
+     "high_close": 306.3599853515625,
+     "stop": 260.405988,
+     "last_price": 306.3599853515625,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4899.03
+     "last_value_eur": 4937.33
     },
     {
      "symbol": "EOG",
@@ -325,12 +328,12 @@
      "entry_price": 147.08999633789062,
      "shares": 38,
      "cost_eur": 4981.56,
-     "high_close": 151.50999450683594,
-     "stop": 128.783495,
-     "last_price": 151.50999450683594,
-     "last_day": "2026-11-10",
+     "high_close": 153.77000427246094,
+     "stop": 130.704504,
+     "last_price": 153.77000427246094,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 5130.23
+     "last_value_eur": 5231.7
     },
     {
      "symbol": "JBL",
@@ -341,12 +344,12 @@
      "entry_price": 250.27000427246094,
      "shares": 22,
      "cost_eur": 4907.18,
-     "high_close": 250.27000427246094,
-     "stop": 212.729504,
-     "last_price": 249.82000732421875,
-     "last_day": "2026-11-10",
+     "high_close": 258.8900146484375,
+     "stop": 220.056512,
+     "last_price": 258.8900146484375,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4897.36
+     "last_value_eur": 5099.48
     }
    ],
    "pending": [],
@@ -553,7 +556,7 @@
     }
    ],
    "cooldown": {},
-   "last_decision": "2026-11-10"
+   "last_decision": "2026-11-11"
   },
   "no_stop": {
    "label": "Brodel 2.0 ab 60 ohne Stop-Loss",
@@ -570,12 +573,12 @@
      "entry_price": 173.19000244140625,
      "shares": 32,
      "cost_eur": 4972.69,
-     "high_close": 175.19000244140625,
+     "high_close": 175.89999389648438,
      "stop": 147.211502,
-     "last_price": 175.19000244140625,
-     "last_day": "2026-11-10",
+     "last_price": 175.89999389648438,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4995.41
+     "last_value_eur": 5039.69
     },
     {
      "symbol": "ACGL",
@@ -586,12 +589,12 @@
      "entry_price": 105.47000122070312,
      "shares": 52,
      "cost_eur": 4920.98,
-     "high_close": 109.13999938964844,
+     "high_close": 109.16999816894531,
      "stop": 89.649501,
-     "last_price": 109.13999938964844,
-     "last_day": "2026-11-10",
+     "last_price": 109.16999816894531,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 5057.07
+     "last_value_eur": 5082.7
     },
     {
      "symbol": "CPAY",
@@ -602,12 +605,12 @@
      "entry_price": 459.6199951171875,
      "shares": 12,
      "cost_eur": 4948.79,
-     "high_close": 459.6400146484375,
+     "high_close": 461.95001220703125,
      "stop": 390.676996,
-     "last_price": 459.6400146484375,
-     "last_day": "2026-11-10",
+     "last_price": 461.95001220703125,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4914.86
+     "last_value_eur": 4963.23
     },
     {
      "symbol": "FTV",
@@ -618,12 +621,12 @@
      "entry_price": 66.30999755859375,
      "shares": 84,
      "cost_eur": 4997.77,
-     "high_close": 67.7300033569336,
+     "high_close": 67.88999938964844,
      "stop": 56.363498,
-     "last_price": 67.7300033569336,
-     "last_day": "2026-11-10",
+     "last_price": 67.88999938964844,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 5069.58
+     "last_value_eur": 5105.91
     },
     {
      "symbol": "GEHC",
@@ -636,10 +639,10 @@
      "cost_eur": 4989.66,
      "high_close": 84.02999877929688,
      "stop": 70.55,
-     "last_price": 83.6500015258789,
-     "last_day": "2026-11-10",
+     "last_price": 82.5999984741211,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4994.05
+     "last_value_eur": 4954.99
     },
     {
      "symbol": "PYPL",
@@ -652,10 +655,10 @@
      "cost_eur": 4983.76,
      "high_close": 60.04999923706055,
      "stop": 50.766249,
-     "last_price": 58.779998779296875,
-     "last_day": "2026-11-10",
+     "last_price": 59.47999954223633,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4871.07
+     "last_value_eur": 4952.7
     },
     {
      "symbol": "SU.TO",
@@ -666,12 +669,12 @@
      "entry_price": 95.94999694824219,
      "shares": 81,
      "cost_eur": 4939.93,
-     "high_close": 96.12000274658203,
+     "high_close": 98.20999908447266,
      "stop": 81.557497,
-     "last_price": 96.12000274658203,
-     "last_day": "2026-11-10",
+     "last_price": 98.20999908447266,
+     "last_day": "2026-11-11",
      "currency": "CAD",
-     "last_value_eur": 4914.11
+     "last_value_eur": 5021.21
     },
     {
      "symbol": "SSE.L",
@@ -684,10 +687,10 @@
      "cost_eur": 4998.63,
      "high_close": 2681.0,
      "stop": 2232.1,
-     "last_price": 2681.0,
-     "last_day": "2026-11-09",
+     "last_price": 2670.0,
+     "last_day": "2026-11-10",
      "currency": "GBP",
-     "last_value_eur": 5073.82
+     "last_value_eur": 5042.55
     },
     {
      "symbol": "LSEG.L",
@@ -700,10 +703,10 @@
      "cost_eur": 4913.16,
      "high_close": 9484.0,
      "stop": 8061.4,
-     "last_price": 9380.0,
-     "last_day": "2026-11-09",
+     "last_price": 9394.0,
+     "last_day": "2026-11-10",
      "currency": "GBP",
-     "last_value_eur": 4831.17
+     "last_value_eur": 4828.38
     },
     {
      "symbol": "EG",
@@ -714,12 +717,12 @@
      "entry_price": 414.0,
      "shares": 13,
      "cost_eur": 4796.74,
-     "high_close": 422.32000732421875,
+     "high_close": 423.739990234375,
      "stop": 351.9,
-     "last_price": 422.32000732421875,
-     "last_day": "2026-11-10",
+     "last_price": 423.739990234375,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4892.12
+     "last_value_eur": 4932.09
     },
     {
      "symbol": "RPRX",
@@ -730,12 +733,12 @@
      "entry_price": 68.47000122070312,
      "shares": 81,
      "cost_eur": 4942.94,
-     "high_close": 69.44999694824219,
+     "high_close": 70.01000213623047,
      "stop": 58.199501,
-     "last_price": 69.44999694824219,
-     "last_day": "2026-11-10",
+     "last_price": 70.01000213623047,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 5012.67
+     "last_value_eur": 5077.3
     },
     {
      "symbol": "STE",
@@ -748,10 +751,10 @@
      "cost_eur": 4790.64,
      "high_close": 257.1199951171875,
      "stop": 217.566006,
-     "last_price": 257.1199951171875,
-     "last_day": "2026-11-10",
+     "last_price": 256.2699890136719,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4811.35
+     "last_value_eur": 4818.42
     },
     {
      "symbol": "VRTX",
@@ -764,10 +767,10 @@
      "cost_eur": 4874.89,
      "high_close": 547.8900146484375,
      "stop": 464.924475,
-     "last_price": 547.8900146484375,
-     "last_day": "2026-11-10",
+     "last_price": 547.030029296875,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4882.08
+     "last_value_eur": 4897.78
     },
     {
      "symbol": "WST",
@@ -778,12 +781,12 @@
      "entry_price": 410.8800048828125,
      "shares": 13,
      "cost_eur": 4760.6,
-     "high_close": 412.54998779296875,
+     "high_close": 412.8599853515625,
      "stop": 349.248004,
-     "last_price": 412.54998779296875,
-     "last_day": "2026-11-10",
+     "last_price": 412.8599853515625,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4778.94
+     "last_value_eur": 4805.45
     },
     {
      "symbol": "ROP",
@@ -794,12 +797,12 @@
      "entry_price": 470.0799865722656,
      "shares": 11,
      "cost_eur": 4608.62,
-     "high_close": 474.4700012207031,
+     "high_close": 477.70001220703125,
      "stop": 399.567989,
-     "last_price": 474.4700012207031,
-     "last_day": "2026-11-10",
+     "last_price": 477.70001220703125,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4650.65
+     "last_value_eur": 4704.74
     },
     {
      "symbol": "TRV",
@@ -812,10 +815,10 @@
      "cost_eur": 4955.56,
      "high_close": 400.7799987792969,
      "stop": 337.586003,
-     "last_price": 400.7799987792969,
-     "last_day": "2026-11-10",
+     "last_price": 399.4599914550781,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4999.72
+     "last_value_eur": 5007.14
     },
     {
      "symbol": "WSM",
@@ -826,12 +829,12 @@
      "entry_price": 258.3900146484375,
      "shares": 21,
      "cost_eur": 4836.12,
-     "high_close": 261.54998779296875,
+     "high_close": 262.0899963378906,
      "stop": 219.631512,
-     "last_price": 261.54998779296875,
-     "last_day": "2026-11-10",
+     "last_price": 262.0899963378906,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4894.25
+     "last_value_eur": 4927.85
     },
     {
      "symbol": "ADP",
@@ -842,12 +845,12 @@
      "entry_price": 300.45001220703125,
      "shares": 18,
      "cost_eur": 4820.0,
-     "high_close": 305.44000244140625,
+     "high_close": 306.3599853515625,
      "stop": 255.38251,
-     "last_price": 305.44000244140625,
-     "last_day": "2026-11-10",
+     "last_price": 306.3599853515625,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4899.03
+     "last_value_eur": 4937.33
     },
     {
      "symbol": "EOG",
@@ -858,12 +861,12 @@
      "entry_price": 147.08999633789062,
      "shares": 38,
      "cost_eur": 4981.56,
-     "high_close": 151.50999450683594,
+     "high_close": 153.77000427246094,
      "stop": 125.026497,
-     "last_price": 151.50999450683594,
-     "last_day": "2026-11-10",
+     "last_price": 153.77000427246094,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 5130.23
+     "last_value_eur": 5231.7
     },
     {
      "symbol": "JBL",
@@ -874,12 +877,12 @@
      "entry_price": 250.27000427246094,
      "shares": 22,
      "cost_eur": 4907.18,
-     "high_close": 250.27000427246094,
+     "high_close": 258.8900146484375,
      "stop": 212.729504,
-     "last_price": 249.82000732421875,
-     "last_day": "2026-11-10",
+     "last_price": 258.8900146484375,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4897.36
+     "last_value_eur": 5099.48
     }
    ],
    "pending": [],
@@ -1086,13 +1089,13 @@
     }
    ],
    "cooldown": {},
-   "last_decision": "2026-11-10"
+   "last_decision": "2026-11-11"
   },
   "rank": {
    "label": "Brodel 3.0 beste 2 %",
    "use_stop": true,
    "rule": "rank",
-   "cash": 32727.508199561395,
+   "cash": 9473.388482948212,
    "positions": [
     {
      "symbol": "SNDK",
@@ -1103,12 +1106,12 @@
      "entry_price": 856.4400024414062,
      "shares": 6,
      "cost_eur": 4610.77,
-     "high_close": 886.510009765625,
-     "stop": 753.533508,
-     "last_price": 859.989990234375,
-     "last_day": "2026-11-10",
+     "high_close": 977.6900024414062,
+     "stop": 831.036502,
+     "last_price": 977.6900024414062,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4597.87
+     "last_value_eur": 5252.19
     },
     {
      "symbol": "HALO",
@@ -1121,10 +1124,10 @@
      "cost_eur": 4944.75,
      "high_close": 103.9800033569336,
      "stop": 88.383003,
-     "last_price": 102.9800033569336,
-     "last_day": "2026-11-10",
+     "last_price": 101.68000030517578,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4863.41
+     "last_value_eur": 4825.02
     },
     {
      "symbol": "FIX",
@@ -1135,12 +1138,12 @@
      "entry_price": 1053.6400146484375,
      "shares": 5,
      "cost_eur": 4727.0,
-     "high_close": 1113.22998046875,
-     "stop": 946.245483,
-     "last_price": 1105.9300537109375,
-     "last_day": "2026-11-10",
+     "high_close": 1161.6300048828125,
+     "stop": 987.385504,
+     "last_price": 1161.6300048828125,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4927.31
+     "last_value_eur": 5200.27
     },
     {
      "symbol": "EXEL",
@@ -1153,10 +1156,10 @@
      "cost_eur": 4976.74,
      "high_close": 71.73999786376953,
      "stop": 60.978998,
-     "last_price": 70.58000183105469,
-     "last_day": "2026-11-10",
+     "last_price": 70.69999694824219,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4968.45
+     "last_value_eur": 5000.74
     },
     {
      "symbol": "BGEO.L",
@@ -1167,12 +1170,12 @@
      "entry_price": 12710.0,
      "shares": 32,
      "cost_eur": 4900.01,
-     "high_close": 13280.0,
-     "stop": 11288.0,
-     "last_price": 13280.0,
-     "last_day": "2026-11-09",
+     "high_close": 13480.0,
+     "stop": 11458.0,
+     "last_price": 13480.0,
+     "last_day": "2026-11-10",
      "currency": "GBP",
-     "last_value_eur": 5090.13
+     "last_value_eur": 5156.11
     },
     {
      "symbol": "TSM",
@@ -1183,12 +1186,12 @@
      "entry_price": 388.4200134277344,
      "shares": 14,
      "cost_eur": 4846.53,
-     "high_close": 396.4800109863281,
-     "stop": 337.008009,
-     "last_price": 396.4800109863281,
-     "last_day": "2026-11-10",
+     "high_close": 413.3500061035156,
+     "stop": 351.347505,
+     "last_price": 413.3500061035156,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4946.08
+     "last_value_eur": 5181.24
     },
     {
      "symbol": "4021.T",
@@ -1199,12 +1202,12 @@
      "entry_price": 6780.0,
      "shares": 100,
      "cost_eur": 3825.13,
-     "high_close": 6884.0,
-     "stop": 5851.4,
-     "last_price": 6884.0,
-     "last_day": "2026-11-10",
+     "high_close": 7015.0,
+     "stop": 5962.75,
+     "last_price": 7015.0,
+     "last_day": "2026-11-11",
      "currency": "JPY",
-     "last_value_eur": 3882.79
+     "last_value_eur": 3957.62
     },
     {
      "symbol": "MO",
@@ -1215,12 +1218,12 @@
      "entry_price": 76.31999969482422,
      "shares": 73,
      "cost_eur": 4965.47,
-     "high_close": 76.33999633789062,
-     "stop": 64.888997,
-     "last_price": 76.33999633789062,
-     "last_day": "2026-11-10",
+     "high_close": 77.38999938964844,
+     "stop": 65.781499,
+     "last_price": 77.38999938964844,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4965.77
+     "last_value_eur": 5058.2
     },
     {
      "symbol": "MU",
@@ -1231,57 +1234,137 @@
      "entry_price": 717.4500122070312,
      "shares": 7,
      "cost_eur": 4476.09,
-     "high_close": 725.1099853515625,
-     "stop": 616.343488,
-     "last_price": 725.1099853515625,
-     "last_day": "2026-11-10",
+     "high_close": 811.2999877929688,
+     "stop": 689.60499,
+     "last_price": 811.2999877929688,
+     "last_day": "2026-11-11",
      "currency": "USD",
-     "last_value_eur": 4522.87
-    }
-   ],
-   "pending": [
+     "last_value_eur": 5084.73
+    },
     {
      "symbol": "5803.T",
      "name": "Fujikura Ltd.",
-     "score": 87.8,
+     "score_at_buy": 87.8,
      "sector": "Industrials",
-     "order_day": "2026-11-10",
-     "reserved": 5000.0,
-     "status": "open"
+     "entry_day": "2026-11-11",
+     "entry_price": 2949.0,
+     "shares": 300,
+     "cost_eur": 4992.17,
+     "high_close": 3121.0,
+     "stop": 2652.85,
+     "last_price": 3121.0,
+     "last_day": "2026-11-11",
+     "currency": "JPY",
+     "last_value_eur": 5282.28
     },
     {
      "symbol": "SU.TO",
      "name": "Suncor Energy Inc.",
-     "score": 80.7,
+     "score_at_buy": 80.7,
      "sector": "Energy",
-     "order_day": "2026-11-10",
-     "reserved": 5000.0,
-     "status": "open"
+     "entry_day": "2026-11-11",
+     "entry_price": 97.20999908447266,
+     "shares": 81,
+     "cost_eur": 4971.09,
+     "high_close": 98.20999908447266,
+     "stop": 83.478499,
+     "last_price": 98.20999908447266,
+     "last_day": "2026-11-11",
+     "currency": "CAD",
+     "last_value_eur": 5021.21
     },
     {
      "symbol": "9107.T",
      "name": "Kawasaki Kisen Kaisha, Ltd.",
-     "score": 79.3,
+     "score_at_buy": 79.3,
      "sector": "Industrials",
-     "order_day": "2026-11-10",
-     "reserved": 5000.0,
-     "status": "open"
+     "entry_day": "2026-11-11",
+     "entry_price": 2989.5,
+     "shares": 200,
+     "cost_eur": 3374.14,
+     "high_close": 3055.0,
+     "stop": 2596.75,
+     "last_price": 3055.0,
+     "last_day": "2026-11-11",
+     "currency": "JPY",
+     "last_value_eur": 3447.05
     },
     {
      "symbol": "5801.T",
      "name": "Furukawa Electric Co., Ltd.",
-     "score": 79.2,
+     "score_at_buy": 79.2,
      "sector": "Industrials",
-     "order_day": "2026-11-10",
-     "reserved": 5000.0,
-     "status": "open"
+     "entry_day": "2026-11-11",
+     "entry_price": 2190.0,
+     "shares": 400,
+     "cost_eur": 4943.09,
+     "high_close": 2373.0,
+     "stop": 2017.05,
+     "last_price": 2373.0,
+     "last_day": "2026-11-11",
+     "currency": "JPY",
+     "last_value_eur": 5355.06
     },
     {
      "symbol": "APA",
      "name": "APA Corporation",
-     "score": 79.2,
+     "score_at_buy": 79.2,
      "sector": "Energy",
-     "order_day": "2026-11-10",
+     "entry_day": "2026-11-11",
+     "entry_price": 45.900001525878906,
+     "shares": 121,
+     "cost_eur": 4973.63,
+     "high_close": 46.7400016784668,
+     "stop": 39.729001,
+     "last_price": 46.7400016784668,
+     "last_day": "2026-11-11",
+     "currency": "USD",
+     "last_value_eur": 5063.63
+    }
+   ],
+   "pending": [
+    {
+     "symbol": "VLO",
+     "name": "Valero Energy Corporation",
+     "score": 81.9,
+     "sector": "Energy",
+     "order_day": "2026-11-11",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "CVE.TO",
+     "name": "Cenovus Energy Inc.",
+     "score": 79.9,
+     "sector": "Energy",
+     "order_day": "2026-11-11",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "WST",
+     "name": "West Pharmaceutical Services, Inc.",
+     "score": 79.6,
+     "sector": "Healthcare",
+     "order_day": "2026-11-11",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "MPC",
+     "name": "Marathon Petroleum Corporation",
+     "score": 79.0,
+     "sector": "Energy",
+     "order_day": "2026-11-11",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "WDC",
+     "name": "Western Digital Corporation",
+     "score": 78.5,
+     "sector": "Technology",
+     "order_day": "2026-11-11",
      "reserved": 5000.0,
      "status": "open"
     }
@@ -1383,12 +1466,180 @@
      "price": 717.45,
      "shares": 7,
      "value_eur": 4476.09
+    },
+    {
+     "symbol": "5803.T",
+     "name": "Fujikura Ltd.",
+     "side": "Kauf",
+     "reason": "Score 87.8",
+     "day": "2026-11-11",
+     "price": 2949.0,
+     "shares": 300,
+     "value_eur": 4992.17
+    },
+    {
+     "symbol": "SU.TO",
+     "name": "Suncor Energy Inc.",
+     "side": "Kauf",
+     "reason": "Score 80.7",
+     "day": "2026-11-11",
+     "price": 97.21,
+     "shares": 81,
+     "value_eur": 4971.09
+    },
+    {
+     "symbol": "9107.T",
+     "name": "Kawasaki Kisen Kaisha, Ltd.",
+     "side": "Kauf",
+     "reason": "Score 79.3",
+     "day": "2026-11-11",
+     "price": 2989.5,
+     "shares": 200,
+     "value_eur": 3374.14
+    },
+    {
+     "symbol": "5801.T",
+     "name": "Furukawa Electric Co., Ltd.",
+     "side": "Kauf",
+     "reason": "Score 79.2",
+     "day": "2026-11-11",
+     "price": 2190.0,
+     "shares": 400,
+     "value_eur": 4943.09
+    },
+    {
+     "symbol": "APA",
+     "name": "APA Corporation",
+     "side": "Kauf",
+     "reason": "Score 79.2",
+     "day": "2026-11-11",
+     "price": 45.9,
+     "shares": 121,
+     "value_eur": 4973.63
     }
    ],
    "cooldown": {
     "8035.T": "2026-11-10"
    },
-   "last_decision": "2026-11-10"
+   "last_decision": "2026-11-11"
+  },
+  "rank_regime": {
+   "label": "Rang-Score mit Kaufpause",
+   "started": "2026-11-11",
+   "cash": 75000.0,
+   "positions": [],
+   "pending": [
+    {
+     "symbol": "SNDK",
+     "name": "Sandisk Corporation",
+     "score": 87.1,
+     "sector": "Technology",
+     "order_day": "2026-11-11",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "8035.T",
+     "name": "Tokyo Electron Limited",
+     "score": 86.1,
+     "sector": "Technology",
+     "order_day": "2026-11-11",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "EXEL",
+     "name": "Exelixis, Inc.",
+     "score": 85.6,
+     "sector": "Healthcare",
+     "order_day": "2026-11-11",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "APA",
+     "name": "APA Corporation",
+     "score": 84.6,
+     "sector": "Energy",
+     "order_day": "2026-11-11",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "HALO",
+     "name": "Halozyme Therapeutics, Inc.",
+     "score": 83.2,
+     "sector": "Healthcare",
+     "order_day": "2026-11-11",
+     "reserved": 5000.0,
+     "status": "open"
+    }
+   ],
+   "trades": [],
+   "cooldown": {},
+   "use_stop": true,
+   "rule": "rank",
+   "regime_filter": true,
+   "last_decision": "2026-11-11"
+  },
+  "rank_exit": {
+   "label": "Rang-Score mit Score-Ausstieg",
+   "started": "2026-11-11",
+   "cash": 75000.0,
+   "positions": [],
+   "pending": [
+    {
+     "symbol": "SNDK",
+     "name": "Sandisk Corporation",
+     "score": 87.1,
+     "sector": "Technology",
+     "order_day": "2026-11-11",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "8035.T",
+     "name": "Tokyo Electron Limited",
+     "score": 86.1,
+     "sector": "Technology",
+     "order_day": "2026-11-11",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "EXEL",
+     "name": "Exelixis, Inc.",
+     "score": 85.6,
+     "sector": "Healthcare",
+     "order_day": "2026-11-11",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "APA",
+     "name": "APA Corporation",
+     "score": 84.6,
+     "sector": "Energy",
+     "order_day": "2026-11-11",
+     "reserved": 5000.0,
+     "status": "open"
+    },
+    {
+     "symbol": "HALO",
+     "name": "Halozyme Therapeutics, Inc.",
+     "score": 83.2,
+     "sector": "Healthcare",
+     "order_day": "2026-11-11",
+     "reserved": 5000.0,
+     "status": "open"
+    }
+   ],
+   "trades": [],
+   "cooldown": {},
+   "use_stop": true,
+   "rule": "rank",
+   "score_exit": true,
+   "last_decision": "2026-11-11"
   }
  },
  "etf": {
@@ -1396,7 +1647,7 @@
   "cash": 0.0,
   "shares": 790.2248326440782,
   "bought_on": "2026-11-09",
-  "last_value": 101500.43
+  "last_value": 101662.42
  },
  "equity": [
   {
@@ -1426,11 +1677,26 @@
    "bot": 100629.32,
    "no_stop": 100629.32,
    "rank": 100492.19
+  },
+  {
+   "day": "2026-11-11",
+   "etf": 101662.42,
+   "bot": 101490.42,
+   "no_stop": 101490.42,
+   "rank": 103358.74,
+   "rank_regime": 100000.0,
+   "rank_exit": 100000.0
   }
  ],
  "coverage": {
-  "day": "2026-11-10",
+  "day": "2026-11-11",
   "fresh": 0.991,
-  "scored": 0.992
+  "scored": 0.988
+ },
+ "regime": {
+  "day": "2026-11-10",
+  "close": 128.65,
+  "average": 121.99,
+  "above": true
  }
 }
