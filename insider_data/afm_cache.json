@@ -1249,5 +1249,95 @@
     "volume": 921.0
    }
   ]
+ },
+ "202611095D123CD8-E8AC-40BA-8795-967C38471CC0": {
+  "date": "2026-11-09",
+  "issuer": "Euronext N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 167.63,
+    "unit": "EUR",
+    "volume": 1706.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 167.7,
+    "unit": "EUR",
+    "volume": 315.0
+   }
+  ]
+ },
+ "20261110654534B8-84DC-4851-8A41-CFF58F823CA2": {
+  "date": "2026-11-10",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 309.2,
+    "unit": "EUR",
+    "volume": 614.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 860.29,
+    "unit": "EUR",
+    "volume": 500.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 614.0
+   }
+  ]
+ },
+ "20261111654534B8-84DC-4851-8A41-CFF58F823CA2": {
+  "date": "2026-11-11",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 871.03,
+    "unit": "EUR",
+    "volume": 386.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": true,
+    "price": 309.2,
+    "unit": "EUR",
+    "volume": 386.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 386.0
+   }
+  ]
  }
 }
