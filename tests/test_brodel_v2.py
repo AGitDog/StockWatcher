@@ -526,3 +526,10 @@ def test_quality_detail_names_the_new_figures_and_keeps_old_days_readable():
     assert new == "Operative Marge 31.0 %, Gesamtkapitalrendite 12.0 %, Free Cashflow 42.0 % der Schulden"
     old = app.v3_block_details({"profit_margin": 0.2, "return_on_equity": 1.4, "debt_equity": 84.0})["Qualitaet"]
     assert old.startswith("Marge 20.0 %, Eigenkapitalrendite 140.0 %")
+
+
+def test_quality_detail_says_debt_free_instead_of_a_huge_percentage():
+    import app
+
+    text = app.v3_block_details({"operating_margin": 0.28, "return_on_assets": 0.18, "fcf_to_debt": 5.0e14})["Qualitaet"]
+    assert text.endswith("praktisch schuldenfrei") and "%" not in text.split(",")[-1]

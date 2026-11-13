@@ -363,8 +363,12 @@ def v3_block_details(factors: dict) -> dict[str, str]:
 
     pe = factors.get("forward_pe")
     if "operating_margin" in factors:
+        fcf_to_debt = factors.get("fcf_to_debt")
+        # a company without debt gets its whole cashflow as the ratio: say so instead of printing a huge percentage
+        solvency = ("praktisch schuldenfrei" if fcf_to_debt is not None and fcf_to_debt > 10
+                    else f"Free Cashflow {percent(fcf_to_debt)} der Schulden")
         quality = (f"Operative Marge {percent(factors.get('operating_margin'))}, Gesamtkapitalrendite {percent(factors.get('return_on_assets'))}, "
-                   f"Free Cashflow {percent(factors.get('fcf_to_debt'))} der Schulden")
+                   f"{solvency}")
     else:  # stored before QUALITY_CHANGE_DAY
         debt = factors.get("debt_equity")
         quality = (f"Marge {percent(factors.get('profit_margin'))}, Eigenkapitalrendite {percent(factors.get('return_on_equity'))}, "
