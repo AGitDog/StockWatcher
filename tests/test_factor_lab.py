@@ -151,7 +151,7 @@ def test_walk_forward_has_no_lookahead():
 
 def test_walk_forward_learns_dominant_factor():
     rng = np.random.default_rng(5)
-    dates = pd.date_range("2010-01-31", periods=80, freq="M")
+    dates = pd.date_range("2010-01-31", periods=80, freq=pd.offsets.MonthEnd())
     symbols = [f"S{i}" for i in range(40)]
     good = pd.DataFrame(rng.normal(size=(80, 40)), index=dates, columns=symbols)
     noise = pd.DataFrame(rng.normal(size=(80, 40)), index=dates, columns=symbols)

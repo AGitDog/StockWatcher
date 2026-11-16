@@ -49,7 +49,7 @@ def test_update_signals_missing_watchlist(mock_exit, mock_exists):
 
 @patch("update_signals.os.path.exists")
 @patch("update_signals.sys.exit")
-@patch("builtins.open", new_callable=mock_open, read_data="")
+@patch("update_signals.open", new_callable=mock_open, read_data="", create=True)
 def test_update_signals_empty_watchlist(mock_file, mock_exit, mock_exists):
     """Leere Watchlist soll sauber mit exit(0) beendet werden."""
     mock_exists.return_value = True
@@ -63,7 +63,7 @@ def test_update_signals_empty_watchlist(mock_file, mock_exit, mock_exists):
 
 
 @patch("update_signals.os.path.exists")
-@patch("builtins.open", new_callable=mock_open, read_data="AAPL\nMSFT")
+@patch("update_signals.open", new_callable=mock_open, read_data="AAPL\nMSFT", create=True)
 @patch("update_signals.build_symbol_signal_monitor")
 @patch("update_signals.save_signal_snapshot")
 @patch("update_signals.add_watchlist_peer_context")
@@ -86,7 +86,7 @@ def test_update_signals_calls_all_symbols(mock_peer, mock_save, mock_build, mock
 
 
 @patch("update_signals.os.path.exists")
-@patch("builtins.open", new_callable=mock_open, read_data="AAPL\nINVALID")
+@patch("update_signals.open", new_callable=mock_open, read_data="AAPL\nINVALID", create=True)
 @patch("update_signals.build_symbol_signal_monitor")
 @patch("update_signals.save_signal_snapshot")
 @patch("update_signals.add_watchlist_peer_context")
@@ -113,7 +113,7 @@ def test_update_signals_survives_single_symbol_crash(mock_peer, mock_save, mock_
 
 
 @patch("update_signals.os.path.exists")
-@patch("builtins.open", new_callable=mock_open, read_data="AAPL")
+@patch("update_signals.open", new_callable=mock_open, read_data="AAPL", create=True)
 @patch("update_signals.build_symbol_signal_monitor")
 @patch("update_signals.save_signal_snapshot")
 @patch("update_signals.add_watchlist_peer_context")
@@ -133,7 +133,7 @@ def test_update_signals_saves_sorted_by_score(mock_peer, mock_save, mock_build, 
 
 
 @patch("update_signals.os.path.exists")
-@patch("builtins.open", new_callable=mock_open, read_data="AAPL")
+@patch("update_signals.open", new_callable=mock_open, read_data="AAPL", create=True)
 @patch("update_signals.build_symbol_signal_monitor")
 @patch("update_signals.save_signal_snapshot")
 @patch("update_signals.add_watchlist_peer_context")
@@ -168,7 +168,7 @@ def test_daily_job_missing_watchlist(mock_exit, mock_exists):
 
 @patch("daily_job.os.path.exists")
 @patch("daily_job.sys.exit")
-@patch("builtins.open", new_callable=mock_open, read_data="")
+@patch("daily_job.open", new_callable=mock_open, read_data="", create=True)
 def test_daily_job_empty_watchlist(mock_file, mock_exit, mock_exists):
     """daily_job muss bei leerer Watchlist sauber mit exit(0) enden."""
     mock_exists.return_value = True
@@ -182,7 +182,7 @@ def test_daily_job_empty_watchlist(mock_file, mock_exit, mock_exists):
 
 
 @patch("daily_job.os.path.exists")
-@patch("builtins.open", new_callable=mock_open, read_data="AAPL\nGOOG")
+@patch("daily_job.open", new_callable=mock_open, read_data="AAPL\nGOOG", create=True)
 @patch("daily_job.build_symbol_signal_monitor")
 @patch("daily_job.save_signal_snapshot")
 @patch("daily_job.add_watchlist_peer_context")
@@ -211,7 +211,7 @@ def test_daily_job_success(mock_history, mock_peer, mock_save, mock_build, mock_
 
 
 @patch("daily_job.os.path.exists")
-@patch("builtins.open", new_callable=mock_open, read_data="AAPL")
+@patch("daily_job.open", new_callable=mock_open, read_data="AAPL", create=True)
 @patch("daily_job.build_symbol_signal_monitor")
 @patch("daily_job.save_signal_snapshot")
 @patch("daily_job.add_watchlist_peer_context")
@@ -420,7 +420,7 @@ def test_workflows_pull_before_push():
 
 
 @patch("daily_job.os.path.exists")
-@patch("builtins.open", new_callable=mock_open, read_data="AAPL\nINVALID")
+@patch("daily_job.open", new_callable=mock_open, read_data="AAPL\nINVALID", create=True)
 @patch("daily_job.build_symbol_signal_monitor")
 @patch("daily_job.save_signal_snapshot")
 @patch("daily_job.add_watchlist_peer_context")
@@ -524,7 +524,7 @@ def test_workflows_have_timeout():
 
 
 @patch("daily_job.os.path.exists")
-@patch("builtins.open", new_callable=mock_open, read_data="AAPL\nSLOW\nMSFT")
+@patch("daily_job.open", new_callable=mock_open, read_data="AAPL\nSLOW\nMSFT", create=True)
 @patch("daily_job.build_symbol_signal_monitor")
 @patch("daily_job.save_signal_snapshot")
 @patch("daily_job.add_watchlist_peer_context")
@@ -566,7 +566,7 @@ def test_daily_job_handles_per_symbol_timeout(mock_history, mock_peer, mock_save
 
 @patch("daily_job.os.path.exists")
 @patch("daily_job.sys.exit")
-@patch("builtins.open", new_callable=mock_open, read_data="AAPL")
+@patch("daily_job.open", new_callable=mock_open, read_data="AAPL", create=True)
 @patch("daily_job.build_symbol_signal_monitor")
 def test_daily_job_exits_1_on_all_symbols_failed(mock_build, mock_file, mock_exit, mock_exists):
     """daily_job muss mit exit(1) abbrechen, wenn alle Symbole fehlschlagen."""
@@ -583,7 +583,7 @@ def test_daily_job_exits_1_on_all_symbols_failed(mock_build, mock_file, mock_exi
 
 @patch("update_signals.os.path.exists")
 @patch("update_signals.sys.exit")
-@patch("builtins.open", new_callable=mock_open, read_data="AAPL")
+@patch("update_signals.open", new_callable=mock_open, read_data="AAPL", create=True)
 @patch("update_signals.build_symbol_signal_monitor")
 def test_update_signals_exits_1_on_all_symbols_failed(mock_build, mock_file, mock_exit, mock_exists):
     """update_signals muss mit exit(1) abbrechen, wenn alle Symbole fehlschlagen."""
@@ -600,7 +600,7 @@ def test_update_signals_exits_1_on_all_symbols_failed(mock_build, mock_file, moc
 
 
 @patch("update_signals.os.path.exists")
-@patch("builtins.open", new_callable=mock_open, read_data="AAPL\nFLAKY")
+@patch("update_signals.open", new_callable=mock_open, read_data="AAPL\nFLAKY", create=True)
 @patch("update_signals.build_symbol_signal_monitor")
 @patch("update_signals.save_signal_snapshot")
 @patch("update_signals.add_watchlist_peer_context")

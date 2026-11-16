@@ -121,7 +121,7 @@ def test_four_group_runs_build_one_daily_snapshot(tmp_path):
 
 
 @patch("update_signals.os.path.exists", return_value=True)
-@patch("builtins.open", new_callable=mock_open, read_data="AAPL\n7203.T\nSAP.DE")
+@patch("update_signals.open", new_callable=mock_open, read_data="AAPL\n7203.T\nSAP.DE", create=True)
 @patch("update_signals.build_symbol_signal_monitor")
 @patch("update_signals.save_signal_snapshot", return_value=Path("dummy.json.gz"))
 @patch("update_signals.merge_group_run")

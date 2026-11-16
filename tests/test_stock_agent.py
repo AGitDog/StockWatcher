@@ -475,12 +475,12 @@ def test_fetch_company_extended_fundamentals(mock_ticker_class):
     mock_instance.income_stmt = mock_income
 
     # Mock history for PE trend & dividend yields
-    hist_idx = pd.date_range("2020-01-01", "2024-12-31", freq="Q")
+    hist_idx = pd.date_range("2020-01-01", "2024-12-31", freq=pd.offsets.QuarterEnd())
     mock_hist = pd.DataFrame({"Close": [100.0] * len(hist_idx)}, index=hist_idx)
     mock_instance.history.return_value = mock_hist
 
     # Mock dividends over 4 years with consecutive increases
-    div_idx = pd.date_range("2021-01-01", "2024-12-31", freq="Q")
+    div_idx = pd.date_range("2021-01-01", "2024-12-31", freq=pd.offsets.QuarterEnd())
     div_vals = [0.20, 0.20, 0.20, 0.20,  # 2021: 0.80
                 0.22, 0.22, 0.22, 0.22,  # 2022: 0.88
                 0.24, 0.24, 0.24, 0.24,  # 2023: 0.96
