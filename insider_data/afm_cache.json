@@ -1250,6 +1250,111 @@
    }
   ]
  },
+ "202611093C946E0C-6385-4A8C-B3A2-FB5A3E5165CA": {
+  "date": "2026-11-09",
+  "issuer": "Euronext N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 162.5,
+    "unit": "EUR",
+    "volume": 2000.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 165.92,
+    "unit": "EUR",
+    "volume": 386.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 166.7,
+    "unit": "EUR",
+    "volume": 1000.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 166.87,
+    "unit": "EUR",
+    "volume": 1000.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 166.92,
+    "unit": "EUR",
+    "volume": 1000.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 166.98,
+    "unit": "EUR",
+    "volume": 1000.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 167.14,
+    "unit": "EUR",
+    "volume": 1000.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 167.41,
+    "unit": "EUR",
+    "volume": 1000.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 167.43,
+    "unit": "EUR",
+    "volume": 1000.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 167.66,
+    "unit": "EUR",
+    "volume": 2000.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 168.06,
+    "unit": "EUR",
+    "volume": 2000.0
+   }
+  ]
+ },
  "202611095D123CD8-E8AC-40BA-8795-967C38471CC0": {
   "date": "2026-11-09",
   "issuer": "Euronext N.V.",
@@ -1337,6 +1442,54 @@
     "price": 0.0,
     "unit": "EUR",
     "volume": 386.0
+   }
+  ]
+ },
+ "2026111239D9DAB7-CF07-422F-B958-111EAF8A0922": {
+  "date": "2026-11-12",
+  "issuer": "Euronext N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 166.01,
+    "unit": "EUR",
+    "volume": 6908.0
+   }
+  ]
+ },
+ "20261113F30A632B-04D4-4B3A-9922-FB7DF37A2D77": {
+  "date": "2026-11-13",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 893.37,
+    "unit": "EUR",
+    "volume": 300.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": true,
+    "price": 309.2,
+    "unit": "EUR",
+    "volume": 300.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 300.0
    }
   ]
  }

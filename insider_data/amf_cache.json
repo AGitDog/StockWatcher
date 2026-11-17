@@ -3002,5 +3002,187 @@
     "volume": 20000.0
    }
   ]
+ },
+ "2026DD1150548": {
+  "date": "2026-11-16",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-11",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": true,
+    "price": 0.0,
+    "volume": 705.0
+   }
+  ]
+ },
+ "2026DD1150556": {
+  "date": "2026-11-16",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-11",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": true,
+    "price": 0.0,
+    "volume": 705.0
+   }
+  ]
+ },
+ "2026DD1150564": {
+  "date": "2026-11-16",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-11",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": true,
+    "price": 0.0,
+    "volume": 705.0
+   }
+  ]
+ },
+ "2026DD1150571": {
+  "date": "2026-11-16",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-12",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": true,
+    "price": 0.0,
+    "volume": 1038.0
+   }
+  ]
+ },
+ "2026DD1150572": {
+  "date": "2026-11-16",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-11",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": true,
+    "price": 0.0,
+    "volume": 705.0
+   }
+  ]
+ },
+ "2026DD1150575": {
+  "date": "2026-11-16",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-11",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": true,
+    "price": 0.0,
+    "volume": 705.0
+   }
+  ]
+ },
+ "2026DD1150579": {
+  "date": "2026-11-16",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-11",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": true,
+    "price": 0.0,
+    "volume": 416.0
+   }
+  ]
+ },
+ "2026DD1150581": {
+  "date": "2026-11-16",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-11",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": true,
+    "price": 0.0,
+    "volume": 416.0
+   }
+  ]
+ },
+ "2026DD1150582": {
+  "date": "2026-11-16",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-11",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": true,
+    "price": 0.0,
+    "volume": 705.0
+   }
+  ]
+ },
+ "2026DD1150584": {
+  "date": "2026-11-16",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-11",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": true,
+    "price": 0.0,
+    "volume": 3354.0
+   }
+  ]
+ },
+ "2026DD1150645": {
+  "date": "2026-11-16",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-13",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 450.2743,
+    "volume": 5000.0
+   }
+  ]
+ },
+ "2026DD1150651": {
+  "date": "2026-11-16",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-12",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 104.7755,
+    "volume": 3974.0
+   }
+  ]
+ },
+ "2026DD1150686": {
+  "date": "2026-11-16",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-12",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 29.2721,
+    "volume": 4929.0
+   }
+  ]
  }
 }
