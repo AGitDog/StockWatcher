@@ -3184,5 +3184,61 @@
     "volume": 4929.0
    }
   ]
+ },
+ "2026DD1150882": {
+  "date": "2026-11-17",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-12",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": true,
+    "price": 0.0,
+    "volume": 14966.0
+   }
+  ]
+ },
+ "2026DD1150943": {
+  "date": "2026-11-17",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-17",
+    "instrument": "action",
+    "nature": "acquisition d'actions gratuites",
+    "options": true,
+    "price": 0.0,
+    "volume": 41470.0
+   }
+  ]
+ },
+ "2026DD1150972": {
+  "date": "2026-11-17",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-17",
+    "instrument": "action",
+    "nature": "acquisition d'actions gratuites",
+    "options": true,
+    "price": 0.0,
+    "volume": 1875.0
+   }
+  ]
+ },
+ "2026DD1151001": {
+  "date": "2026-11-17",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-12",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": true,
+    "price": 0.0,
+    "volume": 6141.0
+   }
+  ]
  }
 }

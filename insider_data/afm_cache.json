@@ -1460,6 +1460,63 @@
    }
   ]
  },
+ "20261113C8839CCC-F9E6-450D-8388-A1C8D7DC4729": {
+  "date": "2026-11-13",
+  "issuer": "Euronext N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 168.6,
+    "unit": "EUR",
+    "volume": 2730.0
+   }
+  ]
+ },
+ "20261113CA52142B-BAFC-41CB-8BF0-DFFABBBF4AFF": {
+  "date": "2026-11-13",
+  "issuer": "argenx SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 880.14,
+    "unit": "EUR",
+    "volume": 840.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 880.19,
+    "unit": "EUR",
+    "volume": 332.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "omwisseling i.v.m. uitoefening",
+    "nature": "verwerving",
+    "options": true,
+    "price": 611.2,
+    "unit": "EUR",
+    "volume": 840.0
+   },
+   {
+    "instrument": "personeelsoptie",
+    "kind": "uitoefening ((personeels-)opties)",
+    "nature": "vervreemding",
+    "options": true,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 840.0
+   }
+  ]
+ },
  "20261113F30A632B-04D4-4B3A-9922-FB7DF37A2D77": {
   "date": "2026-11-13",
   "issuer": "argenx SE",
