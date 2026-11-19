@@ -3240,5 +3240,19 @@
     "volume": 6141.0
    }
   ]
+ },
+ "2026DD1151127": {
+  "date": "2026-11-18",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-17",
+    "instrument": "fie - totalenergies actionnariat france",
+    "nature": "cession",
+    "options": false,
+    "price": 82.1669,
+    "volume": 5504.8075
+   }
+  ]
  }
 }
