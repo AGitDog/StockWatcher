@@ -1460,6 +1460,21 @@
    }
   ]
  },
+ "2026111328C2C55C-9073-40BF-AD8F-DAFBAEB38EE1": {
+  "date": "2026-11-13",
+  "issuer": "Ferrari N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 367.65,
+    "unit": "EUR",
+    "volume": 69.0
+   }
+  ]
+ },
  "20261113C8839CCC-F9E6-450D-8388-A1C8D7DC4729": {
   "date": "2026-11-13",
   "issuer": "Euronext N.V.",
@@ -1547,6 +1562,102 @@
     "price": 0.0,
     "unit": "EUR",
     "volume": 300.0
+   }
+  ]
+ },
+ "202611160585EF6E-69DD-4D37-8EDF-95B18BAAA9B6": {
+  "date": "2026-11-16",
+  "issuer": "Euronext N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 169.3,
+    "unit": "EUR",
+    "volume": 500.0
+   }
+  ]
+ },
+ "2026111752505891-E819-4FFA-A1E1-1A7A57308EE2": {
+  "date": "2026-11-17",
+  "issuer": "Airbus SE",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 204.0,
+    "unit": "EUR",
+    "volume": 1145.0
+   }
+  ]
+ },
+ "20261118974F238A-55AF-4B1F-8752-6F180FD75928": {
+  "date": "2026-11-18",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 3.31,
+    "unit": "USD",
+    "volume": 2.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 3.61,
+    "unit": "USD",
+    "volume": 688.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "USD",
+    "volume": 690.0
+   }
+  ]
+ },
+ "20261118CAB5D9EC-EAA4-4666-91F6-565FAD0FE5D2": {
+  "date": "2026-11-18",
+  "issuer": "Stellantis N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 3.31,
+    "unit": "USD",
+    "volume": 1.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 3.61,
+    "unit": "USD",
+    "volume": 42.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verwerving",
+    "nature": "verwerving",
+    "options": false,
+    "price": 0.0,
+    "unit": "EUR",
+    "volume": 43.0
    }
   ]
  }
