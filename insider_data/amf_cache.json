@@ -3282,5 +3282,51 @@
     "volume": 3300.0
    }
   ]
+ },
+ "2026DD1151698": {
+  "date": "2026-11-20",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-19",
+    "instrument": "options de souscription",
+    "nature": "levee de stock-options",
+    "options": true,
+    "price": 81.02,
+    "volume": 4406.0
+   },
+   {
+    "currency": "euro",
+    "date": "2026-11-19",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 91.5933,
+    "volume": 4406.0
+   }
+  ]
+ },
+ "2026DD1151705": {
+  "date": "2026-11-20",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-19",
+    "instrument": "options de souscription",
+    "nature": "levee de stock-options",
+    "options": true,
+    "price": 61.11,
+    "volume": 8762.0
+   },
+   {
+    "currency": "euro",
+    "date": "2026-11-19",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 91.5936,
+    "volume": 8762.0
+   }
+  ]
  }
 }
