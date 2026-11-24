@@ -1660,5 +1660,38 @@
     "volume": 43.0
    }
   ]
+ },
+ "20261119E3F0AA27-7140-48F1-8BA9-E54A89AC22AC": {
+  "date": "2026-11-19",
+  "issuer": "Ferrari N.V.",
+  "transactions": [
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 373.9,
+    "unit": "EUR",
+    "volume": 64.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 373.95,
+    "unit": "EUR",
+    "volume": 117.0
+   },
+   {
+    "instrument": "gewoon aandeel",
+    "kind": "verkoop",
+    "nature": "vervreemding",
+    "options": false,
+    "price": 374.0,
+    "unit": "EUR",
+    "volume": 60.0
+   }
+  ]
  }
 }

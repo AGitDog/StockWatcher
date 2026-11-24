@@ -3328,5 +3328,33 @@
     "volume": 8762.0
    }
   ]
+ },
+ "2026DD1151804": {
+  "date": "2026-11-23",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-17",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 240.1254,
+    "volume": 750.0
+   }
+  ]
+ },
+ "2026DD1151827": {
+  "date": "2026-11-23",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-19",
+    "instrument": "parts dun fcpe",
+    "nature": "rachat",
+    "options": false,
+    "price": 93.13,
+    "volume": 515.8921
+   }
+  ]
  }
 }
