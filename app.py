@@ -1734,7 +1734,7 @@ BOT_SERIES = {
     "rank_regime": "Rang-Score mit Kaufpause",
     "rank_exit": "Rang-Score mit Score-Ausstieg",
     "bot": "Punkte-Score ab 60",
-    "no_stop": "Punkte-Score ohne Stop-Loss",
+    "points_monthly": "Punkte-Score monatlich neu",
     "etf": "MSCI World ETF",
 }
 
@@ -1769,8 +1769,11 @@ def build_depot_rule_rows(cfg: dict) -> list[dict]:
          "Wozu": "Bringt es etwas, schwach gewordene Aktien früher zu verkaufen?"},
         {"Depot": BOT_SERIES["bot"], "Kauft": f"jede Aktie ab {cfg['buy_threshold']} Punkten im Punkte-Score, höchste zuerst",
          "Verkauft": stop, "Wozu": "Hauptdepot des Punkte-Scores"},
-        {"Depot": BOT_SERIES["no_stop"], "Kauft": f"wie „{BOT_SERIES['bot']}“", "Verkauft": "nie",
-         "Wozu": f"Hilft der Stop-Loss? Gegenstück zu „{BOT_SERIES['bot']}“"},
+        {"Depot": BOT_SERIES["points_monthly"],
+         "Kauft": f"zu jedem Monatswechsel die {cfg['max_positions']} Aktien mit dem höchsten Punkte-Score; "
+                  "das freie Geld wird gleichmäßig auf die freien Plätze verteilt, das Depot bleibt voll investiert",
+         "Verkauft": "kein Stop-Loss: beim Monatswechsel, wenn die Aktie nicht mehr zu den 20 besten gehört",
+         "Wozu": f"Wählt der Punkte-Score ohne Stop-Loss gut aus? Gegenstück zu „{BOT_SERIES['bot']}“"},
         {"Depot": BOT_SERIES["etf"], "Kauft": f"einmal am Start für das ganze Geld ({paper_bot.ETF_SYMBOL})", "Verkauft": "nie",
          "Wozu": "Messlatte: Das schafft man ohne jeden Aufwand"},
     ]
@@ -1781,7 +1784,8 @@ def build_common_rule_rows(cfg: dict) -> list[dict]:
     return [
         {"Thema": "Wann", "Regel": "Einmal täglich nach dem letzten US-Lauf. Entschieden wird nur mit dem Snapshot dieses Tages."},
         {"Thema": "Datenprüfung", "Regel": f"Neue Käufe nur, wenn mindestens {cfg['min_coverage'] * 100:.0f} % der Tagesdaten frisch sind."},
-        {"Thema": "Betrag", "Regel": f"{_de_number(cfg['position_budget'], 0)} € je Aktie, höchstens {cfg['max_positions']} Aktien je Depot. Startkapital {_de_number(cfg['capital'], 0)} €."},
+        {"Thema": "Betrag", "Regel": f"{_de_number(cfg['position_budget'], 0)} € je Aktie, höchstens {cfg['max_positions']} Aktien je Depot. Startkapital {_de_number(cfg['capital'], 0)} €. "
+                                     "Ausnahme „Punkte-Score monatlich neu“: Es teilt sein freies Geld gleichmäßig auf die freien Plätze auf."},
         {"Thema": "Kauf", "Regel": f"Zur Eröffnung am nächsten Handelstag an der Heimatbörse der Aktie. {_de_number(cfg['fee'], 0)} € Gebühr, "
                                    f"London {fmt_pct(cfg['uk_stamp_duty'] * 100)} Stempelsteuer. Tokio handelt nur in 100er-Paketen. Aktien, deren Paket mehr als "
                                    f"{_de_number(cfg['position_budget'], 0)} € kostet, werden gar nicht bewertet und nie gekauft. Ohne Kurs verfällt eine Order nach {cfg['order_expiry_days']} Tagen."},
@@ -1838,7 +1842,7 @@ def build_depot_status_rows(state: dict) -> list[dict]:
 
 DEPOT_COMPARISONS = [
     ("Wählt der Rang-Score besser als der Punkte-Score?", "rank", "bot"),
-    ("Hilft der Stop-Loss?", "bot", "no_stop"),
+    ("Stop-Loss oder monatlich neu sortieren?", "bot", "points_monthly"),
     ("Hilft die Kaufpause im fallenden Markt?", "rank_regime", "rank"),
     ("Hilft der Score-Ausstieg?", "rank_exit", "rank"),
     ("Schlägt der Rang-Score den ETF?", "rank", "etf"),
@@ -1917,6 +1921,8 @@ def build_bot_position_rows(portfolio: dict, config: dict) -> list[dict]:
             row["Rang-Score heute"] = position.get("last_score")
             row[f"Tage unter {config['exit_score']}"] = position.get("weak_days", 0)
             row["Verkauf"] = "zur nächsten Eröffnung" if position.get("exit_day") else ""
+        if portfolio.get("rule") == "monthly":
+            row["Verkauf"] = "zur nächsten Eröffnung, nicht mehr unter den 20 besten" if position.get("exit_day") else ""
         rows.append(row)
     return sorted(rows, key=lambda r: r["Plus/Minus %"], reverse=True)
 
@@ -1961,7 +1967,21 @@ def depot_status_line(state: dict, key: str, cfg: dict) -> str | None:
             return f"Keine gehaltene Aktie liegt gerade unter {cfg['exit_score']} im Rang-Score."
         names = ", ".join(f"{p['symbol']} ({p['weak_days']} von {cfg['exit_days']} Tagen)" for p in weak)
         return f"Unter {cfg['exit_score']} im Rang-Score: {names}."
+    if portfolio.get("rule") == "monthly":
+        month = portfolio.get("rebalance_month")
+        if not month:
+            return "Sortiert zum ersten Mal mit dem nächsten Lauf."
+        year, number = int(month[:4]), int(month[5:])
+        following = f"{MONTH_NAMES[number % 12]} {year + (number == 12)}"
+        leaving = [p["symbol"] for p in portfolio.get("positions", []) if p.get("exit_day")]
+        text = f"Zuletzt sortiert im {MONTH_NAMES[number - 1]} {year}, das nächste Mal am ersten Handelstag im {following}."
+        if leaving:
+            text += f" Wird zur nächsten Eröffnung verkauft: {', '.join(leaving)}."
+        return text
     return None
+
+
+MONTH_NAMES = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
 
 
 def render_bot_tab():

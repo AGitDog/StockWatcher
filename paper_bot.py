@@ -20,7 +20,13 @@ Two more Rang-Score depots (since 11.11.2026, same rules as the Rang-Score depot
 - "Score-Ausstieg": a position whose Rang-Score is below 40 on 5 decision days in a row is
   sold at the next open, whatever the price did.
 
-Comparison portfolios: the first rules without stop-loss, and a MSCI World ETF.
+"Punkte-Score monatlich neu" (since 25.11.2026, replaces "the same buys without stop-loss", which
+filled its 20 places in its first days and then never traded again): at every change of month it
+holds the 20 stocks with the highest Punkte-Score. Stocks that dropped out are sold at the next
+open, the new ones are bought from the following run on with the freed cash, split evenly over the
+free places (so the depot stays fully invested like the ETF). No stop-loss.
+
+Benchmark: a MSCI World ETF.
 State lives in ``bot_depot/state.json`` (committed by the workflow).
 
     python paper_bot.py run       # daily step (workflow)
@@ -72,12 +78,13 @@ DEFAULT_CONFIG: dict[str, Any] = {
 
 PORTFOLIOS = {
     "bot": {"label": "Punkte-Score ab 60", "use_stop": True, "rule": "threshold"},
-    "no_stop": {"label": "Punkte-Score ab 60 ohne Stop-Loss", "use_stop": False, "rule": "threshold"},
+    "points_monthly": {"label": "Punkte-Score monatlich neu", "use_stop": False, "rule": "monthly"},
     "rank": {"label": "Rang-Score beste 2 %", "use_stop": True, "rule": "rank"},
     "rank_regime": {"label": "Rang-Score mit Kaufpause", "use_stop": True, "rule": "rank", "regime_filter": True},
     "rank_exit": {"label": "Rang-Score mit Score-Ausstieg", "use_stop": True, "rule": "rank", "score_exit": True},
 }
 PORTFOLIO_FLAGS = ("use_stop", "rule", "regime_filter", "score_exit")
+RETIRED_PORTFOLIOS = ("no_stop",)  # removed 25.11.2026 together with its values in the equity curve
 
 # exchange suffix -> (currency, price divisor); London quotes in pence
 SUFFIX_CURRENCY = {
@@ -169,6 +176,10 @@ def _new_portfolio(key: str, cfg: dict[str, Any], started: str) -> dict[str, Any
 def ensure_portfolios(state: dict[str, Any], now: datetime) -> list[str]:
     """Add depots that did not exist when the state was created; they start with fresh capital today."""
     state["config"] = {**DEFAULT_CONFIG, **state.get("config", {})}
+    for key in RETIRED_PORTFOLIOS:
+        if state["portfolios"].pop(key, None) is not None:
+            for point in state.get("equity", []):
+                point.pop(key, None)
     added = [key for key in PORTFOLIOS if key not in state["portfolios"]]
     for key in added:
         state["portfolios"][key] = _new_portfolio(key, state["config"], snapshot_day(now))
@@ -246,7 +257,7 @@ def process_position(pf: dict, position: dict, bars: list[tuple[date, pd.Series]
     """Walk new daily bars; returns False when the position was closed."""
     for day, bar in bars:
         if position.get("exit_day") and day > date.fromisoformat(position["exit_day"]):
-            reason = f"Rang-Score {cfg['exit_days']} Tage unter {cfg['exit_score']} (Verkauf zur Eröffnung)"
+            reason = position.get("exit_reason") or f"Rang-Score {cfg['exit_days']} Tage unter {cfg['exit_score']} (Verkauf zur Eröffnung)"
             if _sell(pf, position, day, float(bar["Open"]), reason, fx, cfg):
                 return False
         if pf["use_stop"]:
@@ -280,7 +291,8 @@ def fill_pending(pf: dict, order: dict, bars: list[tuple[date, pd.Series]], fx: 
     symbol = str(order["symbol"]).upper()
     unit_cost = open_eur * (1 + cfg.get("uk_stamp_duty", 0.0) if symbol.endswith(".L") else 1)
     lot = cfg.get("japan_lot", 1) if symbol.endswith(".T") else 1  # Tokyo trades in lots of 100
-    shares = math.floor((cfg["position_budget"] - cfg["fee"]) / unit_cost / lot) * lot
+    budget = order.get("reserved", cfg["position_budget"])  # the monthly depot splits its cash, the others use 5,000 €
+    shares = math.floor((budget - cfg["fee"]) / unit_cost / lot) * lot
     order["status"] = "done"
     if shares <= 0:
         pf["cash"] += order["reserved"]
@@ -353,6 +365,49 @@ def rank_candidates(snapshot: dict | None, cfg: dict, decision_day: date) -> lis
     top = scored[: math.ceil(len(scored) * cfg["top_share"])]
     return [_candidate(item, item["brodel_score_v3"]) for item in top
             if not _results_soon(item, decision_day, cfg["earnings_block_days"])]
+
+
+def monthly_targets(snapshot: dict | None, cfg: dict) -> list[dict]:
+    """The stocks with the highest Punkte-Score of the day, best first, no indices.
+
+    Twice as many as the depot has places: the first ones are the target, the rest step in
+    when a target cannot be bought (lot too expensive, no price after the decision)."""
+    items = snapshot_store.fresh_items(snapshot.get("items", [])) if snapshot else []
+    scored = [(primary_score(ensure_brodel_v2(dict(item))), item) for item in items
+              if item.get("symbol") and not str(item["symbol"]).startswith("^")]
+    scored.sort(key=lambda pair: (-pair[0], str(pair[1]["symbol"])))
+    return [_candidate(item, score) for score, item in scored[: 2 * cfg["max_positions"]]]
+
+
+def rebalance_monthly(pf: dict, snapshot: dict | None, cfg: dict, decision_day: date, fx: dict, skipped: list) -> tuple[list[dict], list[str]]:
+    """At a new month: new target list, holdings that left it are sold at the next open. Every day: buy missing targets."""
+    month = decision_day.strftime("%Y-%m")
+    sells: list[str] = []
+    if pf.get("rebalance_month") != month:
+        targets = monthly_targets(snapshot, cfg)
+        if not targets:
+            return [], []
+        pf["targets"] = targets
+        pf["rebalance_month"] = month
+        wanted = {cand["symbol"] for cand in targets[: cfg["max_positions"]]}
+        for position in pf["positions"]:
+            if position["symbol"] not in wanted and not position.get("exit_day"):
+                position["exit_day"] = decision_day.isoformat()
+                position["exit_reason"] = "Nicht mehr unter den 20 besten im Punkte-Score (Verkauf zur Eröffnung)"
+                sells.append(position["symbol"])
+        pf["pending"], dropped = ([o for o in pf["pending"] if o["symbol"] in wanted],
+                                  [o for o in pf["pending"] if o["symbol"] not in wanted])
+        for order in dropped:  # an order of last month that is no target any more
+            pf["cash"] += order["reserved"]
+    # Held stocks marked for sale still use their place: the freed cash buys from the next run on.
+    # The free cash is split evenly over the free places, so the depot stays fully invested.
+    free = cfg["max_positions"] - len(pf["positions"]) - len(pf["pending"])
+    if free <= 0 or pf["cash"] < cfg["fee"] * 10:
+        return [], sells
+    budget = round(pf["cash"] / free, 2)
+    placed = place_orders(pf, pf.get("targets", []), decision_day,
+                          {**cfg, "cooldown_days": 0, "position_budget": budget}, fx=fx, skipped=skipped)
+    return placed, sells
 
 
 def data_coverage(snapshot: dict | None) -> tuple[float, float]:
@@ -462,7 +517,12 @@ def step(state: dict, snapshot: dict | None, bars: dict[str, pd.DataFrame], fx: 
             placed, too_expensive = [], []
             if pf.get("score_exit"):
                 summary[f"{key}_exits"] = update_weak_days(pf, snapshot, cfg, decision_day)
-            if pf.get("regime_filter") and regime is not None and not regime["above"]:
+            if pf.get("rule") == "monthly":
+                if data_ok:
+                    placed, sells = rebalance_monthly(pf, snapshot, cfg, decision_day, fx, too_expensive)
+                    if sells:
+                        summary[f"{key}_sells"] = sells
+            elif pf.get("regime_filter") and regime is not None and not regime["above"]:
                 summary[f"{key}_paused"] = True  # ETF below its average: no new orders today
                 pf["paused_days"] = pf.get("paused_days", 0) + 1  # shown on the Trades page
             elif pf.get("rule") == "rank":

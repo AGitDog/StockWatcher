@@ -82,7 +82,7 @@ def test_buy_next_open_then_trailing_stop_sells():
     assert sale["shares"] == shares
     assert pf["cash"] == pytest.approx(100_000 - (shares * 100 + 1) + shares * fill - 1)
 
-    twin = state["portfolios"]["no_stop"]
+    twin = state["portfolios"]["points_monthly"]
     assert len(twin["positions"]) == 1 and twin["positions"][0]["last_price"] == 95
 
 
@@ -206,7 +206,7 @@ def test_app_bot_rows():
     assert rows[0]["Punkte-Score beim Kauf"] == 62
     trades = app.build_bot_trade_rows(state["portfolios"]["bot"])
     assert trades[0]["Art"] == "Verkauf" and trades[0]["Symbol"] == "ALV.DE"  # newest first
-    no_stop = app.build_bot_position_rows(state["portfolios"]["no_stop"], state["config"])
+    no_stop = app.build_bot_position_rows(state["portfolios"]["points_monthly"], state["config"])
     assert "Stop-Kurs" not in no_stop[0] and len(no_stop) == 2
     frame = app.build_bot_equity_frame(state)
     assert list(frame.columns) == list(app.BOT_SERIES.values())
@@ -431,10 +431,10 @@ def test_run_loads_enough_etf_history_for_the_average(tmp_path):
 def _equity_state():
     state = _state()
     state["equity"] = [
-        {"day": "2026-11-06", "etf": 100_000.0, "bot": 100_000.0, "no_stop": 100_000.0, "rank": 100_000.0},
-        {"day": "2026-11-11", "etf": 102_000.0, "bot": 101_000.0, "no_stop": 100_500.0, "rank": 104_000.0,
+        {"day": "2026-11-06", "etf": 100_000.0, "bot": 100_000.0, "points_monthly": 100_000.0, "rank": 100_000.0},
+        {"day": "2026-11-11", "etf": 102_000.0, "bot": 101_000.0, "points_monthly": 100_500.0, "rank": 104_000.0,
          "rank_regime": 100_000.0, "rank_exit": 100_000.0},
-        {"day": "2026-11-24", "etf": 103_020.0, "bot": 99_000.0, "no_stop": 99_500.0, "rank": 98_800.0,
+        {"day": "2026-11-24", "etf": 103_020.0, "bot": 99_000.0, "points_monthly": 99_500.0, "rank": 98_800.0,
          "rank_regime": 97_000.0, "rank_exit": 97_000.0},
     ]
     return state
@@ -447,7 +447,7 @@ def test_depot_rules_name_every_depot_and_its_difference():
     assert list(rows) == list(app.BOT_SERIES.values())
     assert "200-Tage-Durchschnitt" in rows["Rang-Score mit Kaufpause"]["Kauft"]
     assert "5 Tage in Folge unter 40" in rows["Rang-Score mit Score-Ausstieg"]["Verkauft"]
-    assert rows["Punkte-Score ohne Stop-Loss"]["Verkauft"] == "nie"
+    assert rows["Punkte-Score monatlich neu"]["Verkauft"].startswith("kein Stop-Loss")
     assert "höchstens 5 Aktien je Sektor" in rows["Rang-Score beste 2 %"]["Kauft"]
     common = " ".join(row["Regel"] for row in app.build_common_rule_rows(bot.DEFAULT_CONFIG))
     for term in ("5.000 €", "15 % unter dem Kaufkurs", "10 % unter dem Höchststand", "28 Tagen", "100er-Paketen", "gar nicht bewertet"):
@@ -463,7 +463,7 @@ def test_depot_status_measures_each_depot_from_its_own_start_against_the_etf():
     assert late["ETF im selben Zeitraum"] == "+1,0 %" and late["Vorsprung"] == "-4,0 Pkt."
     assert rows["Rang-Score beste 2 %"]["ETF im selben Zeitraum"] == "+3,0 %"
     assert rows["MSCI World ETF"]["Vorsprung"] == "–"
-    assert rows["Punkte-Score ohne Stop-Loss"]["Vorsprung"] == "-3,5 Pkt."
+    assert rows["Punkte-Score monatlich neu"]["Vorsprung"] == "-3,5 Pkt."
     assert app._stock_count({"positions": [1, 2], "pending": [3]}) == "2 + 1 Order"
     assert app._stock_count({"positions": [1], "pending": []}) == "1"
 
@@ -477,7 +477,7 @@ def test_comparisons_use_the_common_period_and_say_when_a_rule_never_fired():
     assert pause["Seit"] == "11.11."  # rank is measured from 104.000 on, not from its own start
     assert pause["Ergebnis"] == "-3,0 % gegen -5,0 %"
     assert pause["Stand"].startswith("Regel hat noch nie gegriffen")
-    assert rows["Hilft der Stop-Loss?"]["Stand"] == "Punkte-Score ohne Stop-Loss vorn"
+    assert rows["Stop-Loss oder monatlich neu sortieren?"]["Stand"] == "Punkte-Score monatlich neu vorn"
     state["portfolios"]["rank_regime"]["paused_days"] = 3
     assert app.build_depot_comparison_rows(state)[2]["Stand"] == "Rang-Score mit Kaufpause vorn"
 
@@ -501,3 +501,99 @@ def test_depot_status_line_explains_the_special_rule():
     state["portfolios"]["rank_exit"]["positions"] = [{"symbol": "VLO", "weak_days": 2}]
     assert app.depot_status_line(state, "rank_exit", bot.DEFAULT_CONFIG) == "Unter 40 im Rang-Score: VLO (2 von 5 Tagen)."
     assert app.depot_status_line(state, "bot", bot.DEFAULT_CONFIG) is None
+
+
+# ── Punkte-Score monatlich neu (25.11.2026, replaces the depot without stop-loss) ──
+
+def _points_snapshot(day, scores):
+    return _snapshot(day, [_item(symbol, score) for symbol, score in scores.items()])
+
+
+def test_monthly_depot_buys_the_top_twenty_and_ignores_indices():
+    state = _state()
+    scores = {f"S{i:02d}.DE": 100 - i for i in range(30)}
+    snap = _points_snapshot("2026-11-02", scores)
+    snap["items"].append(_item("^GDAXI", 99))
+    summary = bot.step(state, snap, {}, {}, _at("2026-11-02"))
+    pf = state["portfolios"]["points_monthly"]
+    assert summary["points_monthly_orders"] == [f"S{i:02d}.DE" for i in range(20)]
+    assert pf["rebalance_month"] == "2026-11" and pf["cash"] == 0
+    assert len(pf["targets"]) == 30  # 20 targets plus the reserve (all 30 here)
+
+
+def _fill_monthly(state, day, symbols, price=100.0):
+    bars = {s: _bars([(day, price, price, price)]) for s in symbols}
+    bot.step(state, None, bars, {}, _at(day))
+
+
+def test_monthly_depot_swaps_at_the_change_of_month_without_stop():
+    state = _state()
+    first = {f"S{i:02d}.DE": 100 - i for i in range(20)}
+    bot.step(state, _points_snapshot("2026-11-02", first), {}, {}, _at("2026-11-02"))
+    _fill_monthly(state, "2026-11-03", first)
+    pf = state["portfolios"]["points_monthly"]
+    assert len(pf["positions"]) == 20
+
+    # a crash of 40 % does not sell anything: there is no stop
+    _fill_monthly(state, "2026-11-04", first, price=60.0)
+    assert len(pf["positions"]) == 20
+
+    # same month, other scores: nothing changes until the month changes
+    december = {**{f"S{i:02d}.DE": 100 - i for i in range(18)}, "NEW1.DE": 120, "NEW2.DE": 119}
+    summary = bot.step(state, _points_snapshot("2026-11-30", december), {}, {}, _at("2026-11-30"))
+    assert "points_monthly_sells" not in summary and summary["points_monthly_orders"] == []
+
+    summary = bot.step(state, _points_snapshot("2026-12-01", december), {}, {}, _at("2026-12-01"))
+    assert summary["points_monthly_sells"] == ["S18.DE", "S19.DE"]
+    assert summary["points_monthly_orders"] == []  # the places are still taken until the sale
+
+    bars = {s: _bars([("2026-12-02", 70.0, 69.0, 71.0)]) for s in first}
+    bot.step(state, _points_snapshot("2026-12-02", december), bars, {}, _at("2026-12-02"))
+    sold = [t for t in pf["trades"] if t["side"] == "Verkauf"]
+    assert [t["symbol"] for t in sold] == ["S18.DE", "S19.DE"] and all(t["price"] == 70.0 for t in sold)
+    assert "20 besten" in sold[0]["reason"]
+    new = sorted(pf["pending"], key=lambda o: o["symbol"])
+    assert [o["symbol"] for o in new] == ["NEW1.DE", "NEW2.DE"]
+    # sold at a loss: the freed cash is split over both places instead of one full 5.000 € order
+    assert new[0]["reserved"] == new[1]["reserved"] < 5000 and pf["cash"] == pytest.approx(0, abs=0.02)
+
+
+def test_monthly_depot_waits_for_enough_fresh_data():
+    state = _state()
+    items = [_item("A.DE", 70)] + [_item(f"S{i}.DE", 10, stale_from="2026-11-01") for i in range(3)]
+    bot.step(state, _snapshot("2026-11-02", items), {}, {}, _at("2026-11-02"))
+    pf = state["portfolios"]["points_monthly"]
+    assert pf["pending"] == [] and "rebalance_month" not in pf  # tried again on the next day
+
+
+def test_monthly_depot_ignores_the_rebuy_block_and_drops_old_orders():
+    state = _state()
+    pf = state["portfolios"]["points_monthly"]
+    pf["cooldown"]["A.DE"] = "2026-11-20"
+    pf["rebalance_month"] = "2026-11"
+    pf["pending"] = [{"symbol": "OLD.DE", "reserved": 5000.0, "order_day": "2026-11-30", "score": 50, "status": "open"}]
+    pf["cash"] = 95_000.0
+    bot.step(state, _points_snapshot("2026-12-01", {"A.DE": 70}), {}, {}, _at("2026-12-01"))
+    assert [o["symbol"] for o in pf["pending"]] == ["A.DE"] and pf["cash"] == 95_000.0
+
+
+def test_old_state_loses_the_depot_without_stop_and_gets_the_monthly_one():
+    state = _state()
+    del state["portfolios"]["points_monthly"]
+    state["portfolios"]["no_stop"] = {"label": "Punkte-Score ab 60 ohne Stop-Loss", "positions": [], "pending": []}
+    state["equity"] = [{"day": "2026-11-24", "etf": 1.0, "bot": 2.0, "no_stop": 3.0}]
+    assert bot.ensure_portfolios(state, _at("2026-11-25")) == ["points_monthly"]
+    assert "no_stop" not in state["portfolios"] and state["equity"] == [{"day": "2026-11-24", "etf": 1.0, "bot": 2.0}]
+    assert state["portfolios"]["points_monthly"]["started"] == "2026-11-25"
+
+
+def test_monthly_status_line_names_the_next_change():
+    import app
+
+    state = _state()
+    pf = state["portfolios"]["points_monthly"]
+    assert app.depot_status_line(state, "points_monthly", bot.DEFAULT_CONFIG) == "Sortiert zum ersten Mal mit dem nächsten Lauf."
+    pf["rebalance_month"] = "2026-12"
+    pf["positions"] = [{"symbol": "S19.DE", "exit_day": "2026-12-01"}]
+    line = app.depot_status_line(state, "points_monthly", bot.DEFAULT_CONFIG)
+    assert "Dezember 2026" in line and "Januar 2027" in line and "S19.DE" in line
