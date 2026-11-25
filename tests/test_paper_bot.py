@@ -201,12 +201,13 @@ def test_app_bot_rows():
     rows = app.build_bot_position_rows(state["portfolios"]["bot"], state["config"])
     assert [r["Symbol"] for r in rows] == ["SAP.DE"]
     assert rows[0]["Plus/Minus %"] == 31.0
-    assert rows[0]["Stop-Abstand"] == "10 %"  # +31 % > +25 %
-    assert rows[0]["Stop-Loss"] == pytest.approx(117.9)
+    assert rows[0]["Stop-Regel"] == "10 % unter Hoch"  # +31 % > +25 %
+    assert rows[0]["Stop-Kurs"] == pytest.approx(117.9)
+    assert rows[0]["Punkte-Score beim Kauf"] == 62
     trades = app.build_bot_trade_rows(state["portfolios"]["bot"])
     assert trades[0]["Art"] == "Verkauf" and trades[0]["Symbol"] == "ALV.DE"  # newest first
     no_stop = app.build_bot_position_rows(state["portfolios"]["no_stop"], state["config"])
-    assert "Stop-Loss" not in no_stop[0] and len(no_stop) == 2
+    assert "Stop-Kurs" not in no_stop[0] and len(no_stop) == 2
     frame = app.build_bot_equity_frame(state)
     assert list(frame.columns) == list(app.BOT_SERIES.values())
 
@@ -239,7 +240,9 @@ def test_bot_tab_renders(tmp_path, monkeypatch):
     assert not at.exception
     import app
     assert any("Trades" in s.value for s in at.subheader)
-    assert len(at.metric) == len(app.BOT_SERIES)
+    assert len(at.metric) == 3  # value, stocks, cash of the chosen depot
+    tables = [frame.value for frame in at.dataframe]
+    assert list(tables[0]["Depot"]) == list(app.BOT_SERIES.values())  # what each depot does, first
 
 
 def _ranked(symbol, score, **extra):
@@ -339,6 +342,7 @@ def test_regime_depot_pauses_buys_below_the_200_day_line_and_keeps_stops():
     falling = {bot.ETF_SYMBOL: _etf_bars("2025-10-01", 280, -0.1)}
     summary = bot.step(state, _snapshot("2026-11-02", items), falling, {}, _at("2026-11-02"))
     assert summary["regime"]["above"] is False and summary["rank_regime_paused"]
+    assert state["portfolios"]["rank_regime"]["paused_days"] == 1
     assert state["portfolios"]["rank_regime"]["pending"] == []
     assert [o["symbol"] for o in state["portfolios"]["rank"]["pending"]] == ["R099.DE", "R098.DE"]
     assert [o["symbol"] for o in state["portfolios"]["rank_exit"]["pending"]] == ["R099.DE", "R098.DE"]
@@ -420,3 +424,80 @@ def test_run_loads_enough_etf_history_for_the_average(tmp_path):
     bot.run(now=_at("2026-11-11"), state_path=tmp_path / "state.json", loader=loader, snapshot=_snapshot("2026-11-11", []))
     assert bot.ETF_SYMBOL in seen["symbols"]
     assert (date(2026, 11, 11) - seen["start"]).days >= 290
+
+
+# ── Trades page (25.11.2026) ────────────────────────────────────────────────
+
+def _equity_state():
+    state = _state()
+    state["equity"] = [
+        {"day": "2026-11-06", "etf": 100_000.0, "bot": 100_000.0, "no_stop": 100_000.0, "rank": 100_000.0},
+        {"day": "2026-11-11", "etf": 102_000.0, "bot": 101_000.0, "no_stop": 100_500.0, "rank": 104_000.0,
+         "rank_regime": 100_000.0, "rank_exit": 100_000.0},
+        {"day": "2026-11-24", "etf": 103_020.0, "bot": 99_000.0, "no_stop": 99_500.0, "rank": 98_800.0,
+         "rank_regime": 97_000.0, "rank_exit": 97_000.0},
+    ]
+    return state
+
+
+def test_depot_rules_name_every_depot_and_its_difference():
+    import app
+
+    rows = {row["Depot"]: row for row in app.build_depot_rule_rows(bot.DEFAULT_CONFIG)}
+    assert list(rows) == list(app.BOT_SERIES.values())
+    assert "200-Tage-Durchschnitt" in rows["Rang-Score mit Kaufpause"]["Kauft"]
+    assert "5 Tage in Folge unter 40" in rows["Rang-Score mit Score-Ausstieg"]["Verkauft"]
+    assert rows["Punkte-Score ohne Stop-Loss"]["Verkauft"] == "nie"
+    assert "höchstens 5 Aktien je Sektor" in rows["Rang-Score beste 2 %"]["Kauft"]
+    common = " ".join(row["Regel"] for row in app.build_common_rule_rows(bot.DEFAULT_CONFIG))
+    for term in ("5.000 €", "15 % unter dem Kaufkurs", "10 % unter dem Höchststand", "28 Tagen", "100er-Paketen"):
+        assert term in common, term
+
+
+def test_depot_status_measures_each_depot_from_its_own_start_against_the_etf():
+    import app
+
+    rows = {row["Depot"]: row for row in app.build_depot_status_rows(_equity_state())}
+    late = rows["Rang-Score mit Kaufpause"]
+    assert late["Seit"] == "11.11." and late["Seit Start"] == "-3,0 %"
+    assert late["ETF im selben Zeitraum"] == "+1,0 %" and late["Vorsprung"] == "-4,0 Pkt."
+    assert rows["Rang-Score beste 2 %"]["ETF im selben Zeitraum"] == "+3,0 %"
+    assert rows["MSCI World ETF"]["Vorsprung"] == "–"
+    assert rows["Punkte-Score ohne Stop-Loss"]["Vorsprung"] == "-3,5 Pkt."
+    assert app._stock_count({"positions": [1, 2], "pending": [3]}) == "2 + 1 Order"
+    assert app._stock_count({"positions": [1], "pending": []}) == "1"
+
+
+def test_comparisons_use_the_common_period_and_say_when_a_rule_never_fired():
+    import app
+
+    state = _equity_state()
+    rows = {row["Frage"]: row for row in app.build_depot_comparison_rows(state)}
+    pause = rows["Hilft die Kaufpause im fallenden Markt?"]
+    assert pause["Seit"] == "11.11."  # rank is measured from 104.000 on, not from its own start
+    assert pause["Ergebnis"] == "-3,0 % gegen -5,0 %"
+    assert pause["Stand"].startswith("Regel hat noch nie gegriffen")
+    assert rows["Hilft der Stop-Loss?"]["Stand"] == "Punkte-Score ohne Stop-Loss vorn"
+    state["portfolios"]["rank_regime"]["paused_days"] = 3
+    assert app.build_depot_comparison_rows(state)[2]["Stand"] == "Rang-Score mit Kaufpause vorn"
+
+
+def test_trade_reasons_and_orders_name_the_right_score():
+    import app
+
+    pf = {"rule": "rank", "trades": [{"side": "Kauf", "reason": "Score 85.6", "day": "2026-11-12", "symbol": "EXEL"}]}
+    assert app.build_bot_trade_rows(pf)[0]["Grund"] == "Rang-Score 85,6"
+    pf = {"rule": "threshold", "trades": [{"side": "Kauf", "reason": "Score 62", "day": "2026-11-12", "symbol": "SAP.DE"}]}
+    assert app.build_bot_trade_rows(pf)[0]["Grund"] == "Punkte-Score 62"
+
+
+def test_depot_status_line_explains_the_special_rule():
+    import app
+
+    state = _equity_state()
+    state["regime"] = {"day": "2026-11-23", "close": 126.64, "average": 122.69, "above": True}
+    line = app.depot_status_line(state, "rank_regime", bot.DEFAULT_CONFIG)
+    assert "Kaufpause aus" in line and "noch nie aktiv" in line and "126,64" in line
+    state["portfolios"]["rank_exit"]["positions"] = [{"symbol": "VLO", "weak_days": 2}]
+    assert app.depot_status_line(state, "rank_exit", bot.DEFAULT_CONFIG) == "Unter 40 im Rang-Score: VLO (2 von 5 Tagen)."
+    assert app.depot_status_line(state, "bot", bot.DEFAULT_CONFIG) is None

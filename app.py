@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import math
 import os
 import re
 from pathlib import Path
@@ -1278,17 +1279,7 @@ def _help_trades() -> None:
     st.markdown(
         "Jedes Depot startet mit **100.000 €** und kauft Aktien für je 5.000 €, höchstens 20 Stück. Es wird nur simuliert, es fließt kein echtes Geld."
     )
-    st.table(pd.DataFrame([
-        {"Depot": "Punkte-Score ab 60", "Kauft": "jede Aktie ab 60 Punkten, höchste zuerst", "Verkauft": "per Stop-Loss"},
-        {"Depot": "Punkte-Score ab 60 ohne Stop-Loss", "Kauft": "dieselben Aktien", "Verkauft": "nie, zeigt, ob der Stop-Loss hilft"},
-        {"Depot": "Rang-Score beste 2 %", "Kauft": "die besten 2 % des Tages, höchstens 5 pro Tag und 25 % je Sektor, nichts in der Woche vor Quartalszahlen",
-         "Verkauft": "per Stop-Loss"},
-        {"Depot": "Rang-Score mit Kaufpause", "Kauft": "wie Rang-Score, aber nicht, solange der MSCI-World-ETF unter seinem 200-Tage-Durchschnitt liegt",
-         "Verkauft": "per Stop-Loss"},
-        {"Depot": "Rang-Score mit Score-Ausstieg", "Kauft": "wie Rang-Score",
-         "Verkauft": "per Stop-Loss, oder wenn der Rang-Score 5 Tage in Folge unter 40 liegt"},
-        {"Depot": "MSCI World ETF", "Kauft": "einmal am Start", "Verkauft": "nie, die Messlatte"},
-    ]))
+    st.table(pd.DataFrame(build_depot_rule_rows(paper_bot.DEFAULT_CONFIG)).set_index("Depot"))
     st.markdown(
         "**Stop-Loss:** 15 % unter dem Kaufkurs. Er steigt mit dem höchsten Schlusskurs mit und sinkt nie. "
         "Liegt der Höchststand 25 % über dem Kaufkurs, rückt er auf 10 % Abstand. Die genauen Regeln stehen auf der Seite **Trades**."
@@ -1754,7 +1745,153 @@ def build_bot_equity_frame(state: dict) -> pd.DataFrame:
     return frame.set_index("day").rename(columns=BOT_SERIES).reindex(columns=list(BOT_SERIES.values()))
 
 
+def depot_score_name(portfolio: dict) -> str:
+    """The score a depot buys by."""
+    return "Rang-Score" if portfolio.get("rule") == "rank" else "Punkte-Score"
+
+
+def build_depot_rule_rows(cfg: dict) -> list[dict]:
+    """What each depot does differently, in one row each. Shared by the Trades page and the help."""
+    rank_buy = (f"die besten {cfg['top_share'] * 100:.0f} % des Tages nach Rang-Score; höchstens {cfg['max_buys_per_day']} Käufe pro Tag, "
+                f"höchstens {math.floor(cfg['sector_cap'] * cfg['max_positions'])} Aktien je Sektor, nichts in der Woche vor Quartalszahlen")
+    stop = "per Stop-Loss"
+    return [
+        {"Depot": BOT_SERIES["rank"], "Kauft": rank_buy, "Verkauft": stop,
+         "Wozu": "Hauptdepot des Rang-Scores"},
+        {"Depot": BOT_SERIES["rank_regime"],
+         "Kauft": f"wie „{BOT_SERIES['rank']}“, aber nichts, solange der MSCI World ETF unter seinem {cfg['regime_ma_days']}-Tage-Durchschnitt schließt",
+         "Verkauft": stop, "Wozu": "Schützt eine Kaufpause im fallenden Markt?"},
+        {"Depot": BOT_SERIES["rank_exit"], "Kauft": f"wie „{BOT_SERIES['rank']}“",
+         "Verkauft": f"{stop}, oder zur nächsten Eröffnung, wenn der Rang-Score {cfg['exit_days']} Tage in Folge unter {cfg['exit_score']} liegt",
+         "Wozu": "Bringt es etwas, schwach gewordene Aktien früher zu verkaufen?"},
+        {"Depot": BOT_SERIES["bot"], "Kauft": f"jede Aktie ab {cfg['buy_threshold']} Punkten im Punkte-Score, höchste zuerst",
+         "Verkauft": stop, "Wozu": "Hauptdepot des Punkte-Scores"},
+        {"Depot": BOT_SERIES["no_stop"], "Kauft": f"wie „{BOT_SERIES['bot']}“", "Verkauft": "nie",
+         "Wozu": f"Hilft der Stop-Loss? Gegenstück zu „{BOT_SERIES['bot']}“"},
+        {"Depot": BOT_SERIES["etf"], "Kauft": f"einmal am Start für das ganze Geld ({paper_bot.ETF_SYMBOL})", "Verkauft": "nie",
+         "Wozu": "Messlatte: Das schafft man ohne jeden Aufwand"},
+    ]
+
+
+def build_common_rule_rows(cfg: dict) -> list[dict]:
+    """Rules every depot follows."""
+    return [
+        {"Thema": "Wann", "Regel": "Einmal täglich nach dem letzten US-Lauf. Entschieden wird nur mit dem Snapshot dieses Tages."},
+        {"Thema": "Datenprüfung", "Regel": f"Neue Käufe nur, wenn mindestens {cfg['min_coverage'] * 100:.0f} % der Tagesdaten frisch sind."},
+        {"Thema": "Betrag", "Regel": f"{_de_number(cfg['position_budget'], 0)} € je Aktie, höchstens {cfg['max_positions']} Aktien je Depot. Startkapital {_de_number(cfg['capital'], 0)} €."},
+        {"Thema": "Kauf", "Regel": f"Zur Eröffnung am nächsten Handelstag an der Heimatbörse der Aktie. {_de_number(cfg['fee'], 0)} € Gebühr, "
+                                   f"London {fmt_pct(cfg['uk_stamp_duty'] * 100)} Stempelsteuer. Tokio handelt nur in 100er-Paketen; ist ein Paket teurer als "
+                                   f"{_de_number(cfg['position_budget'], 0)} €, wird die Order storniert. Ohne Kurs verfällt eine Order nach {cfg['order_expiry_days']} Tagen."},
+        {"Thema": "Stop-Loss", "Regel": f"Startet {cfg['initial_stop'] * 100:.0f} % unter dem Kaufkurs und wird mit dem höchsten Schlusskurs nachgezogen, nie zurück. "
+                                        f"Ab +{cfg['tighten_after_gain'] * 100:.0f} % Gewinn liegt er nur noch {cfg['tight_stop'] * 100:.0f} % unter dem Höchststand."},
+        {"Thema": "Verkauf am Stop", "Regel": f"Berührt das Tagestief den Stop, wird zum Stop-Kurs minus {fmt_pct(cfg['stop_slippage'] * 100)} verkauft, nie unter dem Tagestief. "
+                                              "Eröffnet die Aktie schon darunter, wird zur Eröffnung verkauft."},
+        {"Thema": "Sperre", "Regel": f"Eine verkaufte Aktie darf frühestens nach {cfg['cooldown_days']} Tagen wieder gekauft werden."},
+        {"Thema": "Bewertung", "Regel": "Alle Werte in Euro, mit den Schlusskursen und den Wechselkursen des Tages."},
+    ]
+
+
+def _first_equity_row(equity: list[dict], key: str) -> dict | None:
+    return next((row for row in equity if isinstance(row.get(key), (int, float))), None)
+
+
+def _change(equity: list[dict], key: str, since: str) -> float | None:
+    """Change of a series from the first booked day on or after ``since`` to the last day, in percent."""
+    rows = [row for row in equity if row.get("day", "") >= since and isinstance(row.get(key), (int, float))]
+    if len(rows) < 1 or not rows[0][key]:
+        return None
+    return (rows[-1][key] / rows[0][key] - 1) * 100
+
+
+def _stock_count(portfolio: dict) -> str:
+    held, pending = len(portfolio.get("positions", [])), len(portfolio.get("pending", []))
+    return f"{held}" + (f" + {pending} {'Order' if pending == 1 else 'Orders'}" if pending else "")
+
+
+def build_depot_status_rows(state: dict) -> list[dict]:
+    """Value of every depot since its own start, next to the ETF over exactly the same days."""
+    equity = state.get("equity", [])
+    last = equity[-1] if equity else {}
+    rows = []
+    for key, label in BOT_SERIES.items():
+        first = _first_equity_row(equity, key)
+        if first is None:
+            continue
+        since = first["day"]
+        portfolio = state["portfolios"].get(key, {})
+        own = _change(equity, key, since)
+        etf = _change(equity, "etf", since)
+        rows.append({
+            "Depot": label,
+            "Seit": f"{since[8:10]}.{since[5:7]}.",
+            "Wert €": _de_number(last.get(key, 0), 0),
+            "Seit Start": fmt_pct(own, 1, signed=True),
+            "ETF im selben Zeitraum": "–" if key == "etf" else fmt_pct(etf, 1, signed=True),
+            "Vorsprung": "–" if key == "etf" or own is None or etf is None else f"{'+' if own - etf > 0 else ''}{_de_number(own - etf, 1)} Pkt.",
+            "Aktien": "–" if key == "etf" else _stock_count(portfolio),
+        })
+    return rows
+
+
+DEPOT_COMPARISONS = [
+    ("Wählt der Rang-Score besser als der Punkte-Score?", "rank", "bot"),
+    ("Hilft der Stop-Loss?", "bot", "no_stop"),
+    ("Hilft die Kaufpause im fallenden Markt?", "rank_regime", "rank"),
+    ("Hilft der Score-Ausstieg?", "rank_exit", "rank"),
+    ("Schlägt der Rang-Score den ETF?", "rank", "etf"),
+    ("Schlägt der Punkte-Score den ETF?", "bot", "etf"),
+]
+
+
+def _rule_never_fired(state: dict, key: str) -> bool:
+    portfolio = state["portfolios"].get(key, {})
+    if portfolio.get("regime_filter"):
+        return not portfolio.get("paused_days")
+    if portfolio.get("score_exit"):
+        return not any(trade.get("side") == "Verkauf" and str(trade.get("reason", "")).startswith("Rang-Score")
+                       for trade in portfolio.get("trades", []))
+    return False
+
+
+def build_depot_comparison_rows(state: dict) -> list[dict]:
+    """The questions the depots answer, each measured over the days both sides existed."""
+    equity = state.get("equity", [])
+    rows = []
+    for question, key, other in DEPOT_COMPARISONS:
+        first_a, first_b = _first_equity_row(equity, key), _first_equity_row(equity, other)
+        if first_a is None or first_b is None:
+            continue
+        since = max(first_a["day"], first_b["day"])
+        own, theirs = _change(equity, key, since), _change(equity, other, since)
+        if own is None or theirs is None:
+            continue
+        gap = own - theirs
+        if _rule_never_fired(state, key):
+            verdict = "Regel hat noch nie gegriffen, der Abstand kommt nur von anderen Kaufterminen"
+        elif abs(gap) < 0.05:
+            verdict = "gleichauf"
+        else:
+            verdict = f"{BOT_SERIES[key] if gap > 0 else BOT_SERIES[other]} vorn"
+        rows.append({
+            "Frage": question,
+            "Vergleich": f"{BOT_SERIES[key]} gegen {BOT_SERIES[other]}",
+            "Seit": f"{since[8:10]}.{since[5:7]}.",
+            "Ergebnis": f"{fmt_pct(own, 1, signed=True)} gegen {fmt_pct(theirs, 1, signed=True)}",
+            "Stand": verdict,
+        })
+    return rows
+
+
+def _score_text(value) -> str:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    return _de_number(number, 1) if number != int(number) else str(int(number))
+
+
 def build_bot_position_rows(portfolio: dict, config: dict) -> list[dict]:
+    score_name = depot_score_name(portfolio)
     rows = []
     for position in portfolio.get("positions", []):
         entry, last, stop = position["entry_price"], position["last_price"], position["stop"]
@@ -1762,7 +1899,7 @@ def build_bot_position_rows(portfolio: dict, config: dict) -> list[dict]:
             "Symbol": position["symbol"],
             "Name": position.get("name", ""),
             "Gekauft am": position["entry_day"],
-            "Score beim Kauf": position.get("score_at_buy"),
+            f"{score_name} beim Kauf": position.get("score_at_buy"),
             "Kaufkurs": round(entry, 2),
             "Aktuell": round(last, 2),
             "Plus/Minus %": round((last / entry - 1) * 100, 1),
@@ -1770,9 +1907,9 @@ def build_bot_position_rows(portfolio: dict, config: dict) -> list[dict]:
             "Währung": position.get("currency", ""),
         }
         if portfolio.get("use_stop", True):
-            row["Stop-Loss"] = round(stop, 2)
-            row["Abstand zum Stop %"] = round((last / stop - 1) * 100, 1) if stop else None
-            row["Stop-Abstand"] = f"{paper_bot.stop_distance(position, config) * 100:.0f} %"
+            row["Stop-Kurs"] = round(stop, 2)
+            row["Luft bis Stop %"] = round((last / stop - 1) * 100, 1) if stop else None
+            row["Stop-Regel"] = f"{paper_bot.stop_distance(position, config) * 100:.0f} % unter Hoch"
         if portfolio.get("score_exit"):
             row["Rang-Score heute"] = position.get("last_score")
             row[f"Tage unter {config['exit_score']}"] = position.get("weak_days", 0)
@@ -1782,8 +1919,12 @@ def build_bot_position_rows(portfolio: dict, config: dict) -> list[dict]:
 
 
 def build_bot_trade_rows(portfolio: dict) -> list[dict]:
+    score_name = depot_score_name(portfolio)
     rows = []
     for trade in reversed(portfolio.get("trades", [])):
+        reason = str(trade.get("reason", ""))
+        if trade.get("side") == "Kauf" and reason.startswith("Score "):
+            reason = f"{score_name} {_score_text(reason[6:])}"
         rows.append({
             "Datum": trade.get("day"),
             "Art": trade.get("side"),
@@ -1794,76 +1935,108 @@ def build_bot_trade_rows(portfolio: dict) -> list[dict]:
             "Betrag €": trade.get("value_eur"),
             "Gewinn/Verlust €": trade.get("pnl_eur"),
             "Gewinn/Verlust %": trade.get("pnl_pct"),
-            "Grund": trade.get("reason", ""),
+            "Grund": reason,
         })
     return rows
 
 
+def depot_status_line(state: dict, key: str, cfg: dict) -> str | None:
+    """What the special rule of a depot is doing right now."""
+    portfolio = state["portfolios"][key]
+    if portfolio.get("regime_filter"):
+        regime = state.get("regime")
+        paused = portfolio.get("paused_days", 0)
+        history = f" Bisher {paused} Tage mit Kaufpause." if paused else " Die Pause war bisher noch nie aktiv."
+        if not regime:
+            return "Marktlage unbekannt (zu wenig ETF-Kurse), deshalb keine Kaufpause." + history
+        return (f"Marktlage am {regime['day'][8:10]}.{regime['day'][5:7]}.: MSCI World ETF {_de_number(regime['close'])} € "
+                f"{'über' if regime['above'] else 'unter'} dem {cfg['regime_ma_days']}-Tage-Durchschnitt ({_de_number(regime['average'])} €). "
+                f"**Kaufpause {'aus' if regime['above'] else 'an'}.**" + history)
+    if portfolio.get("score_exit"):
+        weak = [p for p in portfolio.get("positions", []) if p.get("weak_days")]
+        if not weak:
+            return f"Keine gehaltene Aktie liegt gerade unter {cfg['exit_score']} im Rang-Score."
+        names = ", ".join(f"{p['symbol']} ({p['weak_days']} von {cfg['exit_days']} Tagen)" for p in weak)
+        return f"Unter {cfg['exit_score']} im Rang-Score: {names}."
+    return None
+
+
 def render_bot_tab():
-    st.subheader("💼 Trades: fünf Spieldepots im Vergleich")
+    st.subheader("💼 Trades: Spieldepots")
     state = paper_bot.load_state()
-    cfg = (state or {}).get("config", paper_bot.DEFAULT_CONFIG)
-    with st.expander("Regeln des Bots", expanded=state is None):
-        st.markdown(
-            f"- Läuft einmal täglich nach dem letzten US-Lauf und nutzt nur den Snapshot dieses Tages.\n"
-            f"- **Depot Punkte-Score:** kauft jede Aktie ab **{cfg['buy_threshold']} Punkten**, die höchsten zuerst.\n"
-            f"- **Depot Rang-Score:** kauft die besten **{cfg['top_share'] * 100:.0f} % des Tages**, höchstens {cfg['max_buys_per_day']} Käufe pro Tag "
-            f"und {cfg['sector_cap'] * 100:.0f} % des Depots je Sektor, keine Aktie in der Woche vor ihren Quartalszahlen.\n"
-            f"- **Rang-Score mit Kaufpause:** dieselben Regeln, aber keine neuen Käufe, solange der MSCI-World-ETF unter seinem "
-            f"{cfg['regime_ma_days']}-Tage-Durchschnitt schließt. Gehaltene Aktien bleiben mit ihrem Stop-Loss im Depot.\n"
-            f"- **Rang-Score mit Score-Ausstieg:** dieselben Regeln, zusätzlich wird eine Aktie zur nächsten Eröffnung verkauft, "
-            f"wenn ihr Rang-Score an {cfg['exit_days']} Entscheidungstagen in Folge unter {cfg['exit_score']} liegt. Tage ohne frischen Score zählen nicht.\n"
-            f"- **Beide:** je **{cfg['position_budget']:,.0f} €**, höchstens **{cfg['max_positions']} Aktien**, Kauf zur Eröffnung am nächsten Handelstag "
-            f"(1 € Gebühr, London {cfg['uk_stamp_duty'] * 100:.1f} % Stempelsteuer, Tokio in 100er-Stückelung).\n"
-            f"- **Datenprüfung:** Neue Käufe nur, wenn mindestens {cfg['min_coverage'] * 100:.0f} % der Tagesdaten frisch sind.\n"
-            f"- **Stop-Loss:** {cfg['initial_stop'] * 100:.0f} % unter dem Kaufkurs. Er wird jeden Tag zum höchsten Schlusskurs nachgezogen "
-            f"und sinkt nie. Ab **+{cfg['tighten_after_gain'] * 100:.0f} %** Gewinn rückt er auf **{cfg['tight_stop'] * 100:.0f} %** heran.\n"
-            f"- **Verkauf:** sobald der Tiefstkurs den Stop berührt, zum Stop-Kurs minus {cfg.get('stop_slippage', 0) * 100:.1f} % "
-            "Slippage (eine ausgelöste Stop-Order wird zur Bestens-Order), aber nie unter dem Tagestief. "
-            "Eröffnet die Aktie schon unter dem Stop, wird zur Eröffnung verkauft.\n"
-            f"- **Sperre:** Eine verkaufte Aktie wird frühestens nach {cfg['cooldown_days']} Tagen wieder gekauft.\n"
-            "- **Vergleich:** Dieselben Käufe ohne Stop-Loss und ein MSCI-World-ETF mit demselben Startkapital. "
-            "So zeigt sich, ob der Stop-Loss und die Aktienauswahl etwas bringen."
-        )
+    cfg = {**paper_bot.DEFAULT_CONFIG, **((state or {}).get("config") or {})}
+    st.markdown(
+        "Fünf Spieldepots kaufen mit je 100.000 € Spielgeld nach festen Regeln. Jedes Depot beantwortet eine Frage, "
+        "und alle treten gegen einen MSCI-World-ETF an. Es fließt kein echtes Geld."
+    )
+
+    st.markdown("#### Was macht welches Depot?")
+    st.dataframe(pd.DataFrame(build_depot_rule_rows(cfg)), use_container_width=True, hide_index=True,
+                 column_config={"Kauft": st.column_config.TextColumn(width="large"),
+                                "Verkauft": st.column_config.TextColumn(width="medium"),
+                                "Wozu": st.column_config.TextColumn(width="medium")})
+    with st.expander("Regeln, die für alle Depots gelten"):
+        st.table(pd.DataFrame(build_common_rule_rows(cfg)).set_index("Thema"))
+
     if not state:
-        st.info("Das Bot-Depot wird mit dem nächsten nächtlichen US-Lauf angelegt.")
+        st.info("Die Spieldepots werden mit dem nächsten nächtlichen US-Lauf angelegt.")
         return
 
-    last = state["equity"][-1] if state["equity"] else {}
-    capital = cfg["capital"]
-    cols = st.columns(3)
-    for index, (key, label) in enumerate(BOT_SERIES.items()):
-        value = last.get(key, capital)
-        cols[index % 3].metric(label, f"{value:,.0f} €", f"{(value / capital - 1) * 100:+.2f} %")
-    st.caption(f"Gestartet am {state['started']}, letzter Lauf {state['last_run']}, bewertet mit Schlusskursen bis {last.get('day', '-')}. "
-               + ", ".join(f"{pf['label']} seit {pf['started']}" for pf in state["portfolios"].values() if pf.get("started", state["started"]) != state["started"]))
-    regime = state.get("regime")
-    if regime:
-        st.caption(f"Marktlage am {regime['day']}: MSCI World ETF {regime['close']:.2f} € "
-                   f"{'über' if regime['above'] else 'unter'} dem {cfg['regime_ma_days']}-Tage-Durchschnitt ({regime['average']:.2f} €), "
-                   f"Kaufpause {'aus' if regime['above'] else 'an'}.")
     coverage = state.get("coverage") or {}
     if coverage and coverage.get("fresh", 0) < cfg["min_coverage"]:
         st.warning(f"Am {coverage['day']} waren nur {coverage['fresh'] * 100:.0f} % der Daten frisch. An diesem Tag gab es keine neuen Käufe.")
+
+    last = state["equity"][-1] if state["equity"] else {}
+    st.markdown("#### Stand")
+    st.dataframe(pd.DataFrame(build_depot_status_rows(state)), use_container_width=True, hide_index=True)
+    day = last.get("day", "")
+    st.caption(f"Bewertet mit Schlusskursen bis {day[8:10]}.{day[5:7]}.{day[:4]}, letzter Lauf {state['last_run'][:16].replace('T', ' ')} UTC. "
+               "Jedes Depot wird ab seinem eigenen Start gemessen und mit dem ETF über genau dieselben Tage verglichen.")
 
     equity = build_bot_equity_frame(state)
     if len(equity) > 1:
         st.line_chart(equity)
 
+    comparisons = build_depot_comparison_rows(state)
+    if comparisons:
+        st.markdown("#### Was die Depots bisher zeigen")
+        st.dataframe(pd.DataFrame(comparisons), use_container_width=True, hide_index=True)
+        trading_days = len(state.get("equity", []))
+        st.caption(f"Nach {trading_days} Handelstagen ist jeder Unterschied noch Zufall. Belastbar wird ein Vergleich frühestens nach etwa 12 Monaten, "
+                   "und erst wenn der Markt auch einmal gefallen ist.")
+
+    st.markdown("#### Ein Depot im Detail")
     depots = {meta["label"]: key for key, meta in paper_bot.PORTFOLIOS.items() if key in state["portfolios"]}
-    choice = st.radio("Depot", list(depots), horizontal=True, key="bot_depot_choice")
-    portfolio = state["portfolios"][depots[choice]]
-    st.markdown(f"**Bestand** ({len(portfolio['positions'])} von {cfg['max_positions']} Plätzen, Cash {portfolio['cash']:,.0f} €)")
+    choice = st.radio("Depot", list(depots), horizontal=True, key="bot_depot_choice", label_visibility="collapsed")
+    key = depots[choice]
+    portfolio = state["portfolios"][key]
+    rule = next((row for row in build_depot_rule_rows(cfg) if row["Depot"] == BOT_SERIES.get(key)), None)
+    if rule:
+        st.markdown(f"**Kauft:** {rule['Kauft']}.  \n**Verkauft:** {rule['Verkauft']}.  \n**Wozu:** {rule['Wozu']}")
+    status = depot_status_line(state, key, cfg)
+    if status:
+        st.info(status)
+    cols = st.columns(3)
+    cols[0].metric("Wert", f"{_de_number(last.get(key, cfg['capital']), 0)} €")
+    cols[1].metric("Aktien", f"{len(portfolio['positions'])} von {cfg['max_positions']}",
+                   f"+ {len(portfolio['pending'])} offene Orders" if portfolio["pending"] else None, delta_color="off")
+    cols[2].metric("Bargeld", f"{_de_number(portfolio['cash'], 0)} €")
+
+    score_name = depot_score_name(portfolio)
     position_rows = build_bot_position_rows(portfolio, cfg)
+    st.markdown("**Bestand**")
     if position_rows:
         st.dataframe(pd.DataFrame(position_rows), use_container_width=True, hide_index=True,
                      height=breakdown_table_height(len(position_rows)))
+        if portfolio.get("use_stop", True):
+            st.caption("Stop-Kurs: Fällt der Kurs darauf, wird verkauft. Luft bis Stop: wie weit der Kurs noch fallen darf. "
+                       "Stop-Regel: Abstand zum höchsten Schlusskurs seit dem Kauf.")
     else:
         st.caption("Noch keine Aktien im Depot.")
     if portfolio["pending"]:
         st.markdown("**Offene Kauforders** (werden zur nächsten Eröffnung ausgeführt)")
         st.dataframe(pd.DataFrame([
-            {"Symbol": o["symbol"], "Name": o.get("name", ""), "Punkte-Score": o["score"], "Entschieden am": o["order_day"]}
+            {"Symbol": o["symbol"], "Name": o.get("name", ""), score_name: o["score"], "Entschieden am": o["order_day"]}
             for o in portfolio["pending"]
         ]), use_container_width=True, hide_index=True)
     trades = build_bot_trade_rows(portfolio)

@@ -436,6 +436,7 @@ def step(state: dict, snapshot: dict | None, bars: dict[str, pd.DataFrame], fx: 
                 summary[f"{key}_exits"] = update_weak_days(pf, snapshot, cfg, decision_day)
             if pf.get("regime_filter") and regime is not None and not regime["above"]:
                 summary[f"{key}_paused"] = True  # ETF below its average: no new orders today
+                pf["paused_days"] = pf.get("paused_days", 0) + 1  # shown on the Trades page
             elif pf.get("rule") == "rank":
                 if data_ok and scored_share >= cfg.get("min_coverage", 0.0):
                     placed = place_orders(
