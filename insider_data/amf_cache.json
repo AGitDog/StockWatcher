@@ -3356,5 +3356,33 @@
     "volume": 515.8921
    }
   ]
+ },
+ "2026DD1152049": {
+  "date": "2026-11-24",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-23",
+    "instrument": "action",
+    "nature": "cession",
+    "options": false,
+    "price": 436.2607,
+    "volume": 5000.0
+   }
+  ]
+ },
+ "2026DD1152178": {
+  "date": "2026-11-24",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-23",
+    "instrument": "action",
+    "nature": "donation",
+    "options": false,
+    "price": 189.14,
+    "volume": 5462.0
+   }
+  ]
  }
 }
