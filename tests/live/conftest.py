@@ -3,6 +3,12 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
+def _offline_lot_filter():
+    """Overrides the fixture of the same name in tests/conftest.py."""
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _offline_insider_sources():
     """Overrides the fixture of the same name in tests/conftest.py: no network block here."""
     yield

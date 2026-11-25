@@ -450,7 +450,7 @@ def test_depot_rules_name_every_depot_and_its_difference():
     assert rows["Punkte-Score ohne Stop-Loss"]["Verkauft"] == "nie"
     assert "höchstens 5 Aktien je Sektor" in rows["Rang-Score beste 2 %"]["Kauft"]
     common = " ".join(row["Regel"] for row in app.build_common_rule_rows(bot.DEFAULT_CONFIG))
-    for term in ("5.000 €", "15 % unter dem Kaufkurs", "10 % unter dem Höchststand", "28 Tagen", "100er-Paketen"):
+    for term in ("5.000 €", "15 % unter dem Kaufkurs", "10 % unter dem Höchststand", "28 Tagen", "100er-Paketen", "gar nicht bewertet"):
         assert term in common, term
 
 

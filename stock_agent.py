@@ -1198,6 +1198,7 @@ def build_symbol_signal_monitor(symbol_or_name: str, symbol_mappings: dict[str, 
         "signal_breakdown_v2": v2_breakdown,
         "factors_v3": collect_v3_factors(symbol, info, history, eps_revision_signal, buyback_signal, insider_signal, quote_type == "etf"),
         "next_earnings": event_signal.get("next_earnings"),
+        "last_close": _get_current_price(info, history),  # the paper bot checks Tokyo lot costs with it
     }
 
 

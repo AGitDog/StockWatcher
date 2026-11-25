@@ -1332,6 +1332,9 @@ def _help_data_sources() -> None:
         "Ein zweiter Lauf am nächsten Morgen springt ein, falls der erste ausfällt.\n"
         "- **Gedrosselte Daten:** Liefert Yahoo für eine Aktie nichts, wird sie im selben Lauf erneut abgefragt. "
         "Die Startseite zeigt, wie viele Aktien frische Daten haben.\n"
+        "- **Zu teure Tokio-Aktien:** In Tokio gibt es Aktien nur im 100er-Paket. Kostet ein Paket mehr als eine Depot-Position (5.000 €), "
+        "kann kein Spieldepot die Aktie kaufen. Der Nachtlauf lässt sie deshalb ganz aus, zurzeit 14 Aktien wie Nintendo, Fast Retailing oder Keyence. "
+        "Die Liste wird jede Nacht mit aktuellen Kursen neu berechnet. Wird ein Paket nach einem Aktiensplit billiger, ist die Aktie wieder dabei.\n"
         "- **Wochencheck:** Jeden Sonntag prüft GitHub alle Verbindungen dieser Tabelle, die Läufe der Woche und die App. "
         "Bei einem Fehler kommt eine E-Mail mit einem Bericht als GitHub-Issue."
     )
@@ -1780,8 +1783,8 @@ def build_common_rule_rows(cfg: dict) -> list[dict]:
         {"Thema": "Datenprüfung", "Regel": f"Neue Käufe nur, wenn mindestens {cfg['min_coverage'] * 100:.0f} % der Tagesdaten frisch sind."},
         {"Thema": "Betrag", "Regel": f"{_de_number(cfg['position_budget'], 0)} € je Aktie, höchstens {cfg['max_positions']} Aktien je Depot. Startkapital {_de_number(cfg['capital'], 0)} €."},
         {"Thema": "Kauf", "Regel": f"Zur Eröffnung am nächsten Handelstag an der Heimatbörse der Aktie. {_de_number(cfg['fee'], 0)} € Gebühr, "
-                                   f"London {fmt_pct(cfg['uk_stamp_duty'] * 100)} Stempelsteuer. Tokio handelt nur in 100er-Paketen; ist ein Paket teurer als "
-                                   f"{_de_number(cfg['position_budget'], 0)} €, wird die Order storniert. Ohne Kurs verfällt eine Order nach {cfg['order_expiry_days']} Tagen."},
+                                   f"London {fmt_pct(cfg['uk_stamp_duty'] * 100)} Stempelsteuer. Tokio handelt nur in 100er-Paketen. Aktien, deren Paket mehr als "
+                                   f"{_de_number(cfg['position_budget'], 0)} € kostet, werden gar nicht bewertet und nie gekauft. Ohne Kurs verfällt eine Order nach {cfg['order_expiry_days']} Tagen."},
         {"Thema": "Stop-Loss", "Regel": f"Startet {cfg['initial_stop'] * 100:.0f} % unter dem Kaufkurs und wird mit dem höchsten Schlusskurs nachgezogen, nie zurück. "
                                         f"Ab +{cfg['tighten_after_gain'] * 100:.0f} % Gewinn liegt er nur noch {cfg['tight_stop'] * 100:.0f} % unter dem Höchststand."},
         {"Thema": "Verkauf am Stop", "Regel": f"Berührt das Tagestief den Stop, wird zum Stop-Kurs minus {fmt_pct(cfg['stop_slippage'] * 100)} verkauft, nie unter dem Tagestief. "

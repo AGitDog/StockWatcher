@@ -12,6 +12,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import lot_filter
 from brodel_v3 import compute_brodel_v3
 from stock_agent import (
     RUN_GROUPS,
@@ -56,6 +57,16 @@ def run_update(group: str = "all"):
     if not all_entries:
         print("No valid entries found in watchlist.", flush=True)
         sys.exit(0)
+
+    # Tokyo lots above one depot position are never bought: do not scan them at all.
+    if group in ("asia", "all"):
+        try:
+            lot_filter.refresh_for_watchlist([entry_symbol(entry, symbol_mappings) for entry in all_entries])
+        except Exception as e:  # the old list stays in place
+            print(f"Liste der zu teuren Tokio-Pakete nicht erneuert: {type(e).__name__}: {e}", flush=True)
+    all_entries, dropped = lot_filter.drop_excluded(all_entries, lambda entry: entry_symbol(entry, symbol_mappings))
+    if dropped:
+        print(f"{len(dropped)} Tokio-Aktien ausgelassen, 100er-Paket teurer als 5.000 EUR: {', '.join(dropped)}", flush=True)
 
     entries = rotate_entries(select_group_entries(all_entries, group, symbol_mappings))
     print(f"Group {group}: {len(entries)} of {len(all_entries)} entries, {MAX_WORKERS} threads...", flush=True)

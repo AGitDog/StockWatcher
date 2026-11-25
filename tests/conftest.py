@@ -2,6 +2,7 @@
 import pytest
 
 import insider_sources
+import lot_filter
 
 
 def pytest_addoption(parser):
@@ -23,6 +24,19 @@ def pytest_configure(config):
 
 
 FAKE_USD_RATES = {"USD": 1.0, "EUR": 1.1, "GBP": 1.3, "CHF": 1.2, "CAD": 0.7}
+
+
+@pytest.fixture(autouse=True)
+def _offline_lot_filter(monkeypatch, tmp_path):
+    """The list of too expensive Tokyo lots lives in a temporary file and is never rebuilt from Yahoo."""
+    real_refresh = lot_filter.refresh_for_watchlist
+
+    def no_refresh(symbols, today=None, path=None):
+        return lot_filter.load_exclusions(path)
+
+    no_refresh.real = real_refresh  # tests of the real function use this
+    monkeypatch.setattr(lot_filter, "EXCLUSION_FILE", tmp_path / "zu_teure_pakete.json")
+    monkeypatch.setattr(lot_filter, "refresh_for_watchlist", no_refresh)
 
 
 @pytest.fixture(autouse=True)

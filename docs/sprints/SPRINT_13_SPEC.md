@@ -83,3 +83,13 @@ Wunsch: Regeln und Aufgaben der Depots waren auf der Seite nicht zu durchschauen
 - **Bot:** `paused_days` zählt Entscheidungstage mit Kaufpause.
 - **Hilfe:** Die Depot-Tabelle im Reiter Spieldepots kommt aus derselben Funktion wie auf der Trades-Seite.
 - **Tests:** Depotregeln, Stand ab eigenem Start mit ETF über dieselben Tage, Vergleiche ab gemeinsamem Zeitraum und „Regel hat nie gegriffen“, Score-Namen in Kaufgründen, Statuszeile, Zählung der Pausentage, Seite rendert mit der Depot-Tabelle zuerst. 441 grün.
+
+## 11. Zu teure Tokio-Pakete nicht mehr scannen (25.11.2026)
+Befund: Die Rang-Score-Depots orderten Tokio-Aktien, deren 100er-Paket mehr als 5.000 € kostet (Tokyo Electron, Advantest, Keyence), und stornierten sie am nächsten Tag: 9 Stornos, jedes Mal ein verlorener Kaufplatz von 5. Wunsch: Solche Aktien gar nicht erst scannen.
+- **`lot_filter.py`:** Liste `signal_history/zu_teure_pakete.json` (wird mit den Snapshots committet). Der Asien-Lauf (und `all`) baut sie jede Nacht neu: Kurs aus dem letzten Snapshot (`last_close`, für ältere Snapshots aus dem Preis/Volumen-Text), Kurs der bereits ausgelassenen Aktien per kleinem Sammelabruf, EUR/JPY von Yahoo. Ausgelassen wird, wessen Paket mehr als 4.999 € kostet (Budget minus 1 € Gebühr). Ohne Wechselkurs bleibt die alte Liste, ohne neuen Kurs bleibt eine Aktie mit ihren letzten Paketkosten drauf. Nach einem Split kommt sie zurück.
+- **`update_signals.run_update` und `daily_job`:** alle Gruppen lassen die Aktien aus. Weil sie nicht mehr in `allowed_symbols` stehen, verschwinden sie auch aus dem zusammengeführten Snapshot.
+- **Erste Liste (25.11.):** 14 von 224 Tokio-Aktien, EUR/JPY 174,77: 1801, 4004, 4578, 6098, 6273 (32.220 €), 6367, 6504, 6857, 6861, 6920, 7741, 7974 (5.149 €), 9766, 9983 (49.346 €). 1.360 von 1.374 Aktien bleiben im Scan.
+- **Zweite Sicherung im Bot:** `place_orders` überspringt mit `lot_too_expensive` ein Paket, das am Entscheidungstag über dem Budget liegt (Kurs kann zwischen zwei Nächten steigen), und nimmt den nächsten Kandidaten. EURJPY wird dafür immer mitgeladen. Ohne Kurs oder Kurs-Rate wird wie bisher geordert.
+- **Snapshot:** neues Feld `last_close` je Eintrag.
+- **Texte:** gemeinsame Depotregel „Kauf“ und Hilfe Datenquellen.
+- **Tests:** `tests/test_lot_filter.py` (Paketkosten, Liste nur über Budget, Rückkehr nach Split, Ausfall von Abruf und Kurs, Nachtlauf scannt ausgelassene nicht, Kurs aus altem Text, Bot überspringt und kauft den nächsten). Unit-Tests arbeiten mit einer temporären Liste ohne Netz (`_offline_lot_filter` in `tests/conftest.py`).

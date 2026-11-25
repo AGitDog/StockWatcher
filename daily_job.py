@@ -39,8 +39,12 @@ def main():
         with open(MAPPINGS_PATH, "r", encoding="utf-8") as f:
             mapping_text = f.read()
 
-    entries = rotate_entries(parse_watchlist_text(watchlist_text))
     symbol_mappings = parse_symbol_mappings(mapping_text)
+    import lot_filter
+    from stock_agent import entry_symbol
+
+    entries, _ = lot_filter.drop_excluded(parse_watchlist_text(watchlist_text), lambda entry: entry_symbol(entry, symbol_mappings))
+    entries = rotate_entries(entries)
 
     if not entries:
         print("Watchlist ist leer oder enthält keine gültigen Einträge.", flush=True)

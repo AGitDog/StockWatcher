@@ -32,6 +32,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
@@ -311,9 +312,30 @@ def buy_candidates(snapshot: dict | None, threshold: float) -> list[dict]:
     return [_candidate(item, score) for score, item in chosen]
 
 
+_PRICE_IN_SUMMARY = re.compile(r"^Kurs (\d+(?:\.\d+)?),")
+
+
+def item_price(item: dict) -> float | None:
+    """Last close of a snapshot entry. Snapshots before 25.11.2026 only have it in the Preis/Volumen text."""
+    value = item.get("last_close")
+    if isinstance(value, (int, float)) and value > 0:
+        return float(value)
+    summary = str(((item.get("signal_breakdown") or {}).get("Preis/Volumen") or {}).get("summary", ""))
+    match = _PRICE_IN_SUMMARY.match(summary)
+    return float(match.group(1)) if match else None
+
+
 def _candidate(item: dict, score: float) -> dict:
     return {"symbol": item["symbol"], "name": item.get("name", ""), "score": score,
-            "sector": str(item.get("sector") or "Unbekannt")}
+            "sector": str(item.get("sector") or "Unbekannt"), "price": item_price(item)}
+
+
+def lot_too_expensive(cand: dict, day: date, fx: dict, cfg: dict) -> bool:
+    """True when the smallest Tokyo lot costs more than the budget. Unknown price or rate: try the order."""
+    if not str(cand["symbol"]).upper().endswith(".T") or not cand.get("price"):
+        return False
+    lot_eur = to_eur(cand["price"] * cfg.get("japan_lot", 1), cand["symbol"], day, fx)
+    return lot_eur is not None and lot_eur > cfg["position_budget"] - cfg["fee"]
 
 
 def _results_soon(item: dict, decision_day: date, days: int) -> bool:
@@ -348,6 +370,8 @@ def place_orders(
     cfg: dict,
     max_new: int | None = None,
     sector_limit: int | None = None,
+    fx: dict | None = None,
+    skipped: list | None = None,
 ) -> list[dict]:
     held = {p["symbol"] for p in pf["positions"]} | {o["symbol"] for o in pf["pending"]}
     sectors: dict[str, int] = {}
@@ -362,6 +386,10 @@ def place_orders(
         if sector_limit is not None and sectors.get(cand.get("sector", "Unbekannt"), 0) >= sector_limit:
             continue
         if cand["symbol"] in held:
+            continue
+        if fx is not None and lot_too_expensive(cand, decision_day, fx, cfg):
+            if skipped is not None:
+                skipped.append(cand["symbol"])  # the next candidate gets the slot instead
             continue
         sold_on = pf["cooldown"].get(cand["symbol"])
         if sold_on and (decision_day - date.fromisoformat(sold_on)).days < cfg["cooldown_days"]:
@@ -431,7 +459,7 @@ def step(state: dict, snapshot: dict | None, bars: dict[str, pd.DataFrame], fx: 
 
         # 3. new orders from today's snapshot (once per decision day)
         if pf.get("last_decision") != decision_day.isoformat():
-            placed = []
+            placed, too_expensive = [], []
             if pf.get("score_exit"):
                 summary[f"{key}_exits"] = update_weak_days(pf, snapshot, cfg, decision_day)
             if pf.get("regime_filter") and regime is not None and not regime["above"]:
@@ -443,11 +471,15 @@ def step(state: dict, snapshot: dict | None, bars: dict[str, pd.DataFrame], fx: 
                         pf, rank_candidates(snapshot, cfg, decision_day), decision_day, cfg,
                         max_new=cfg["max_buys_per_day"],
                         sector_limit=math.floor(cfg["sector_cap"] * cfg["max_positions"]),
+                        fx=fx, skipped=too_expensive,
                     )
             elif data_ok:
-                placed = place_orders(pf, buy_candidates(snapshot, cfg["buy_threshold"]), decision_day, cfg)
+                placed = place_orders(pf, buy_candidates(snapshot, cfg["buy_threshold"]), decision_day, cfg,
+                                      fx=fx, skipped=too_expensive)
             pf["last_decision"] = decision_day.isoformat()
             summary[f"{key}_orders"] = [o["symbol"] for o in placed]
+            if too_expensive:
+                summary[f"{key}_lot_too_expensive"] = too_expensive
 
     # ETF benchmark: invest everything at the first available open
     etf = state["etf"]
@@ -513,7 +545,7 @@ def run(
         if snapshot and snapshot_store._day_of(snapshot) != snapshot_day(now):
             snapshot = None  # no snapshot for today: manage positions, but no new buys
     symbols = symbols_needed(state)  # new orders need prices only from the next run on
-    currencies = {currency_of(s)[0] for s in symbols}
+    currencies = {currency_of(s)[0] for s in symbols} | {"JPY"}  # JPY: lot costs of Tokyo candidates
     fx_symbols = sorted(filter(None, (fx_symbol(c) for c in currencies)))
     oldest = min(
         [date.fromisoformat(state["started"])]
