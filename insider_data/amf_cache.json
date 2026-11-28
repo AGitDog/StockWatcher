@@ -3384,5 +3384,89 @@
     "volume": 5462.0
    }
   ]
+ },
+ "2026DD1152484": {
+  "date": "2026-11-25",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-24",
+    "instrument": "action",
+    "nature": "acquisition d'actions de performance",
+    "options": true,
+    "price": 0.0,
+    "volume": 75000.0
+   }
+  ]
+ },
+ "2026DD1152509": {
+  "date": "2026-11-25",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-24",
+    "instrument": "options de souscription",
+    "nature": "exercice",
+    "options": true,
+    "price": 51.93,
+    "volume": 2000.0
+   }
+  ]
+ },
+ "2026DD1152593": {
+  "date": "2026-11-26",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-20",
+    "instrument": "action",
+    "nature": "fusion intragroupe (societe absorbante)",
+    "options": false,
+    "price": 0.0,
+    "volume": 33509560.0
+   }
+  ]
+ },
+ "2026DD1152624": {
+  "date": "2026-11-26",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-25",
+    "instrument": "action",
+    "nature": "donation effectuee",
+    "options": false,
+    "price": 0.0,
+    "volume": 300.0
+   }
+  ]
+ },
+ "2026DD1152633": {
+  "date": "2026-11-26",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-20",
+    "instrument": "action",
+    "nature": "cession",
+    "options": true,
+    "price": 68.8964,
+    "volume": 4746.0
+   }
+  ]
+ },
+ "2026DD1152836": {
+  "date": "2026-11-27",
+  "transactions": [
+   {
+    "currency": "euro",
+    "date": "2026-11-25",
+    "instrument": "action",
+    "nature": "acquisition",
+    "options": false,
+    "price": 22.0982,
+    "volume": 1000000.0
+   }
+  ]
  }
 }
